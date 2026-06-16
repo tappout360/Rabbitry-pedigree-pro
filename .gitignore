@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.gemini/
+*.log
+.system_generated/
+.idea/
+.vscode/
+*.local

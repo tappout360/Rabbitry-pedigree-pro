@@ -1,0 +1,488 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================
+   RabbitryPedigree Pro - Global Stylesheet
+   ========================================== */
+
+:root {
+  --font-title: 'Outfit', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Defaults - Forest Meadows Theme */
+  --bg-gradient: linear-gradient(135deg, #1b361e 0%, #0d1f11 100%);
+  --glass-bg: rgba(25, 47, 30, 0.45);
+  --glass-border: rgba(165, 214, 167, 0.2);
+  --text-primary: #e8f5e9;
+  --text-secondary: #a5d6a7;
+  --accent-primary: #4caf50;
+  --accent-glow: rgba(76, 175, 80, 0.4);
+  --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --border-radius: 24px;
+  
+  /* Bubble style additions */
+  --bubble-border: #81c784;
+  --bubble-shadow: rgba(0, 0, 0, 0.15);
+}
+
+/* Theme Configurations */
+
+/* 1. Kawaii Clover Garden (Pastel Pink/Mint) */
+.theme-kawaii {
+  --bg-gradient: linear-gradient(135deg, #ffebee 0%, #e8f5e9 100%);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: #ff80ab;
+  --text-primary: #37474f;
+  --text-secondary: #607d8b;
+  --accent-primary: #ff4081;
+  --accent-glow: rgba(255, 64, 129, 0.25);
+  --card-shadow: 4px 4px 0px #ff4081;
+  --bubble-border: #ff4081;
+  --bubble-shadow: #ff80ab;
+}
+
+/* 2. Neon Cyber-Barn (Cyberpunk Purple/Cyan) */
+.theme-cyber {
+  --bg-gradient: linear-gradient(135deg, #0f0c1b 0%, #050209 100%);
+  --glass-bg: rgba(15, 12, 27, 0.85);
+  --glass-border: #00e5ff;
+  --text-primary: #e0f7fa;
+  --text-secondary: #80deea;
+  --accent-primary: #ff4081;
+  --accent-glow: rgba(255, 64, 129, 0.6);
+  --card-shadow: 5px 5px 0px #ff4081;
+  --bubble-border: #00e5ff;
+  --bubble-shadow: rgba(0, 229, 255, 0.3);
+}
+
+/* 3. Ghibli-esque Orchard (Watercolor Warmth) */
+.theme-ghibli {
+  --bg-gradient: linear-gradient(135deg, #f5f0e1 0%, #e8e0cc 100%);
+  --glass-bg: rgba(255, 252, 242, 0.85);
+  --glass-border: #8b5a2b;
+  --text-primary: #4e342e;
+  --text-secondary: #6d4c41;
+  --accent-primary: #d84315;
+  --accent-glow: rgba(216, 67, 21, 0.25);
+  --card-shadow: 6px 6px 0px #8b5a2b;
+  --bubble-border: #8b5a2b;
+  --bubble-shadow: #bcaaa4;
+}
+
+/* 4. Midnight Obsidian (Classic Premium Dark Theme) */
+.theme-dark {
+  --bg-gradient: linear-gradient(135deg, #121214 0%, #08080a 100%);
+  --glass-bg: rgba(30, 30, 35, 0.8);
+  --glass-border: #3f51b5;
+  --text-primary: #f5f5f7;
+  --text-secondary: #9fa8da;
+  --accent-primary: #3f51b5;
+  --accent-glow: rgba(63, 81, 181, 0.4);
+  --card-shadow: 6px 6px 0px #1a1a24;
+  --bubble-border: #5c6bc0;
+  --bubble-shadow: rgba(0, 0, 0, 0.45);
+}
+
+/* Global Reset & Base Setup */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-gradient);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.5s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 700;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Glassmorphism Styles (Broken-up Bubbly Cards) */
+.glass-container {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: var(--glass-bg);
+  border: 3px solid var(--bubble-border);
+  box-shadow: 6px 6px 0px var(--bubble-shadow);
+  border-radius: 28px 12px 24px 16px / 16px 24px 12px 28px; /* Playful uneven bubble edges */
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.glass-container:hover {
+  box-shadow: 6px 6px 0px var(--bubble-shadow);
+}
+
+/* Glassmorphic Input Fields */
+input, select, textarea {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.theme-kawaii input, .theme-kawaii select, .theme-kawaii textarea {
+  background: rgba(255, 255, 255, 0.8);
+}
+.theme-ghibli input, .theme-ghibli select, .theme-ghibli textarea {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-kawaii input:focus, .theme-kawaii select:focus, .theme-kawaii textarea:focus {
+  background: #fff;
+}
+
+/* Explicit option styles to prevent white-on-white text readability issues in dark/cyber mode */
+select option {
+  background-color: #ffffff;
+  color: #333333;
+}
+
+.theme-dark select option,
+.theme-cyber select option,
+.theme-forest select option {
+  background-color: #1a1a24;
+  color: #f5f5f7;
+}
+
+.theme-kawaii select option,
+.theme-ghibli select option {
+  background-color: #ffffff;
+  color: #37474f;
+}
+
+
+/* Bouncy Interactive Buttons */
+.btn-interactive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--accent-glow);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-interactive:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 20px var(--accent-glow);
+  filter: brightness(1.1);
+}
+
+.btn-interactive:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* Keyframe Animations */
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes pulseBorder {
+  0% { border-color: var(--glass-border); }
+  50% { border-color: var(--accent-primary); }
+  100% { border-color: var(--glass-border); }
+}
+
+@keyframes drift {
+  0% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.7; }
+  100% { transform: translateY(-300px) translateX(50px) rotate(360deg); opacity: 0; }
+}
+
+/* Character Widget Styling */
+.mascot-avatar {
+  /* static */
+}
+
+.mascot-bubble {
+  position: relative;
+  background: var(--glass-bg);
+  border: 2px solid var(--glass-border);
+  color: var(--text-primary);
+  border-radius: 18px;
+  padding: 12px 18px;
+  max-width: 250px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  animation: bounceSlow 3s ease-in-out infinite;
+}
+
+.mascot-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: var(--glass-bg) transparent;
+  display: block;
+  width: 0;
+}
+
+.mascot-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -13px;
+  left: 19px;
+  border-width: 11px 11px 0;
+  border-style: solid;
+  border-color: var(--glass-border) transparent;
+  display: block;
+  width: 0;
+  z-index: -1;
+}
+
+/* Theme Particle Effect Container */
+.particle-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  bottom: -20px;
+  font-size: 20px;
+  animation: drift 10s linear infinite;
+  opacity: 0;
+}
+
+/* Bouncy Success Popup Overlays (Anime guide rewards) */
+.success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.success-bubble-card {
+  max-width: 450px;
+  width: 100%;
+  background: var(--glass-bg);
+  border: 4px solid var(--accent-primary);
+  box-shadow: 8px 8px 0px var(--bubble-shadow);
+  border-radius: 32px 16px 28px 20px / 20px 28px 16px 32px;
+  padding: 30px;
+  text-align: center;
+  position: relative;
+  animation: scalePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.success-bubble-card img {
+  max-width: 96px !important;
+  max-height: 96px !important;
+  width: 96px !important;
+  height: 96px !important;
+  object-fit: contain;
+}
+
+@keyframes scalePop {
+  0% { transform: scale(0.7) translateY(40px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.anime-reward-char {
+  font-size: 5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ==========================================
+   Vibrant Fun & Colorful Themes Makeover
+   ========================================== */
+
+:root {
+  --custom-accent-color: #6366f1; /* default custom accent */
+}
+
+/* 3. Spring Meadow Theme (Pastel Mint, Peach & Sky Blue) */
+.theme-spring {
+  --bg-gradient: linear-gradient(135deg, #e0f2f1 0%, #fce4ec 100%);
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: #80cbc4;
+  --text-primary: #004d40;
+  --text-secondary: #00796b;
+  --accent-primary: #ff4081;
+  --accent-glow: rgba(255, 64, 129, 0.3);
+  --card-shadow: 0 10px 25px rgba(128, 203, 196, 0.4);
+  --bubble-border: #00796b;
+  --bubble-shadow: rgba(128, 203, 196, 0.2);
+}
+
+/* 4. Rainbow Hutch Theme (Vibrant Colorful Gradients) */
+.theme-rainbow {
+  --bg-gradient: linear-gradient(135deg, #1e0b36 0%, #0b1c36 100%);
+  --glass-bg: rgba(15, 10, 25, 0.8);
+  --glass-border: #e040fb;
+  --text-primary: #f3e5f5;
+  --text-secondary: #b388ff;
+  --accent-primary: #00e5ff;
+  --accent-glow: rgba(0, 229, 255, 0.4);
+  --card-shadow: 0 0 20px rgba(224, 64, 251, 0.35);
+  --bubble-border: #00e5ff;
+  --bubble-shadow: rgba(179, 136, 255, 0.3);
+}
+
+/* 5. Golden Lop Theme (Warm Sun Yellow & Golden Bronze) */
+.theme-golden {
+  --bg-gradient: linear-gradient(135deg, #2e1c0c 0%, #170d05 100%);
+  --glass-bg: rgba(46, 28, 12, 0.5);
+  --glass-border: #ffd700;
+  --text-primary: #fff8e1;
+  --text-secondary: #ffb300;
+  --accent-primary: #ff8f00;
+  --accent-glow: rgba(255, 143, 0, 0.45);
+  --card-shadow: 0 8px 30px rgba(255, 179, 0, 0.2);
+  --bubble-border: #ffd700;
+  --bubble-shadow: rgba(255, 179, 0, 0.15);
+}
+
+/* 6. Showtime Sparkle Theme (Royal Lavender & Berry Purple) */
+.theme-sparkle {
+  --bg-gradient: linear-gradient(135deg, #1a0f30 0%, #0d061a 100%);
+  --glass-bg: rgba(26, 15, 48, 0.7);
+  --glass-border: #d500f9;
+  --text-primary: #f5f5f5;
+  --text-secondary: #ea80fc;
+  --accent-primary: #ffd700;
+  --accent-glow: rgba(255, 215, 0, 0.5);
+  --card-shadow: 0 0 25px rgba(213, 0, 249, 0.3);
+  --bubble-border: #d500f9;
+  --bubble-shadow: rgba(234, 128, 252, 0.35);
+}
+
+/* Custom Color Accent Utilities */
+.custom-border-accent {
+  border-color: var(--custom-accent-color) !important;
+}
+.custom-bg-accent {
+  background-color: var(--custom-accent-color) !important;
+}
+.custom-text-accent {
+  color: var(--custom-accent-color) !important;
+}
+.custom-glow-accent {
+  box-shadow: 0 0 15px var(--custom-accent-color) !important;
+}
+
+/* Bouncy & Bouncing Animations */
+@keyframes bounceSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-bounce-subtle {
+  animation: bounceSubtle 2s ease-in-out infinite;
+}
+
+/* Champion Pedigree Borders */
+.champion-gold-border {
+  border: 3px solid #ffd700 !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.45) !important;
+}
+.champion-rainbow-border {
+  border: 3px solid transparent !important;
+  background-image: linear-gradient(rgba(15, 10, 25, 0.8), rgba(15, 10, 25, 0.8)), linear-gradient(135deg, #ff007f, #00f0ff) !important;
+  background-origin: border-box !important;
+  background-clip: content-box, border-box !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.35) !important;
+}
+
+/* Pedigree Hop Path Connector Styling */
+.hop-path-paternal {
+  border-color: #60a5fa !important; /* blue path */
+}
+.hop-path-maternal {
+  border-color: #f472b6 !important; /* pink path */
+}
+
+/* Playful ribbon badge stylings */
+.badge-ribbon {
+  background: linear-gradient(135deg, #ff4081, #ff80ab);
+  color: white;
+  font-weight: 850;
+  border-radius: 12px;
+  box-shadow: 2px 2px 0px rgba(255, 64, 129, 0.4);
+}
+.badge-ribbon-gold {
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+  color: #5d4037;
+  font-weight: 850;
+  border-radius: 12px;
+  box-shadow: 2px 2px 0px rgba(255, 179, 0, 0.4);
+}
+.badge-ribbon-cyan {
+  background: linear-gradient(135deg, #00e5ff, #00b0ff);
+  color: #003c54;
+  font-weight: 850;
+  border-radius: 12px;
+  box-shadow: 2px 2px 0px rgba(0, 176, 255, 0.4);
+}
+.badge-ribbon-green {
+  background: linear-gradient(135deg, #00e676, #00c853);
+  color: white;
+  font-weight: 850;
+  border-radius: 12px;
+  box-shadow: 2px 2px 0px rgba(0, 200, 83, 0.4);
+}
