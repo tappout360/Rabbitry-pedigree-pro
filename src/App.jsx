@@ -4,7 +4,7 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check
+  LogOut, HeartPulse, ShieldCheck, Check, Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GeneticsEngine } from './genetics';
@@ -14,26 +14,122 @@ const BREED_STANDARDS = {
   'Holland Lop': {
     name: 'Holland Lop',
     classType: '4-class',
-    buckJrMin: 0, buckJrMax: 48, buckSrMin: 32, buckSrMax: 64, // max 4.0 lbs
+    buckJrMin: 0, buckJrMax: 48, buckSrMin: 32, buckSrMax: 64, // max 4.0 lbs (64 oz), Senior min 2.0 lbs (32 oz)
     doeJrMin: 0, doeJrMax: 48, doeSrMin: 32, doeSrMax: 64
   },
   'Netherland Dwarf': {
     name: 'Netherland Dwarf',
     classType: '4-class',
-    buckJrMin: 0, buckJrMax: 32, buckSrMin: 16, buckSrMax: 40, // max 2.5 lbs
+    buckJrMin: 0, buckJrMax: 32, buckSrMin: 16, buckSrMax: 40, // max 2.5 lbs (40 oz), Senior min 1.0 lbs (16 oz)
     doeJrMin: 0, doeJrMax: 32, doeSrMin: 16, doeSrMax: 40
   },
   'Flemish Giant': {
     name: 'Flemish Giant',
     classType: '6-class',
-    buckJrMin: 0, buckJrMax: 160, buckIntMin: 144, buckIntMax: 192, buckSrMin: 208, buckSrMax: 9999, // sr min 13 lbs
-    doeJrMin: 0, doeJrMax: 176, doeIntMin: 160, doeIntMax: 208, doeSrMin: 224, doeSrMax: 9999    // sr min 14 lbs
+    buckJrMin: 0, buckJrMax: 160, buckIntMin: 144, buckIntMax: 192, buckSrMin: 208, buckSrMax: 9999, // Sr Bucks min 13 lbs (208 oz)
+    doeJrMin: 0, doeJrMax: 176, doeIntMin: 160, doeIntMax: 208, doeSrMin: 224, doeSrMax: 9999    // Sr Does min 14 lbs (224 oz)
   },
   'New Zealand': {
     name: 'New Zealand',
     classType: '6-class',
-    buckJrMin: 0, buckJrMax: 128, buckIntMin: 112, buckIntMax: 144, buckSrMin: 144, buckSrMax: 176, // sr 9-11 lbs
-    doeJrMin: 0, doeJrMax: 144, doeIntMin: 128, doeIntMax: 160, doeSrMin: 160, doeSrMax: 192    // sr 10-12 lbs
+    buckJrMin: 0, buckJrMax: 128, buckIntMin: 112, buckIntMax: 144, buckSrMin: 144, buckSrMax: 176, // Sr Bucks 9-11 lbs (144-176 oz)
+    doeJrMin: 0, doeJrMax: 144, doeIntMin: 128, doeIntMax: 160, doeSrMin: 160, doeSrMax: 192    // Sr Does 10-12 lbs (160-192 oz)
+  },
+  'Californian': {
+    name: 'Californian',
+    classType: '6-class',
+    buckJrMin: 88, buckJrMax: 128, buckIntMin: 0, buckIntMax: 144, buckSrMin: 144, buckSrMax: 160, // Jr 5.5-8 lbs, Int max 9 lbs, Sr 9-10 lbs
+    doeJrMin: 88, doeJrMax: 136, doeIntMin: 0, doeIntMax: 152, doeSrMin: 152, doeSrMax: 168     // Jr 5.5-8.5 lbs, Int max 9.5 lbs, Sr 9.5-10.5 lbs
+  },
+  'Mini Rex': {
+    name: 'Mini Rex',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 52, buckSrMin: 48, buckSrMax: 68, // Jr max 3.25 lbs, Sr Bucks 3-4.25 lbs
+    doeJrMin: 0, doeJrMax: 52, doeSrMin: 52, doeSrMax: 72  // Jr max 3.25 lbs, Sr Does 3.25-4.5 lbs
+  },
+  'Mini Lop': {
+    name: 'Mini Lop',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 72, buckSrMin: 72, buckSrMax: 104, // Jr max 4.5 lbs, Sr 4.5-6.5 lbs
+    doeJrMin: 0, doeJrMax: 72, doeSrMin: 72, doeSrMax: 104
+  },
+  'Dutch': {
+    name: 'Dutch',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 56, buckSrMin: 56, buckSrMax: 88, // Jr max 3.5 lbs, Sr 3.5-5.5 lbs
+    doeJrMin: 0, doeJrMax: 56, doeSrMin: 56, doeSrMax: 88
+  },
+  'Rex': {
+    name: 'Rex',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 128, buckSrMin: 120, buckSrMax: 152, // Jr max 8 lbs, Sr Bucks 7.5-9.5 lbs
+    doeJrMin: 0, doeJrMax: 128, doeSrMin: 128, doeSrMax: 168   // Jr max 8 lbs, Sr Does 8-10.5 lbs
+  },
+  'Lionhead': {
+    name: 'Lionhead',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 52, buckSrMin: 40, buckSrMax: 60, // Jr max 3.25 lbs, Sr 2.5-3.75 lbs
+    doeJrMin: 0, doeJrMax: 52, doeSrMin: 40, doeSrMax: 60
+  },
+  'Jersey Wooly': {
+    name: 'Jersey Wooly',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 48, buckSrMin: 32, buckSrMax: 56, // Jr max 3 lbs, Sr 2-3.5 lbs (ideal 3 lbs)
+    doeJrMin: 0, doeJrMax: 48, doeSrMin: 32, doeSrMax: 56
+  },
+  'French Lop': {
+    name: 'French Lop',
+    classType: '6-class',
+    buckJrMin: 0, buckJrMax: 168, buckIntMin: 0, buckIntMax: 184, buckSrMin: 168, buckSrMax: 9999, // Sr Bucks min 10.5 lbs (168 oz)
+    doeJrMin: 0, doeJrMax: 168, doeIntMin: 0, doeIntMax: 184, doeSrMin: 176, doeSrMax: 9999     // Sr Does min 11 lbs (176 oz)
+  },
+  'Champagne d\'Argent': {
+    name: 'Champagne d\'Argent',
+    classType: '6-class',
+    buckJrMin: 0, buckJrMax: 144, buckIntMin: 0, buckIntMax: 160, buckSrMin: 144, buckSrMax: 176, // Jr max 9 lbs, Sr 9-11 lbs
+    doeJrMin: 0, doeJrMax: 144, doeIntMin: 0, doeIntMax: 168, doeSrMin: 152, doeSrMax: 192     // Jr max 9 lbs, Sr 9.5-12 lbs
+  },
+  'English Angora': {
+    name: 'English Angora',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 88, buckSrMin: 80, buckSrMax: 120, // Jr max 5.5 lbs, Sr 5-7.5 lbs
+    doeJrMin: 0, doeJrMax: 88, doeSrMin: 80, doeSrMax: 120
+  },
+  'Satin': {
+    name: 'Satin',
+    classType: '6-class',
+    buckJrMin: 0, buckJrMax: 128, buckIntMin: 0, buckIntMax: 144, buckSrMin: 136, buckSrMax: 168, // Jr max 8 lbs, Int max 9 lbs, Sr Bucks 8.5-10.5 lbs
+    doeJrMin: 0, doeJrMax: 128, doeIntMin: 0, doeIntMax: 144, doeSrMin: 144, doeSrMax: 176     // Jr max 8 lbs, Int max 9 lbs, Sr Does 9-11 lbs
+  },
+  'Havana': {
+    name: 'Havana',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 80, buckSrMin: 72, buckSrMax: 104, // Jr max 5 lbs, Sr 4.5-6.5 lbs
+    doeJrMin: 0, doeJrMax: 80, doeSrMin: 72, doeSrMax: 104
+  },
+  'Himalayan': {
+    name: 'Himalayan',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 40, buckSrMin: 40, buckSrMax: 72, // Jr max 2.5 lbs, Sr 2.5-4.5 lbs
+    doeJrMin: 0, doeJrMax: 40, doeSrMin: 40, doeSrMax: 72
+  },
+  'Polish': {
+    name: 'Polish',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 40, buckSrMin: 0, buckSrMax: 56,  // Jr max 2.5 lbs, Sr max 3.5 lbs
+    doeJrMin: 0, doeJrMax: 40, doeSrMin: 0, doeSrMax: 56
+  },
+  'Thrianta': {
+    name: 'Thrianta',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 80, buckSrMin: 64, buckSrMax: 96,  // Jr max 5 lbs, Sr 4-6 lbs
+    doeJrMin: 0, doeJrMax: 80, doeSrMin: 64, doeSrMax: 96
+  },
+  'Silver Marten': {
+    name: 'Silver Marten',
+    classType: '4-class',
+    buckJrMin: 0, buckJrMax: 104, buckSrMin: 104, buckSrMax: 136, // Jr max 6.5 lbs, Sr Bucks 6.5-8.5 lbs
+    doeJrMin: 0, doeJrMax: 104, doeSrMin: 112, doeSrMax: 152   // Jr max 6.5 lbs, Sr Does 7-9.5 lbs
   }
 };
 
@@ -353,8 +449,50 @@ function SignaturePad({ value, onChange, placeholder }) {
   );
 }
 
+const getPrimaryPhoto = (rabbit) => {
+  if (rabbit && rabbit.photos && rabbit.photos.length > 0) {
+    const photo = rabbit.photos[0];
+    return typeof photo === 'string' ? photo : photo.url;
+  }
+  return 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300';
+};
+
+const getPrimaryPhotoStyles = (rabbit) => {
+  if (rabbit && rabbit.photos && rabbit.photos.length > 0) {
+    const photo = rabbit.photos[0];
+    const pObj = typeof photo === 'string' ? { brightness: 100, rotation: 0 } : photo;
+    return {
+      filter: `brightness(${pObj.brightness || 100}%)`,
+      transform: `rotate(${pObj.rotation || 0}deg)`
+    };
+  }
+  return {};
+};
+
+const sanitizeTextInput = (text) => {
+  if (!text) return '';
+  const ssnRegex = /\b\d{3}[- ]?\d{2}[- ]?\d{4}\b/;
+  if (ssnRegex.test(text)) {
+    alert("SECURITY WARNING: Social Security Numbers (SSN) are strictly prohibited. You must only use Tattoo numbers and system-generated Breeder Account numbers.");
+    throw new Error("SSN Prohibited");
+  }
+  let sanitized = text;
+  // Strip patterns resembling ICD-10-CM codes (e.g. A00.0, M54.5, etc.)
+  sanitized = sanitized.replace(/\b[A-Z]\d{2}(?:\.\d{1,4})?\b/gi, '[HEALTH CODE REDACTED]');
+  // Strip human healthcare terms
+  const humanHealthWords = [
+    'medicare', 'medicaid', 'phi', 'hipaa', 'health insurance', 
+    'social security number', 'human drug', 'patient record'
+  ];
+  humanHealthWords.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    sanitized = sanitized.replace(regex, '[REDACTED]');
+  });
+  return sanitized;
+};
+
 const scanPedigree = (rabbit, allRabbits, depth = 0) => {
-  if (!rabbit || depth > 2) return [];
+  if (!rabbit || depth > 3) return [];
   const missing = [];
   if (!rabbit.tattooNumber) missing.push({ id: rabbit.id, name: rabbit.name, field: 'tattooNumber', label: 'Tattoo Number' });
   if (!rabbit.variety) missing.push({ id: rabbit.id, name: rabbit.name, field: 'variety', label: 'Variety (Color)' });
@@ -372,6 +510,25 @@ const scanPedigree = (rabbit, allRabbits, depth = 0) => {
     if (dam) missing.push(...scanPedigree(dam, allRabbits, depth + 1));
   }
   return missing;
+};
+
+const parseEmailText = (text) => {
+  const showNameMatch = text.match(/(?:Show|Show\s+Name)\s*:\s*([^\n\r]+)/i);
+  const judgeMatch = text.match(/(?:Judge|Judge\s+Name)\s*:\s*([^\n\r]+)/i);
+  const dateMatch = text.match(/(?:Date)\s*:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+  const awardMatch = text.match(/(?:Award|Placement)\s*:\s*([^\n\r]+)/i);
+  const sizeMatch = text.match(/(?:Class\s+Size|Size)\s*:\s*(\d+)/i);
+  const tattooMatch = text.match(/(?:Rabbit|Tattoo|Tattoo\s+Number|Ear\s+Number)\s*:\s*([A-Za-z0-9-]+)/i);
+
+  return {
+    type: 'leg',
+    showName: showNameMatch ? showNameMatch[1].trim() : '',
+    judge: judgeMatch ? judgeMatch[1].trim() : '',
+    date: dateMatch ? dateMatch[1].trim() : new Date().toISOString().split('T')[0],
+    award: awardMatch ? awardMatch[1].trim() : '1st Class',
+    classSize: sizeMatch ? Number(sizeMatch[1]) : 10,
+    rabbitTattoo: tattooMatch ? tattooMatch[1].trim() : ''
+  };
 };
 
 export default function App() {
@@ -605,6 +762,29 @@ export default function App() {
 
   // Mascot Reward Pop-up State
   const [successMascot, setSuccessMascot] = useState(null);
+
+  // Pedigree Builder Modals & Interaction States
+  const [pedigreeEditNode, setPedigreeEditNode] = useState(null); // { rabbitId, gender, label, currentId, isOffspring }
+  const [showPrintPedigreeModal, setShowPrintPedigreeModal] = useState(null); // rabbit object
+  const [showEmailImportModal, setShowEmailImportModal] = useState(false);
+  const [emailImportText, setEmailImportText] = useState('');
+  const [emailImportPreview, setEmailImportPreview] = useState(null); // parsed details to confirm
+  const [controlCenterUnlocked, setControlCenterUnlocked] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState('');
+  const [arbaMemberNumber, setArbaMemberNumber] = useState(() => currentUser?.arbaMemberNumber || '');
+
+  const [nodeForm, setNodeForm] = useState({
+    tattooNumber: '', name: '', breed: '', variety: '',
+    weightOz: 40, dob: '', registrationNumber: '', gcNumber: '', notes: '', legs: []
+  });
+  const [nodeFormType, setNodeFormType] = useState('new');
+  const [selectedExistingId, setSelectedExistingId] = useState('');
+  const [newAncestorLeg, setNewAncestorLeg] = useState({
+    showName: '', judge: '', date: new Date().toISOString().split('T')[0], award: '1st Class', classSize: ''
+  });
+
+
 
   // Auto-dismiss Success Mascot popup after 4 seconds
   useEffect(() => {
@@ -1084,6 +1264,44 @@ export default function App() {
   const [breederName, setBreederName] = useState(() => currentUser?.name || '');
   const [breederPhone, setBreederPhone] = useState(() => currentUser?.phone || '');
 
+  useEffect(() => {
+    if (pedigreeEditNode) {
+      const editRabbit = allRabbits.find(r => r.id === pedigreeEditNode.rabbitId);
+      if (editRabbit) {
+        setNodeForm({
+          tattooNumber: editRabbit.tattooNumber || '',
+          name: editRabbit.name || '',
+          breed: editRabbit.breed || (selectedRabbit ? selectedRabbit.breed : ''),
+          variety: editRabbit.variety || '',
+          weightOz: editRabbit.weightOz || 0,
+          dob: editRabbit.dob || '',
+          registrationNumber: editRabbit.registrationNumber || '',
+          gcNumber: editRabbit.gcNumber || '',
+          notes: editRabbit.notes || '',
+          legs: editRabbit.legs || []
+        });
+        setNodeFormType('new');
+        setSelectedExistingId('');
+      } else {
+        setNodeForm({
+          tattooNumber: '',
+          name: '',
+          breed: (selectedRabbit ? selectedRabbit.breed : ''),
+          variety: '',
+          weightOz: 40,
+          dob: new Date().toISOString().split('T')[0],
+          registrationNumber: '',
+          gcNumber: '',
+          notes: '',
+          legs: []
+        });
+        setNodeFormType('existing');
+        setSelectedExistingId('');
+      }
+      setNewAncestorLeg({ showName: '', judge: '', date: new Date().toISOString().split('T')[0], award: '1st Class', classSize: '' });
+    }
+  }, [pedigreeEditNode, allRabbits, selectedRabbit]);
+
   // Sync profile fields from currentUser when currentUser (logged in user/context) changes
   useEffect(() => {
     if (currentUser) {
@@ -1092,8 +1310,61 @@ export default function App() {
       setRabbitryName(currentUser.rabbitryName || '');
       setRabbitryLogo(currentUser.logo || '🐇');
       setTheme(currentUser.theme || 'dark');
+      setArbaMemberNumber(currentUser.arbaMemberNumber || '');
     }
   }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (currentUser && currentUser.arbaMemberNumber !== arbaMemberNumber) {
+      setCurrentUser(prev => prev ? { ...prev, arbaMemberNumber } : null);
+    }
+  }, [arbaMemberNumber]);
+
+  useEffect(() => {
+    // Prevent non-admin users from accessing ab-admin context or the admin tab
+    if (currentUser) {
+      if (currentUser.id !== 'ab-admin') {
+        // Non-admin user logged in
+        if (activeTab === 'admin') {
+          setActiveTab('dashboard');
+        }
+        // Validate selectedBreederContext is allowed for this user
+        const employer = adminBreeders.find(b => b.email.toLowerCase() === currentUser.employerEmail?.toLowerCase());
+        const allowedContexts = [currentUser.id];
+        if (employer && currentUser.role === 'assistant' && currentUser.employerStatus === 'active') {
+          allowedContexts.push(employer.id);
+        }
+        if (!allowedContexts.includes(selectedBreederContext)) {
+          setSelectedBreederContext(currentUser.id);
+          localStorage.setItem('rp_selected_context', currentUser.id);
+        }
+        
+        // Ensure non-admin users have controlCenterUnlocked always locked
+        setControlCenterUnlocked(false);
+        setAdminPasswordInput('');
+        setAdminPasswordError('');
+      } else {
+        // Admin user logged in
+        // If context switches away from ab-admin, make sure we lock and exit the admin tab
+        if (selectedBreederContext !== 'ab-admin') {
+          if (activeTab === 'admin') {
+            setActiveTab('dashboard');
+          }
+          setControlCenterUnlocked(false);
+          setAdminPasswordInput('');
+          setAdminPasswordError('');
+        }
+      }
+    } else {
+      // Logged out
+      if (activeTab === 'admin') {
+        setActiveTab('dashboard');
+      }
+      setControlCenterUnlocked(false);
+      setAdminPasswordInput('');
+      setAdminPasswordError('');
+    }
+  }, [currentUser?.id, selectedBreederContext, activeTab, adminBreeders]);
 
   // Sync breeder profile edits back to currentUser and adminBreeders dynamically
   useEffect(() => {
@@ -1337,6 +1608,13 @@ export default function App() {
 
     // Success login!
     setCurrentUser(user);
+    if (user.id === 'ab-admin') {
+      setSelectedBreederContext('ab-admin');
+      localStorage.setItem('rp_selected_context', 'ab-admin');
+    } else {
+      setSelectedBreederContext(user.id);
+      localStorage.setItem('rp_selected_context', user.id);
+    }
     setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
     setRabbitryLogo(user.logo || '🐇');
     setTheme(user.theme || 'dark');
@@ -1352,7 +1630,13 @@ export default function App() {
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to log out?")) {
       localStorage.removeItem('rp_logged_in_email');
+      localStorage.removeItem('rp_selected_context');
       setCurrentUser(null);
+      setSelectedBreederContext('ab-1');
+      setActiveTab('dashboard');
+      setControlCenterUnlocked(false);
+      setAdminPasswordInput('');
+      setAdminPasswordError('');
       setAuthView('login');
       setLoginEmail('');
       setLoginPassword('');
@@ -1559,6 +1843,7 @@ export default function App() {
       id: `r-${Date.now()}`,
       breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
       weightOz: Number(newRabbit.weightOz),
+      notes: sanitizeTextInput(newRabbit.notes),
       inbreedingCoeff: calculateF(newRabbit.sireId, newRabbit.damId),
       photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'], // default cute placeholder photo
       legs: []
@@ -1718,6 +2003,355 @@ export default function App() {
     };
   };
 
+  const handleSavePedigreeNode = (e) => {
+    if (e) e.preventDefault();
+    if (!pedigreeEditNode) return;
+
+    let updatedRabbits = [...allRabbits];
+
+    // Case 1: Editing offspring directly
+    if (pedigreeEditNode.isOffspring) {
+      updatedRabbits = updatedRabbits.map(r => {
+        if (r.id === pedigreeEditNode.rabbitId) {
+          const updated = {
+            ...r,
+            name: nodeForm.name,
+            tattooNumber: nodeForm.tattooNumber,
+            breed: nodeForm.breed,
+            variety: nodeForm.variety,
+            weightOz: Number(nodeForm.weightOz) || 0,
+            dob: nodeForm.dob,
+            registrationNumber: nodeForm.registrationNumber,
+            gcNumber: nodeForm.gcNumber,
+            notes: sanitizeTextInput(nodeForm.notes)
+          };
+          setSelectedRabbit(updated);
+          return updated;
+        }
+        return r;
+      });
+      showToast("Offspring profile updated!", "success");
+    } 
+    // Case 2: Setting parent link to an existing rabbit
+    else if (nodeFormType === 'existing') {
+      if (!selectedExistingId) {
+        alert("Please select an existing rabbit!");
+        return;
+      }
+      updatedRabbits = updatedRabbits.map(r => {
+        if (r.id === pedigreeEditNode.parentOfId) {
+          const updated = {
+            ...r,
+            [pedigreeEditNode.field]: selectedExistingId
+          };
+          if (r.id === selectedRabbit.id) {
+            setSelectedRabbit(updated);
+          }
+          return updated;
+        }
+        return r;
+      });
+      showToast("Ancestor link updated!", "success");
+    } 
+    // Case 3: Creating or editing pedigree-only ancestor
+    else {
+      if (!nodeForm.name || !nodeForm.tattooNumber) {
+        alert("Name and Tattoo Number are required!");
+        return;
+      }
+
+      let ancestorId = pedigreeEditNode.rabbitId;
+
+      if (ancestorId) {
+        // Editing existing pedigree-only ancestor
+        updatedRabbits = updatedRabbits.map(r => {
+          if (r.id === ancestorId) {
+            return {
+              ...r,
+              name: nodeForm.name,
+              tattooNumber: nodeForm.tattooNumber,
+              breed: nodeForm.breed,
+              variety: nodeForm.variety,
+              weightOz: Number(nodeForm.weightOz) || 0,
+              dob: nodeForm.dob,
+              registrationNumber: nodeForm.registrationNumber,
+              gcNumber: nodeForm.gcNumber,
+              notes: sanitizeTextInput(nodeForm.notes)
+            };
+          }
+          return r;
+        });
+        showToast("Ancestor details updated!", "success");
+      } else {
+        // Creating new pedigree-only ancestor
+        ancestorId = `r-pedigree-${Date.now()}`;
+        const newAncestor = {
+          id: ancestorId,
+          breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
+          tattooNumber: nodeForm.tattooNumber,
+          name: nodeForm.name,
+          breed: nodeForm.breed,
+          variety: nodeForm.variety,
+          sex: pedigreeEditNode.gender,
+          dob: nodeForm.dob,
+          weightOz: Number(nodeForm.weightOz) || 40,
+          status: 'pedigree_only',
+          registrationNumber: nodeForm.registrationNumber,
+          gcNumber: nodeForm.gcNumber,
+          notes: sanitizeTextInput(nodeForm.notes),
+          legs: nodeForm.legs || [],
+          sireId: '',
+          damId: ''
+        };
+        updatedRabbits.push(newAncestor);
+
+        // Update the parent's link to this new ancestor
+        updatedRabbits = updatedRabbits.map(r => {
+          if (r.id === pedigreeEditNode.parentOfId) {
+            const updated = {
+              ...r,
+              [pedigreeEditNode.field]: ancestorId
+            };
+            if (r.id === selectedRabbit.id) {
+              setSelectedRabbit(updated);
+            }
+            return updated;
+          }
+          return r;
+        });
+        showToast("New ancestor registered in pedigree!", "success");
+      }
+    }
+
+    // Recalculate inbreeding coefficients for all rabbits
+    const engine = new GeneticsEngine(updatedRabbits);
+    const finalRabbits = updatedRabbits.map(r => ({
+      ...r,
+      inbreedingCoeff: engine.calculateInbreedingCoefficient(r.sireId, r.damId)
+    }));
+
+    setAllRabbits(finalRabbits);
+    
+    // Also sync if offline
+    if (isOffline) {
+      addSyncAction('UPDATE', 'rabbits', finalRabbits);
+    }
+
+    // Refresh selected rabbit details to ensure inbreeding coeff updates in view
+    const freshSelected = finalRabbits.find(r => r.id === selectedRabbit.id);
+    if (freshSelected) {
+      setSelectedRabbit(freshSelected);
+    }
+
+    setPedigreeEditNode(null);
+    triggerConfetti();
+  };
+
+  const handleRemovePedigreeNode = () => {
+    if (!pedigreeEditNode || !pedigreeEditNode.parentOfId) return;
+
+    let updatedRabbits = allRabbits.map(r => {
+      if (r.id === pedigreeEditNode.parentOfId) {
+        const updated = {
+          ...r,
+          [pedigreeEditNode.field]: ''
+        };
+        if (r.id === selectedRabbit.id) {
+          setSelectedRabbit(updated);
+        }
+        return updated;
+      }
+      return r;
+    });
+
+    const engine = new GeneticsEngine(updatedRabbits);
+    const finalRabbits = updatedRabbits.map(r => ({
+      ...r,
+      inbreedingCoeff: engine.calculateInbreedingCoefficient(r.sireId, r.damId)
+    }));
+
+    setAllRabbits(finalRabbits);
+
+    const freshSelected = finalRabbits.find(r => r.id === selectedRabbit.id);
+    if (freshSelected) {
+      setSelectedRabbit(freshSelected);
+    }
+
+    setPedigreeEditNode(null);
+    showToast("Ancestor link removed.", "info");
+  };
+
+  const handleAddAncestorLeg = (e) => {
+    e.preventDefault();
+    if (!newAncestorLeg.showName || !newAncestorLeg.judge) return;
+
+    const createdLeg = {
+      ...newAncestorLeg,
+      id: `leg-${Date.now()}`,
+      showName: sanitizeTextInput(newAncestorLeg.showName),
+      judge: sanitizeTextInput(newAncestorLeg.judge),
+      classSize: Number(newAncestorLeg.classSize) || 0
+    };
+
+    setNodeForm(prev => {
+      const updatedLegs = [...(prev.legs || []), createdLeg];
+      // Also update in allRabbits immediately so it persists if they save the node
+      setAllRabbits(all => all.map(r => {
+        if (r.id === pedigreeEditNode.rabbitId) {
+          return { ...r, legs: updatedLegs };
+        }
+        return r;
+      }));
+      return { ...prev, legs: updatedLegs };
+    });
+
+    setNewAncestorLeg({ showName: '', judge: '', date: new Date().toISOString().split('T')[0], award: '1st Class', classSize: '' });
+    showToast("Ancestor show leg logged!", "success");
+  };
+
+  const handleConfirmImport = (e) => {
+    e.preventDefault();
+    if (!emailImportPreview) return;
+
+    if (emailImportPreview.type === 'leg') {
+      const { showName, judge, date, award, classSize, rabbitTattoo } = emailImportPreview;
+      
+      // Find rabbit by tattoo
+      const target = allRabbits.find(r => r.tattooNumber.toLowerCase() === rabbitTattoo.toLowerCase());
+      if (!target) {
+        alert(`Could not find a rabbit with tattoo "${rabbitTattoo}" in your inventory. Please check the tattoo number.`);
+        return;
+      }
+
+      const createdLeg = {
+        id: `leg-${Date.now()}`,
+        showName: sanitizeTextInput(showName),
+        judge: sanitizeTextInput(judge),
+        date,
+        award,
+        classSize: Number(classSize) || 0
+      };
+
+      const updatedRabbits = allRabbits.map(r => {
+        if (r.id === target.id) {
+          const updated = { ...r, legs: [...(r.legs || []), createdLeg] };
+          if (selectedRabbit && selectedRabbit.id === r.id) {
+            setSelectedRabbit(updated);
+          }
+          return updated;
+        }
+        return r;
+      });
+
+      setAllRabbits(updatedRabbits);
+      showToast(`Show leg successfully imported to "${target.name}"!`, "success");
+    } else {
+      // Import certificate
+      const payload = emailImportPreview.payload;
+      const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
+
+      // Recursive import of ancestors
+      const importNode = (node, sex = 'buck') => {
+        if (!node) return '';
+        const id = `r-pedigree-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        
+        const sireId = node.sire ? importNode(node.sire, 'buck') : '';
+        const damId = node.dam ? importNode(node.dam, 'doe') : '';
+
+        const rabbitRecord = {
+          id,
+          breederId: activeBreederId,
+          tattooNumber: node.tattooNumber || node.tattoo || 'IMP',
+          name: node.name || 'Imported Ancestor',
+          breed: node.breed || 'Holland Lop',
+          variety: node.variety || '',
+          sex: node.sex || sex,
+          dob: node.dob || '',
+          weightOz: Number(node.weightOz || node.weight) || 40,
+          status: 'pedigree_only',
+          registrationNumber: node.registrationNumber || '',
+          gcNumber: node.gcNumber || '',
+          notes: sanitizeTextInput(node.notes || 'Imported via Verifiable Transfer Certificate.'),
+          legs: node.legs || [],
+          sireId,
+          damId
+        };
+
+        setAllRabbits(prev => [...prev, rabbitRecord]);
+        return id;
+      };
+
+      // Import offspring
+      const offspringSireId = payload.sire ? importNode(payload.sire, 'buck') : '';
+      const offspringDamId = payload.dam ? importNode(payload.dam, 'doe') : '';
+      
+      const newOffspring = {
+        id: `r-imported-${Date.now()}`,
+        breederId: activeBreederId,
+        tattooNumber: payload.tattooNumber || payload.rabbitTattoo || 'IMP-OFF',
+        name: payload.name || payload.rabbitName || 'Imported Rabbit',
+        breed: payload.breed || payload.rabbitBreed || 'Holland Lop',
+        variety: payload.variety || payload.rabbitVariety || '',
+        sex: payload.sex || payload.rabbitSex || 'doe',
+        dob: payload.dob || payload.rabbitDob || '',
+        weightOz: Number(payload.weightOz || payload.rabbitWeightOz) || 40,
+        status: 'active', // full active member of inventory!
+        registrationNumber: payload.registrationNumber || payload.rabbitRegistration || '',
+        gcNumber: payload.gcNumber || payload.rabbitGc || '',
+        notes: sanitizeTextInput(payload.notes || 'Imported via Verifiable Transfer Certificate.'),
+        legs: payload.legs || [],
+        sireId: offspringSireId,
+        damId: offspringDamId,
+        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
+      };
+
+      setAllRabbits(prev => {
+        const nextList = [...prev, newOffspring];
+        // Recalculate F
+        const engine = new GeneticsEngine(nextList);
+        return nextList.map(r => ({
+          ...r,
+          inbreedingCoeff: engine.calculateInbreedingCoefficient(r.sireId, r.damId)
+        }));
+      });
+
+      showToast(`Verifiable pedigree certificate imported for "${newOffspring.name}"!`, "success");
+    }
+
+    setEmailImportPreview(null);
+    setEmailImportText('');
+    setShowEmailImportModal(false);
+    triggerConfetti();
+  };
+
+  const handleParseImportText = () => {
+    if (!emailImportText) return;
+    
+    // Check if it looks like JSON
+    const cleanText = emailImportText.trim();
+    if (cleanText.startsWith('{') && cleanText.endsWith('}')) {
+      try {
+        const data = JSON.parse(cleanText);
+        setEmailImportPreview({
+          type: 'certificate',
+          name: data.rabbitName || data.name || 'Imported Rabbit',
+          tattooNumber: data.rabbitTattoo || data.tattooNumber || 'IMP',
+          breed: data.rabbitBreed || data.breed || '',
+          variety: data.rabbitVariety || data.variety || '',
+          sex: data.rabbitSex || data.sex || 'doe',
+          weightOz: data.rabbitWeightOz || data.weightOz || 40,
+          payload: data
+        });
+      } catch (e) {
+        alert("Failed to parse JSON. Please make sure you copied the entire certificate code.");
+      }
+    } else {
+      // Parse as plain text email report
+      const parsed = parseEmailText(cleanText);
+      setEmailImportPreview(parsed);
+    }
+  };
+
   const handleDownloadPhoto = (photoUrl, rabbitName = 'rabbit') => {
     const link = document.createElement('a');
     link.href = photoUrl;
@@ -1755,6 +2389,8 @@ export default function App() {
     const createdLeg = {
       ...newLeg,
       id: `leg-${Date.now()}`,
+      showName: sanitizeTextInput(newLeg.showName),
+      judge: sanitizeTextInput(newLeg.judge),
       classSize: Number(newLeg.classSize) || 0
     };
 
@@ -1904,9 +2540,11 @@ export default function App() {
   };
 
   const filteredRabbits = rabbits.filter(r => 
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.breed.toLowerCase().includes(searchQuery.toLowerCase())
+    r.status !== 'pedigree_only' && r.status !== 'sold' && (
+      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.breed.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   );
 
   // Helper: Compute Age in Months
@@ -2524,6 +3162,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">{activeBreederContext?.rabbitryName || 'Configure Rabbitry'}</h1>
               <span className="text-xs bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded">Pro</span>
+              <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-white/10" id="header-breeder-id">ID: {activeBreederContext?.id}</span>
             </div>
             <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Rabbitry Registry & Pedigree Sync</p>
           </div>
@@ -2670,7 +3309,7 @@ export default function App() {
             >
               <RefreshCw className="w-5 h-5" /> SQLite Sync ({syncQueue.length})
             </button>
-            {currentUser?.isSuperAdmin && currentUser?.id === 'ab-admin' && (
+            {currentUser?.id === 'ab-admin' && selectedBreederContext === 'ab-admin' && (
               <button 
                 onClick={() => setActiveTab('admin')}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'admin' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
@@ -2716,6 +3355,17 @@ export default function App() {
                 onChange={(e) => setBreederPhone(e.target.value)}
                 className="text-sm py-1.5 px-3"
                 placeholder="Enter Phone Number"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold">ARBA Account Number</label>
+              <input 
+                type="text" 
+                value={arbaMemberNumber}
+                onChange={(e) => setArbaMemberNumber(e.target.value)}
+                className="text-sm py-1.5 px-3 font-mono"
+                placeholder="Enter ARBA Account Number"
               />
             </div>
 
@@ -3440,10 +4090,11 @@ export default function App() {
                         value={newRabbit.breed}
                         onChange={(e) => setNewRabbit({...newRabbit, breed: e.target.value})}
                       >
-                        <option value="Holland Lop">Holland Lop (4-class)</option>
-                        <option value="Netherland Dwarf">Netherland Dwarf (4-class)</option>
-                        <option value="Flemish Giant">Flemish Giant (6-class)</option>
-                        <option value="New Zealand">New Zealand (6-class)</option>
+                        {Object.keys(BREED_STANDARDS).map(breedName => (
+                          <option key={breedName} value={breedName}>
+                            {breedName} ({BREED_STANDARDS[breedName].classType})
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -3769,23 +4420,95 @@ export default function App() {
                   </div>
 
                   {/* 3. Interactive Pedigree Tree View */}
-                  <div className="glass-container p-6 flex flex-col gap-6 relative border border-indigo-500/30">
+                  <div className="glass-container p-6 flex flex-col gap-6 relative border border-indigo-500/30 overflow-x-auto">
                     {(() => {
                       const sire = selectedRabbit.sireId ? rabbits.find(r => r.id === selectedRabbit.sireId) : null;
                       const dam = selectedRabbit.damId ? rabbits.find(r => r.id === selectedRabbit.damId) : null;
+                      
                       const patSire = sire && sire.sireId ? rabbits.find(r => r.id === sire.sireId) : null;
                       const patDam = sire && sire.damId ? rabbits.find(r => r.id === sire.damId) : null;
                       const matSire = dam && dam.sireId ? rabbits.find(r => r.id === dam.sireId) : null;
                       const matDam = dam && dam.damId ? rabbits.find(r => r.id === dam.damId) : null;
 
+                      const patPatSire = patSire && patSire.sireId ? rabbits.find(r => r.id === patSire.sireId) : null;
+                      const patPatDam = patSire && patSire.damId ? rabbits.find(r => r.id === patSire.damId) : null;
+                      const patMatSire = patDam && patDam.sireId ? rabbits.find(r => r.id === patDam.sireId) : null;
+                      const patMatDam = patDam && patDam.damId ? rabbits.find(r => r.id === patDam.damId) : null;
+
+                      const matPatSire = matSire && matSire.sireId ? rabbits.find(r => r.id === matSire.sireId) : null;
+                      const matPatDam = matSire && matSire.damId ? rabbits.find(r => r.id === matSire.damId) : null;
+                      const matMatSire = matDam && matDam.sireId ? rabbits.find(r => r.id === matDam.sireId) : null;
+                      const matMatDam = matDam && matDam.damId ? rabbits.find(r => r.id === matDam.damId) : null;
+
+                      const renderNodeCard = (rabbit, roleLabel, gender, onClick) => {
+                        const isUnknown = !rabbit;
+                        let bgClass = '';
+                        let borderClass = '';
+                        let textClass = '';
+                        
+                        if (isUnknown) {
+                          bgClass = 'bg-black/35 hover:bg-black/45 border-dashed border-white/10 hover:border-white/20';
+                          borderClass = 'border';
+                          textClass = 'text-slate-400';
+                        } else {
+                          textClass = 'text-white';
+                          if (gender === 'buck') {
+                            bgClass = 'bg-blue-500/10 hover:bg-blue-500/15 border-blue-500/20 hover:border-blue-500/35';
+                          } else {
+                            bgClass = 'bg-pink-500/10 hover:bg-pink-500/15 border-pink-500/20 hover:border-pink-500/35';
+                          }
+                          borderClass = rabbit.gcNumber ? 'champion-gold-border' : 'border border-white/10';
+                        }
+                        
+                        return (
+                          <div 
+                            onClick={onClick}
+                            className={`p-3 rounded-xl flex gap-2.5 items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${bgClass} ${borderClass}`}
+                            style={{ minHeight: '64px' }}
+                          >
+                            {!isUnknown && getPrimaryPhoto(rabbit) ? (
+                              <img 
+                                src={getPrimaryPhoto(rabbit)} 
+                                alt={roleLabel} 
+                                className={`w-9 h-9 rounded object-cover shrink-0 ${gender === 'buck' ? 'border-blue-500/35' : 'border-pink-500/35'} border`}
+                                style={getPrimaryPhotoStyles(rabbit)}
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded bg-white/5 border border-white/15 flex items-center justify-center text-sm shrink-0">
+                                {gender === 'buck' ? '♂' : '♀'}
+                              </div>
+                            )}
+                            <div className="leading-tight overflow-hidden text-left">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`text-[8px] font-bold block uppercase tracking-wider ${gender === 'buck' ? 'text-blue-400' : 'text-pink-400'}`}>
+                                  {roleLabel}
+                                </span>
+                                {!isUnknown && rabbit.gcNumber && (
+                                  <span className="text-[7px] bg-yellow-500/20 text-yellow-300 font-bold px-1 rounded">🏆 GC</span>
+                                )}
+                              </div>
+                              {isUnknown ? (
+                                <p className="text-[10px] italic mt-0.5 text-slate-400 flex items-center gap-1">➕ Set Ancestor</p>
+                              ) : (
+                                <>
+                                  <p className="font-bold text-xs truncate max-w-[120px] text-white">{rabbit.name}</p>
+                                  <p className="text-[9px] opacity-75 mt-0.5 text-white/80">Tattoo: {rabbit.tattooNumber}</p>
+                                  {rabbit.registrationNumber && <p className="text-[8px] opacity-60 text-white/60 truncate max-w-[120px]">Reg: {rabbit.registrationNumber}</p>}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      };
+
                       return (
                         <>
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center gap-4 flex-wrap">
                             <div>
                               <h3 className="text-lg font-bold">Interactive Pedigree Tree</h3>
-                              <p className="text-xs opacity-75">3-Generation Lineage for: <strong>{selectedRabbit.name} ({selectedRabbit.tattooNumber})</strong></p>
+                              <p className="text-xs opacity-75">3-Generation Ancestor Lineage for: <strong>{selectedRabbit.name} ({selectedRabbit.tattooNumber})</strong></p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                               {!isAssistantWriteOnly && selectedRabbit.status !== 'sold' && (
                                 <button 
                                   onClick={() => {
@@ -3801,179 +4524,133 @@ export default function App() {
                                 </button>
                               )}
                               <button 
+                                onClick={() => setShowEmailImportModal(true)}
+                                className="btn-interactive text-xs bg-indigo-650 border-none font-bold text-white hover:bg-indigo-700 flex items-center gap-1"
+                              >
+                                ✉️ Import from Email
+                              </button>
+                              <button 
                                 onClick={() => {
                                   triggerConfetti();
-                                  alert(`Pedigree PDF exported for registrar submission prep! saved in d:\\Jason\\RabbitryPedigreePro\\exports\\${selectedRabbit.tattooNumber}_pedigree.pdf`);
+                                  setShowPrintPedigreeModal(selectedRabbit);
                                 }}
                                 className="btn-interactive text-xs bg-green-600 border-none font-bold text-white"
                               >
-                                Export ARBA Form 1
+                                Export ARBA Certificate
                               </button>
                             </div>
                           </div>
 
-                          {/* Horizontal Visual Tree */}
-                          <div className="grid grid-cols-3 gap-4 p-4 bg-white/5 rounded-xl border border-white/5 items-center relative min-h-[300px]">
-                            
-                            {/* Gen 1: Self */}
-                            <div className="flex flex-col gap-2">
-                              <div className={`p-3 bg-indigo-500/20 border rounded-xl flex gap-2.5 items-center ${selectedRabbit.gcNumber ? 'champion-gold-border animate-bounce-subtle' : 'border-indigo-500/30'}`}>
-                                {getPrimaryPhoto(selectedRabbit) && (
-                                  <img 
-                                    src={getPrimaryPhoto(selectedRabbit)} 
-                                    alt="Self" 
-                                    className="w-10 h-10 rounded-lg object-cover shrink-0 border border-indigo-500/40"
-                                    style={getPrimaryPhotoStyles(selectedRabbit)}
-                                  />
+                          {/* Horizontal Visual Tree (Flexible columns with fixed height for vertical distribution) */}
+                          <div className="overflow-x-auto w-full p-2 bg-white/5 rounded-2xl border border-white/5">
+                            <div className="flex justify-between gap-6 h-[640px] min-w-[960px] p-4 items-stretch relative">
+                              
+                              {/* Gen 1: Self */}
+                              <div className="flex flex-col justify-around w-60 shrink-0">
+                                {renderNodeCard(
+                                  selectedRabbit, 
+                                  'Offspring (Self)', 
+                                  selectedRabbit.sex, 
+                                  () => setPedigreeEditNode({ rabbitId: selectedRabbit.id, isOffspring: true, label: 'Offspring (Self)' })
                                 )}
-                                <div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[9px] font-bold text-indigo-400 block uppercase tracking-wider">Offspring</span>
-                                    {selectedRabbit.gcNumber && <span className="text-[9px] bg-yellow-500/20 text-yellow-300 font-bold px-1 rounded">🏆 Champ</span>}
-                                  </div>
-                                  <h4 className="font-bold text-xs leading-tight text-white">{selectedRabbit.name}</h4>
-                                  <p className="text-[10px] opacity-80 leading-none mt-0.5">Tattoo: {selectedRabbit.tattooNumber}</p>
-                                  <p className="text-[10px] opacity-80 leading-none">F: {(selectedRabbit.inbreedingCoeff * 100).toFixed(2)}%</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Gen 2: Parents */}
-                            <div className="flex flex-col gap-4 relative">
-                              {/* Sire */}
-                              <div className={`p-3 bg-blue-500/10 border rounded-xl flex gap-2.5 items-center ${sire?.gcNumber ? 'champion-gold-border animate-bounce-subtle' : 'border-blue-500/20'}`}>
-                                {sire && getPrimaryPhoto(sire) && (
-                                  <img 
-                                    src={getPrimaryPhoto(sire)} 
-                                    alt="Sire" 
-                                    className="w-10 h-10 rounded-lg object-cover shrink-0 border border-blue-500/30"
-                                    style={getPrimaryPhotoStyles(sire)}
-                                  />
-                                )}
-                                <div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[9px] font-bold text-blue-400 block uppercase tracking-wider">Sire (Father)</span>
-                                    {sire?.gcNumber && <span className="text-[9px] bg-yellow-500/20 text-yellow-300 font-bold px-1 rounded">🏆 Champ</span>}
-                                  </div>
-                                  {sire ? (
-                                    <>
-                                      <h4 className="font-bold text-xs leading-tight text-white">{sire.name}</h4>
-                                      <p className="text-[10px] opacity-80 mt-0.5">Tat: {sire.tattooNumber}</p>
-                                    </>
-                                  ) : (
-                                    <p className="text-[10px] opacity-60 italic text-slate-400">Unknown Sire</p>
-                                  )}
-                                </div>
                               </div>
 
-                              {/* Dam */}
-                              <div className={`p-3 bg-pink-500/10 border rounded-xl flex gap-2.5 items-center ${dam?.gcNumber ? 'champion-gold-border animate-bounce-subtle' : 'border-pink-500/20'}`}>
-                                {dam && getPrimaryPhoto(dam) && (
-                                  <img 
-                                    src={getPrimaryPhoto(dam)} 
-                                    alt="Dam" 
-                                    className="w-10 h-10 rounded-lg object-cover shrink-0 border border-pink-500/30"
-                                    style={getPrimaryPhotoStyles(dam)}
-                                  />
+                              {/* Gen 2: Parents */}
+                              <div className="flex flex-col justify-around w-60 shrink-0">
+                                {renderNodeCard(
+                                  sire, 
+                                  'Sire (Father)', 
+                                  'buck', 
+                                  () => setPedigreeEditNode({ rabbitId: selectedRabbit.sireId, parentOfId: selectedRabbit.id, field: 'sireId', gender: 'buck', label: 'Sire (Father)' })
                                 )}
-                                <div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-[9px] font-bold text-pink-400 block uppercase tracking-wider">Dam (Mother)</span>
-                                    {dam?.gcNumber && <span className="text-[9px] bg-yellow-500/20 text-yellow-300 font-bold px-1 rounded">🏆 Champ</span>}
-                                  </div>
-                                  {dam ? (
-                                    <>
-                                      <h4 className="font-bold text-xs leading-tight text-white">{dam.name}</h4>
-                                      <p className="text-[10px] opacity-80 mt-0.5">Tat: {dam.tattooNumber}</p>
-                                    </>
-                                  ) : (
-                                    <p className="text-[10px] opacity-60 italic text-slate-400">Unknown Dam</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Gen 3: Grandparents */}
-                            <div className="flex flex-col gap-3">
-                              {/* Paternal Sire */}
-                              <div className={`p-2 bg-white/5 border rounded-lg text-[10px] flex gap-2 items-center ${patSire?.gcNumber ? 'champion-gold-border' : 'border-white/5'}`}>
-                                {patSire && getPrimaryPhoto(patSire) && (
-                                  <img 
-                                    src={getPrimaryPhoto(patSire)} 
-                                    alt="Pat Sire" 
-                                    className="w-8 h-8 rounded object-cover shrink-0 border border-white/10"
-                                    style={getPrimaryPhotoStyles(patSire)}
-                                  />
+                                {renderNodeCard(
+                                  dam, 
+                                  'Dam (Mother)', 
+                                  'doe', 
+                                  () => setPedigreeEditNode({ rabbitId: selectedRabbit.damId, parentOfId: selectedRabbit.id, field: 'damId', gender: 'doe', label: 'Dam (Mother)' })
                                 )}
-                                <div className="leading-tight">
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-bold text-blue-300 block text-[8px] uppercase">Paternal Sire</span>
-                                    {patSire?.gcNumber && <span className="text-[8px] text-yellow-400 font-bold">★</span>}
-                                  </div>
-                                  <p className="font-bold text-[11px] text-white truncate max-w-[100px]">{patSire ? patSire.name : 'Unknown'}</p>
-                                  {patSire && <p className="text-[9px] opacity-60">Tat: {patSire.tattooNumber}</p>}
-                                </div>
                               </div>
 
-                              {/* Paternal Dam */}
-                              <div className={`p-2 bg-white/5 border rounded-lg text-[10px] flex gap-2 items-center ${patDam?.gcNumber ? 'champion-gold-border' : 'border-white/5'}`}>
-                                {patDam && getPrimaryPhoto(patDam) && (
-                                  <img 
-                                    src={getPrimaryPhoto(patDam)} 
-                                    alt="Pat Dam" 
-                                    className="w-8 h-8 rounded object-cover shrink-0 border border-white/10"
-                                    style={getPrimaryPhotoStyles(patDam)}
-                                  />
+                              {/* Gen 3: Grandparents */}
+                              <div className="flex flex-col justify-around w-60 shrink-0">
+                                {renderNodeCard(
+                                  patSire, 
+                                  'Paternal Grand-Sire', 
+                                  'buck', 
+                                  () => sire ? setPedigreeEditNode({ rabbitId: sire.sireId, parentOfId: sire.id, field: 'sireId', gender: 'buck', label: 'Paternal Grand-Sire' }) : alert('Please set Sire first!')
                                 )}
-                                <div className="leading-tight">
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-bold text-pink-300 block text-[8px] uppercase">Paternal Dam</span>
-                                    {patDam?.gcNumber && <span className="text-[8px] text-yellow-400 font-bold">★</span>}
-                                  </div>
-                                  <p className="font-bold text-[11px] text-white truncate max-w-[100px]">{patDam ? patDam.name : 'Unknown'}</p>
-                                  {patDam && <p className="text-[9px] opacity-60">Tat: {patDam.tattooNumber}</p>}
-                                </div>
+                                {renderNodeCard(
+                                  patDam, 
+                                  'Paternal Grand-Dam', 
+                                  'doe', 
+                                  () => sire ? setPedigreeEditNode({ rabbitId: sire.damId, parentOfId: sire.id, field: 'damId', gender: 'doe', label: 'Paternal Grand-Dam' }) : alert('Please set Sire first!')
+                                )}
+                                {renderNodeCard(
+                                  matSire, 
+                                  'Maternal Grand-Sire', 
+                                  'buck', 
+                                  () => dam ? setPedigreeEditNode({ rabbitId: dam.sireId, parentOfId: dam.id, field: 'sireId', gender: 'buck', label: 'Maternal Grand-Sire' }) : alert('Please set Dam first!')
+                                )}
+                                {renderNodeCard(
+                                  matDam, 
+                                  'Maternal Grand-Dam', 
+                                  'doe', 
+                                  () => dam ? setPedigreeEditNode({ rabbitId: dam.damId, parentOfId: dam.id, field: 'damId', gender: 'doe', label: 'Maternal Grand-Dam' }) : alert('Please set Dam first!')
+                                )}
                               </div>
 
-                              {/* Maternal Sire */}
-                              <div className={`p-2 bg-white/5 border rounded-lg text-[10px] flex gap-2 items-center ${matSire?.gcNumber ? 'champion-gold-border' : 'border-white/5'}`}>
-                                {matSire && getPrimaryPhoto(matSire) && (
-                                  <img 
-                                    src={getPrimaryPhoto(matSire)} 
-                                    alt="Mat Sire" 
-                                    className="w-8 h-8 rounded object-cover shrink-0 border border-white/10"
-                                    style={getPrimaryPhotoStyles(matSire)}
-                                  />
+                              {/* Gen 4: Great-Grandparents */}
+                              <div className="flex flex-col justify-around w-60 shrink-0">
+                                {renderNodeCard(
+                                  patPatSire, 
+                                  'Paternal P. Grand-Sire', 
+                                  'buck', 
+                                  () => patSire ? setPedigreeEditNode({ rabbitId: patSire.sireId, parentOfId: patSire.id, field: 'sireId', gender: 'buck', label: 'Paternal Paternal Great-Grand-Sire' }) : alert('Please set Paternal Grand-Sire first!')
                                 )}
-                                <div className="leading-tight">
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-bold text-blue-300 block text-[8px] uppercase">Maternal Sire</span>
-                                    {matSire?.gcNumber && <span className="text-[8px] text-yellow-400 font-bold">★</span>}
-                                  </div>
-                                  <p className="font-bold text-[11px] text-white truncate max-w-[100px]">{matSire ? matSire.name : 'Unknown'}</p>
-                                  {matSire && <p className="text-[9px] opacity-60">Tat: {matSire.tattooNumber}</p>}
-                                </div>
+                                {renderNodeCard(
+                                  patPatDam, 
+                                  'Paternal P. Grand-Dam', 
+                                  'doe', 
+                                  () => patSire ? setPedigreeEditNode({ rabbitId: patSire.damId, parentOfId: patSire.id, field: 'damId', gender: 'doe', label: 'Paternal Paternal Great-Grand-Dam' }) : alert('Please set Paternal Grand-Sire first!')
+                                )}
+                                {renderNodeCard(
+                                  patMatSire, 
+                                  'Paternal M. Grand-Sire', 
+                                  'buck', 
+                                  () => patDam ? setPedigreeEditNode({ rabbitId: patDam.sireId, parentOfId: patDam.id, field: 'sireId', gender: 'buck', label: 'Paternal Maternal Great-Grand-Sire' }) : alert('Please set Paternal Grand-Dam first!')
+                                )}
+                                {renderNodeCard(
+                                  patMatDam, 
+                                  'Paternal M. Grand-Dam', 
+                                  'doe', 
+                                  () => patDam ? setPedigreeEditNode({ rabbitId: patDam.damId, parentOfId: patDam.id, field: 'damId', gender: 'doe', label: 'Paternal Maternal Great-Grand-Dam' }) : alert('Please set Paternal Grand-Dam first!')
+                                )}
+                                {renderNodeCard(
+                                  matPatSire, 
+                                  'Maternal P. Grand-Sire', 
+                                  'buck', 
+                                  () => matSire ? setPedigreeEditNode({ rabbitId: matSire.sireId, parentOfId: matSire.id, field: 'sireId', gender: 'buck', label: 'Maternal Paternal Great-Grand-Sire' }) : alert('Please set Maternal Grand-Sire first!')
+                                )}
+                                {renderNodeCard(
+                                  matPatDam, 
+                                  'Maternal P. Grand-Dam', 
+                                  'doe', 
+                                  () => matSire ? setPedigreeEditNode({ rabbitId: matSire.damId, parentOfId: matSire.id, field: 'damId', gender: 'doe', label: 'Maternal Paternal Great-Grand-Dam' }) : alert('Please set Maternal Grand-Sire first!')
+                                )}
+                                {renderNodeCard(
+                                  matMatSire, 
+                                  'Maternal M. Grand-Sire', 
+                                  'buck', 
+                                  () => matDam ? setPedigreeEditNode({ rabbitId: matDam.sireId, parentOfId: matDam.id, field: 'sireId', gender: 'buck', label: 'Maternal Maternal Great-Grand-Sire' }) : alert('Please set Maternal Grand-Dam first!')
+                                )}
+                                {renderNodeCard(
+                                  matMatDam, 
+                                  'Maternal M. Grand-Dam', 
+                                  'doe', 
+                                  () => matDam ? setPedigreeEditNode({ rabbitId: matDam.damId, parentOfId: matDam.id, field: 'damId', gender: 'doe', label: 'Maternal Maternal Great-Grand-Dam' }) : alert('Please set Maternal Grand-Dam first!')
+                                )}
                               </div>
 
-                              {/* Maternal Dam */}
-                              <div className={`p-2 bg-white/5 border rounded-lg text-[10px] flex gap-2 items-center ${matDam?.gcNumber ? 'champion-gold-border' : 'border-white/5'}`}>
-                                {matDam && getPrimaryPhoto(matDam) && (
-                                  <img 
-                                    src={getPrimaryPhoto(matDam)} 
-                                    alt="Mat Dam" 
-                                    className="w-8 h-8 rounded object-cover shrink-0 border border-white/10"
-                                    style={getPrimaryPhotoStyles(matDam)}
-                                  />
-                                )}
-                                <div className="leading-tight">
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-bold text-pink-300 block text-[8px] uppercase">Maternal Dam</span>
-                                    {matDam?.gcNumber && <span className="text-[8px] text-yellow-400 font-bold">★</span>}
-                                  </div>
-                                  <p className="font-bold text-[11px] text-white truncate max-w-[100px]">{matDam ? matDam.name : 'Unknown'}</p>
-                                  {matDam && <p className="text-[9px] opacity-60">Tat: {matDam.tattooNumber}</p>}
-                                </div>
-                              </div>
                             </div>
                           </div>
                         </>
@@ -4948,15 +5625,79 @@ export default function App() {
           )}
 
           {/* TAB 6: ADMIN CONTROL CENTER */}
-          {activeTab === 'admin' && currentUser?.isSuperAdmin && currentUser?.id === 'ab-admin' && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Header card with summary & stats */}
-              <div className="glass-container p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {activeTab === 'admin' && currentUser?.id === 'ab-admin' && (
+            !controlCenterUnlocked ? (
+              <div className="glass-container p-8 flex flex-col items-center justify-center text-center gap-6 max-w-md mx-auto my-12 border-2 border-red-500/20 shadow-xl shadow-red-950/20 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-indigo-600"></div>
+                <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/35 flex items-center justify-center text-red-400">
+                  <Lock className="w-8 h-8 animate-pulse" />
+                </div>
                 <div>
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <ShieldCheck className="w-6 h-6 text-indigo-400" /> App Owner Control Center
-                  </h3>
+                  <h3 className="text-xl font-bold tracking-tight text-white mb-2">Secondary Authentication Required</h3>
+                  <p className="text-xs opacity-75 leading-relaxed text-slate-300">
+                    Access to the App Owner Control Center requires the secondary administrative password. This is required for secure tenant management and data protection.
+                  </p>
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (adminPasswordInput === 'TechJakylie9699$$') {
+                      setControlCenterUnlocked(true);
+                      setAdminPasswordError('');
+                      setAdminPasswordInput('');
+                      triggerConfetti();
+                      showToast("Control Center unlocked successfully!", "success");
+                    } else {
+                      setAdminPasswordError('Invalid administrative password.');
+                      showToast("Access Denied: Invalid credentials.", "error");
+                    }
+                  }}
+                  className="w-full flex flex-col gap-4 text-xs mt-2"
+                >
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="font-bold text-slate-400">Administrative Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••••••••••"
+                      value={adminPasswordInput}
+                      onChange={(e) => setAdminPasswordInput(e.target.value)}
+                      className="py-2.5 px-4 bg-slate-950/50 border border-white/10 text-white rounded-xl text-center text-sm tracking-widest font-mono focus:border-red-500"
+                    />
+                    {adminPasswordError && (
+                      <span className="text-red-400 font-semibold mt-1 text-[10px] block text-center">
+                        ⚠️ {adminPasswordError}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn-interactive w-full py-3 bg-red-650 hover:bg-red-700 text-white font-bold rounded-xl border-none shadow-md"
+                  >
+                    Unlock Control Center
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                
+                {/* Header card with summary & stats */}
+                <div className="glass-container p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <ShieldCheck className="w-6 h-6 text-indigo-400" /> App Owner Control Center
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setControlCenterUnlocked(false);
+                          showToast("Control Center locked.", "info");
+                        }}
+                        className="p-1 px-2.5 bg-slate-855 hover:bg-slate-800 text-[10px] text-slate-400 hover:text-slate-200 border border-white/10 rounded-lg font-mono ml-4"
+                        title="Lock access"
+                      >
+                        🔒 Lock Tab
+                      </button>
+                    </h3>
                   <p className="text-xs opacity-75">
                     Manage breeder registries, membership approvals, role assignments, and breeder credential recovery.
                   </p>
@@ -5154,7 +5895,7 @@ export default function App() {
               </div>
 
             </div>
-          )}
+          ))}
 
         </div>
 
@@ -6233,6 +6974,659 @@ export default function App() {
           </div>
         );
       })()}
+
+      {/* Pedigree Node Editor Modal */}
+      {pedigreeEditNode && (() => {
+        const editRabbit = allRabbits.find(r => r.id === pedigreeEditNode.rabbitId);
+        
+        // Find existing rabbits of the same gender to populate the dropdown
+        const genderMatchedRabbits = rabbits.filter(r => 
+          r.sex === pedigreeEditNode.gender && 
+          r.id !== selectedRabbit.id && 
+          r.status !== 'pedigree_only'
+        );
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+            <div className="w-full max-w-2xl bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-6 flex flex-col gap-6 shadow-2xl max-h-[90vh] overflow-y-auto text-slate-100">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <div>
+                  <h3 className="font-extrabold text-lg text-indigo-400">
+                    {pedigreeEditNode.label}
+                  </h3>
+                  <p className="text-xs opacity-70">
+                    {pedigreeEditNode.isOffspring 
+                      ? `Editing offspring profile details.` 
+                      : `Set or edit the ${pedigreeEditNode.gender === 'buck' ? 'male' : 'female'} ancestor for ${selectedRabbit.name}.`
+                    }
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setPedigreeEditNode(null)} 
+                  className="opacity-70 hover:opacity-100 text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Form type toggle (Only if NOT offspring) */}
+              {!pedigreeEditNode.isOffspring && !pedigreeEditNode.rabbitId && (
+                <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setNodeFormType('existing')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${nodeFormType === 'existing' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Select Existing Barn Rabbit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNodeFormType('new')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${nodeFormType === 'new' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Create Pedigree-Only Ancestor
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSavePedigreeNode} className="flex flex-col gap-6">
+                
+                {/* EXISTING SELECTION */}
+                {nodeFormType === 'existing' && !pedigreeEditNode.isOffspring && !pedigreeEditNode.rabbitId && (
+                  <div className="flex flex-col gap-2 bg-black/25 p-4 rounded-2xl border border-white/5">
+                    <label className="text-xs font-bold text-indigo-300">Choose {pedigreeEditNode.gender === 'buck' ? 'Buck' : 'Doe'} from Barn</label>
+                    <select
+                      value={selectedExistingId}
+                      onChange={(e) => setSelectedExistingId(e.target.value)}
+                      className="w-full bg-slate-800 border-white/10"
+                      required
+                    >
+                      <option value="">-- Select Rabbit --</option>
+                      {genderMatchedRabbits.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} ({r.tattooNumber}) - {r.breed} {r.variety}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] opacity-60">This links the pedigree slot to a rabbit already in your database registry.</p>
+                  </div>
+                )}
+
+                {/* NEW/EDIT ANCESTOR DETAILS */}
+                {(nodeFormType === 'new' || pedigreeEditNode.isOffspring || pedigreeEditNode.rabbitId) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Tattoo / Ear Number *</label>
+                      <input
+                        type="text"
+                        required
+                        value={nodeForm.tattooNumber}
+                        onChange={(e) => setNodeForm({...nodeForm, tattooNumber: e.target.value})}
+                        placeholder="E.g. S1"
+                        className="bg-slate-800 border-white/10 text-sm"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={nodeForm.name}
+                        onChange={(e) => setNodeForm({...nodeForm, name: e.target.value})}
+                        placeholder="E.g. Grandview's Blue Pearl"
+                        className="bg-slate-800 border-white/10 text-sm"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Breed</label>
+                      <select
+                        value={nodeForm.breed}
+                        onChange={(e) => setNodeForm({...nodeForm, breed: e.target.value})}
+                        className="bg-slate-800 border-white/10 text-sm py-2 px-3 rounded-lg text-white"
+                      >
+                        <option value="">-- Select Breed --</option>
+                        {Object.keys(BREED_STANDARDS).map(breedName => (
+                          <option key={breedName} value={breedName}>
+                            {breedName} ({BREED_STANDARDS[breedName].classType})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Variety (Color)</label>
+                      <input
+                        type="text"
+                        value={nodeForm.variety}
+                        onChange={(e) => setNodeForm({...nodeForm, variety: e.target.value})}
+                        placeholder="E.g. Broken Blue"
+                        className="bg-slate-800 border-white/10 text-sm"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Weight (in Ounces) *</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="number"
+                          value={nodeForm.weightOz}
+                          onChange={(e) => setNodeForm({...nodeForm, weightOz: e.target.value})}
+                          placeholder="Oz"
+                          className="bg-slate-800 border-white/10 text-sm flex-1"
+                        />
+                        <span className="text-xs opacity-75">
+                          ({(Number(nodeForm.weightOz) / 16).toFixed(2)} lbs)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={nodeForm.dob}
+                        onChange={(e) => setNodeForm({...nodeForm, dob: e.target.value})}
+                        className="bg-slate-800 border-white/10 text-sm"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">ARBA Registration Number</label>
+                      <input
+                        type="text"
+                        value={nodeForm.registrationNumber}
+                        onChange={(e) => setNodeForm({...nodeForm, registrationNumber: e.target.value})}
+                        placeholder="E.g. REG-12345"
+                        className="bg-slate-800 border-white/10 text-sm font-mono"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Grand Champion Number</label>
+                      <input
+                        type="text"
+                        value={nodeForm.gcNumber}
+                        onChange={(e) => setNodeForm({...nodeForm, gcNumber: e.target.value})}
+                        placeholder="E.g. GC-5544"
+                        className="bg-slate-800 border-white/10 text-sm font-mono border-yellow-500/35"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-300">Notes (Vet / Breeder Records)</label>
+                      <textarea
+                        value={nodeForm.notes}
+                        onChange={(e) => setNodeForm({...nodeForm, notes: e.target.value})}
+                        placeholder="Notes about quality, background, or veterinary care..."
+                        rows={2}
+                        className="bg-slate-800 border-white/10 text-sm rounded-xl"
+                      />
+                    </div>
+
+                  </div>
+                )}
+
+                {/* SHOW LEGS SUB-PANEL FOR ANCESTOR (ONLY IF ALREADY EXISTS OR NEW WITH INFO) */}
+                {(pedigreeEditNode.rabbitId || pedigreeEditNode.isOffspring) && (
+                  <div className="flex flex-col gap-4 border-t border-white/5 pt-4 mt-2">
+                    <h4 className="text-xs font-bold text-yellow-400 flex items-center gap-1">
+                      🏆 Post & Record Show Leg Certificates
+                    </h4>
+                    
+                    {/* List of current legs */}
+                    <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                      {(nodeForm.legs || []).map((leg, lIdx) => (
+                        <div key={leg.id || lIdx} className="p-2.5 bg-black/30 border border-white/5 rounded-lg flex items-center justify-between text-[11px]">
+                          <div>
+                            <span className="font-bold text-yellow-300">{leg.award}</span>
+                            <p className="opacity-80">{leg.showName} ({leg.date})</p>
+                            <p className="opacity-60 text-[10px]">Judge: {leg.judge} | Class size: {leg.classSize}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNodeForm(prev => {
+                                const nextLegs = prev.legs.filter((_, idx) => idx !== lIdx);
+                                // update in allRabbits
+                                setAllRabbits(all => all.map(r => {
+                                  if (r.id === pedigreeEditNode.rabbitId) {
+                                    return { ...r, legs: nextLegs };
+                                  }
+                                  return r;
+                                }));
+                                return { ...prev, legs: nextLegs };
+                              });
+                            }}
+                            className="text-red-400 hover:text-red-300 font-bold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                      {(!nodeForm.legs || nodeForm.legs.length === 0) && (
+                        <p className="text-[11px] italic opacity-50 text-center py-2">No legs posted for this rabbit yet.</p>
+                      )}
+                    </div>
+
+                    {/* Add leg form */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-black/20 p-3 rounded-xl border border-white/5">
+                      <input
+                        type="text" placeholder="Show Name"
+                        value={newAncestorLeg.showName}
+                        onChange={(e) => setNewAncestorLeg({...newAncestorLeg, showName: e.target.value})}
+                        className="text-[11px] py-1 px-2.5 bg-slate-800 border-white/5"
+                      />
+                      <input
+                        type="text" placeholder="Judge Name"
+                        value={newAncestorLeg.judge}
+                        onChange={(e) => setNewAncestorLeg({...newAncestorLeg, judge: e.target.value})}
+                        className="text-[11px] py-1 px-2.5 bg-slate-800 border-white/5"
+                      />
+                      <select
+                        value={newAncestorLeg.award}
+                        onChange={(e) => setNewAncestorLeg({...newAncestorLeg, award: e.target.value})}
+                        className="text-[11px] py-1 px-2.5 bg-slate-800 border-white/5"
+                      >
+                        <option value="1st Class">1st Class 🥇</option>
+                        <option value="Best of Variety">BOV 🏆</option>
+                        <option value="Best of Breed">BOB 🌟</option>
+                        <option value="Best In Show">BIS 👑</option>
+                      </select>
+                      <input
+                        type="number" placeholder="Class Size"
+                        value={newAncestorLeg.classSize}
+                        onChange={(e) => setNewAncestorLeg({...newAncestorLeg, classSize: e.target.value})}
+                        className="text-[11px] py-1 px-2.5 bg-slate-800 border-white/5"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddAncestorLeg}
+                        className="col-span-2 md:col-span-4 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold rounded-lg border border-yellow-500/35 transition-all text-xs"
+                      >
+                        ➕ Post Show Leg Certificate
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-between gap-2 border-t border-white/10 pt-4 flex-wrap">
+                  <div>
+                    {!pedigreeEditNode.isOffspring && pedigreeEditNode.rabbitId && (
+                      <button
+                        type="button"
+                        onClick={handleRemovePedigreeNode}
+                        className="btn-interactive text-xs bg-red-650 hover:bg-red-700 font-bold py-2 px-4 border-none text-white"
+                      >
+                        Remove Link (Make Unknown)
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPedigreeEditNode(null)}
+                      className="btn-interactive text-xs bg-slate-800 border border-white/10 text-slate-300 hover:bg-slate-700 py-2 px-4"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-interactive text-xs bg-indigo-600 hover:bg-indigo-650 font-bold py-2 px-4 border-none text-white"
+                    >
+                      Save Ancestor & Link
+                    </button>
+                  </div>
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Printable Pedigree Certificate Modal */}
+      {showPrintPedigreeModal && (() => {
+        const rabbit = showPrintPedigreeModal;
+        const sire = rabbit.sireId ? rabbits.find(r => r.id === rabbit.sireId) : null;
+        const dam = rabbit.damId ? rabbits.find(r => r.id === rabbit.damId) : null;
+        
+        const patSire = sire && sire.sireId ? rabbits.find(r => r.id === sire.sireId) : null;
+        const patDam = sire && sire.damId ? rabbits.find(r => r.id === sire.damId) : null;
+        const matSire = dam && dam.sireId ? rabbits.find(r => r.id === dam.sireId) : null;
+        const matDam = dam && dam.damId ? rabbits.find(r => r.id === dam.damId) : null;
+
+        const patPatSire = patSire && patSire.sireId ? rabbits.find(r => r.id === patSire.sireId) : null;
+        const patPatDam = patSire && patSire.damId ? rabbits.find(r => r.id === patSire.damId) : null;
+        const patMatSire = patDam && patDam.sireId ? rabbits.find(r => r.id === patDam.sireId) : null;
+        const patMatDam = patDam && patDam.damId ? rabbits.find(r => r.id === patDam.damId) : null;
+
+        const matPatSire = matSire && matSire.sireId ? rabbits.find(r => r.id === matSire.sireId) : null;
+        const matPatDam = matSire && matSire.damId ? rabbits.find(r => r.id === matSire.damId) : null;
+        const matMatSire = matDam && matDam.sireId ? rabbits.find(r => r.id === matDam.sireId) : null;
+        const matMatDam = matDam && matDam.damId ? rabbits.find(r => r.id === matDam.damId) : null;
+
+        const renderPrintBox = (ancestor, roleLabel, gender) => {
+          if (!ancestor) {
+            return (
+              <div className="p-2 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full min-h-[50px]">
+                <span className="text-[7px] uppercase font-bold text-slate-400 block leading-none">{roleLabel}</span>
+                <span className="text-[9px] italic text-slate-400 font-semibold mt-1">Unknown Ancestor</span>
+              </div>
+            );
+          }
+          
+          const namePrefix = ancestor.gcNumber ? `GC ` : '';
+          const weightLbs = (ancestor.weightOz / 16).toFixed(2);
+          const legsCount = ancestor.legs?.length || 0;
+
+          return (
+            <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'}`}>
+              <div>
+                <div className="flex justify-between items-start gap-1 leading-none">
+                  <span className="text-[7px] uppercase font-bold text-slate-500">{roleLabel}</span>
+                  {legsCount > 0 && <span className="text-[7px] bg-indigo-100 text-indigo-800 font-bold px-1 rounded">Legs: {legsCount}</span>}
+                </div>
+                <h5 className="font-serif font-bold text-[10px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px]">
+                  {namePrefix}{ancestor.name}
+                </h5>
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[8px] border-t border-slate-200 pt-1 text-slate-700 font-mono">
+                <div>Tat: <strong>{ancestor.tattooNumber}</strong></div>
+                <div>Wt: <strong>{weightLbs} lbs</strong></div>
+                <div className="col-span-2">Breed/Var: <strong>{ancestor.breed} - {ancestor.variety}</strong></div>
+                {ancestor.registrationNumber && <div className="col-span-2">Reg #: <strong>{ancestor.registrationNumber}</strong></div>}
+                {ancestor.gcNumber && <div className="col-span-2 text-[7px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
+              </div>
+            </div>
+          );
+        };
+
+        const activeBreeder = adminBreeders.find(b => b.id === (selectedBreederContext === 'all' ? (currentUser?.id || 'ab-2') : selectedBreederContext)) || adminBreeders[0];
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+            <div className="printable-modal w-full max-w-5xl bg-white text-slate-900 rounded-3xl p-8 shadow-2xl flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto border-4 border-indigo-650">
+              
+              {/* Close & Print buttons (Hidden on Print) */}
+              <div className="no-print absolute top-4 right-4 flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5"
+                >
+                  🖨️ Print Certificate
+                </button>
+                <button 
+                  onClick={() => setShowPrintPedigreeModal(null)}
+                  className="p-2 text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Certificate layout */}
+              <div className="flex flex-col gap-6 w-full mt-2">
+                
+                {/* Header section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b-2 border-black pb-4 items-center">
+                  
+                  {/* Left Side: Breeder Info */}
+                  <div className="flex flex-col text-left text-xs gap-0.5 text-slate-700">
+                    <span className="text-[8px] font-bold text-slate-400 block uppercase">Generated by</span>
+                    <strong className="text-sm font-bold text-slate-900">{activeBreeder.rabbitryName || 'Grandview Rabbitry'}</strong>
+                    <p>Owner: {activeBreeder.name}</p>
+                    {activeBreeder.phone && <p>Phone: {activeBreeder.phone}</p>}
+                    <p>Email: {activeBreeder.email}</p>
+                    {activeBreeder.arbaMemberNumber && <p>ARBA Account #: {activeBreeder.arbaMemberNumber}</p>}
+                  </div>
+
+                  {/* Center: Title */}
+                  <div className="text-center flex flex-col items-center gap-1">
+                    <span className="text-3xl">🐇</span>
+                    <h2 className="font-serif font-black text-xl uppercase tracking-widest text-indigo-950 leading-none">
+                      Pedigree Certificate
+                    </h2>
+                    <span className="text-[8px] font-mono uppercase tracking-wider text-slate-500">
+                      Official 3-Generation Ancestor Lineage
+                    </span>
+                  </div>
+
+                  {/* Right Side: Offspring Details */}
+                  <div className="bg-slate-55 p-3 rounded-xl border border-slate-200 text-xs text-left grid grid-cols-2 gap-1 gap-x-3 text-slate-700">
+                    <div className="col-span-2 border-b border-slate-200 pb-1 mb-1 flex justify-between items-center">
+                      <strong className="font-serif font-bold text-sm text-slate-900">{rabbit.name}</strong>
+                      {rabbit.gcNumber && <span className="text-[8px] bg-yellow-100 text-yellow-800 font-bold px-1.5 py-0.5 rounded">🏆 CHAMP</span>}
+                    </div>
+                    <div>Tattoo: <strong>{rabbit.tattooNumber}</strong></div>
+                    <div>Sex: <strong className="capitalize">{rabbit.sex}</strong></div>
+                    <div>Breed: <strong>{rabbit.breed}</strong></div>
+                    <div>Variety: <strong>{rabbit.variety}</strong></div>
+                    <div>DOB: <strong>{rabbit.dob}</strong></div>
+                    <div>Weight: <strong>{(rabbit.weightOz / 16).toFixed(2)} lbs</strong></div>
+                    <div>Inbreeding (F): <strong>{(rabbit.inbreedingCoeff * 100).toFixed(2)}%</strong></div>
+                    {rabbit.registrationNumber && <div className="col-span-2">Reg #: <strong>{rabbit.registrationNumber}</strong></div>}
+                  </div>
+
+                </div>
+
+                {/* Pedigree tree display */}
+                <div className="flex gap-4 items-stretch h-[480px]">
+                  
+                  {/* Generation 1: Parents */}
+                  <div className="flex flex-col justify-around gap-4 flex-1">
+                    {renderPrintBox(sire, 'Sire (Father)', 'buck')}
+                    {renderPrintBox(dam, 'Dam (Mother)', 'doe')}
+                  </div>
+
+                  {/* Generation 2: Grandparents */}
+                  <div className="flex flex-col justify-around gap-2 flex-1">
+                    {renderPrintBox(patSire, 'Paternal Grand-Sire', 'buck')}
+                    {renderPrintBox(patDam, 'Paternal Grand-Dam', 'doe')}
+                    {renderPrintBox(matSire, 'Maternal Grand-Sire', 'buck')}
+                    {renderPrintBox(matDam, 'Maternal Grand-Dam', 'doe')}
+                  </div>
+
+                  {/* Generation 3: Great-Grandparents */}
+                  <div className="flex flex-col justify-around gap-1 flex-1">
+                    {renderPrintBox(patPatSire, 'Paternal P. Grand-Sire', 'buck')}
+                    {renderPrintBox(patPatDam, 'Paternal P. Grand-Dam', 'doe')}
+                    {renderPrintBox(patMatSire, 'Paternal M. Grand-Sire', 'buck')}
+                    {renderPrintBox(patMatDam, 'Paternal M. Grand-Dam', 'doe')}
+                    {renderPrintBox(matPatSire, 'Maternal P. Grand-Sire', 'buck')}
+                    {renderPrintBox(matPatDam, 'Maternal P. Grand-Dam', 'doe')}
+                    {renderPrintBox(matMatSire, 'Maternal M. Grand-Sire', 'buck')}
+                    {renderPrintBox(matMatDam, 'Maternal M. Grand-Dam', 'doe')}
+                  </div>
+
+                </div>
+
+                {/* Footer certifications / signatures */}
+                <div className="grid grid-cols-2 gap-8 border-t border-slate-300 pt-4 text-xs text-slate-700">
+                  <div className="flex flex-col gap-1 text-left">
+                    <p>I hereby certify that this pedigree is true and correct to the best of my knowledge and belief.</p>
+                    <div className="flex gap-2 items-end mt-4">
+                      <span>Signed:</span>
+                      <div className="border-b border-black w-48 h-5 font-serif italic text-center text-sm">{activeBreeder.name}</div>
+                      <span>Date:</span>
+                      <div className="border-b border-black w-24 h-5 text-center">{new Date().toISOString().split('T')[0]}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col justify-end items-end text-right">
+                    <span className="text-[10px] font-bold tracking-widest text-indigo-905 uppercase">Rabbitry Registry Sync Certified</span>
+                    <p className="text-[8px] font-mono opacity-50 mt-1">Hash verification token: rp-block-{rabbit.id.slice(-6)}-{Date.now().toString().slice(-4)}</p>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Email / Text Import Wizard Modal */}
+      {showEmailImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-xl bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-6 flex flex-col gap-6 shadow-2xl max-h-[90vh] overflow-y-auto text-slate-100">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div>
+                <h3 className="font-extrabold text-lg text-indigo-400">
+                  ✉️ Email / Text Import Wizard
+                </h3>
+                <p className="text-xs opacity-70">
+                  Paste the show leg email report or Verifiable Transfer Certificate JSON below.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowEmailImportModal(false);
+                  setEmailImportPreview(null);
+                  setEmailImportText('');
+                }} 
+                className="opacity-70 hover:opacity-100 text-white"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {!emailImportPreview ? (
+              // Paste Text Box
+              <div className="flex flex-col gap-4">
+                <textarea
+                  value={emailImportText}
+                  onChange={(e) => setEmailImportText(e.target.value)}
+                  placeholder="Paste email content here... (e.g. Show: Midwest Specialty, Judge: Adam West, Award: Best of Breed, Size: 10, Tattoo: CL-L1) OR paste the JSON certificate block."
+                  rows={8}
+                  className="w-full bg-slate-800 border-white/10 text-sm rounded-xl font-mono text-white/90 p-4"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailImportModal(false)}
+                    className="btn-interactive text-xs bg-slate-800 border border-white/10 text-slate-300 py-2 px-4"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleParseImportText}
+                    className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 text-white border-none"
+                  >
+                    Parse Paste Content
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Preview parsed result
+              <form onSubmit={handleConfirmImport} className="flex flex-col gap-4">
+                <h4 className="text-sm font-bold text-yellow-400">Extracted Import Preview</h4>
+                
+                {emailImportPreview.type === 'leg' ? (
+                  <div className="grid grid-cols-2 gap-3 bg-black/25 p-4 rounded-xl border border-white/5 text-xs text-slate-300">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400">Show Name</label>
+                      <input
+                        type="text"
+                        value={emailImportPreview.showName}
+                        onChange={(e) => setEmailImportPreview({...emailImportPreview, showName: e.target.value})}
+                        className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400">Judge</label>
+                      <input
+                        type="text"
+                        value={emailImportPreview.judge}
+                        onChange={(e) => setEmailImportPreview({...emailImportPreview, judge: e.target.value})}
+                        className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400">Award Date</label>
+                      <input
+                        type="date"
+                        value={emailImportPreview.date}
+                        onChange={(e) => setEmailImportPreview({...emailImportPreview, date: e.target.value})}
+                        className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400">Award Type</label>
+                      <select
+                        value={emailImportPreview.award}
+                        onChange={(e) => setEmailImportPreview({...emailImportPreview, award: e.target.value})}
+                        className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
+                      >
+                        <option value="1st Class">1st Class Ribbon 🥇</option>
+                        <option value="Best of Variety">Best of Variety (BOV) 🏆</option>
+                        <option value="Best of Breed">Best of Breed (BOB) 🌟</option>
+                        <option value="Best In Show">Best In Show (BIS) 👑</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400">Class Size</label>
+                      <input
+                        type="number"
+                        value={emailImportPreview.classSize}
+                        onChange={(e) => setEmailImportPreview({...emailImportPreview, classSize: e.target.value})}
+                        className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400">Rabbit Tattoo Number</label>
+                      <select
+                        value={emailImportPreview.rabbitTattoo}
+                        onChange={(e) => setEmailImportPreview({...emailImportPreview, rabbitTattoo: e.target.value})}
+                        className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
+                      >
+                        <option value="">-- Choose Target Rabbit --</option>
+                        {rabbits.filter(r => r.status !== 'pedigree_only').map(r => (
+                          <option key={r.id} value={r.tattooNumber}>{r.name} ({r.tattooNumber})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 bg-black/25 p-4 rounded-xl border border-white/5 text-xs text-slate-300">
+                    <p className="text-[11px] text-green-400 font-bold mb-2">✓ Valid Verifiable Transfer Certificate Detected!</p>
+                    <div>Rabbit Name: <strong>{emailImportPreview.name}</strong></div>
+                    <div>Tattoo Number: <strong>{emailImportPreview.tattooNumber}</strong></div>
+                    <div>Breed / Variety: <strong>{emailImportPreview.breed} - {emailImportPreview.variety}</strong></div>
+                    <div>Sex: <strong className="capitalize">{emailImportPreview.sex}</strong></div>
+                    <div>Weight: <strong>{(emailImportPreview.weightOz / 16).toFixed(2)} lbs</strong></div>
+                    <p className="text-[10px] text-slate-400 mt-2">Clicking confirm will import this rabbit into your active inventory and recursively recreate its 3-generation pedigree tree from the certificate data.</p>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 border-t border-white/10 pt-3 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setEmailImportPreview(null)}
+                    className="btn-interactive text-xs bg-slate-850 border border-white/10 text-slate-300 py-2 px-4"
+                  >
+                    Back / Clear
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-interactive text-xs bg-indigo-650 hover:bg-indigo-700 font-bold py-2 px-4 text-white border-none"
+                  >
+                    Confirm Import
+                  </button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* Toast Notifications Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
