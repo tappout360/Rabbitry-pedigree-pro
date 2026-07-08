@@ -12,8 +12,10 @@ import NetworkStatusBanner from './components/ui/NetworkStatusBanner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import HealthCheck from './components/ui/HealthCheck';
 import Academy from './views/Academy';
+import TimelineGallery from './components/gallery/TimelineGallery';
+import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import { db, performMigrationAndLoad } from './db/registryDb';
-import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog } from './db/security';
+import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
 
 // Initial Breed Standards Data (Ounces: 16 oz = 1 lb)
 const BREED_STANDARDS = {
@@ -948,7 +950,18 @@ export default function App() {
         
         // Derive key based on currentUser
         const savedUser = localStorage.getItem('rp_current_user');
-        const activeUser = savedUser ? JSON.parse(savedUser) : null;
+        let activeUser = savedUser ? JSON.parse(savedUser) : null;
+        if (!activeUser) {
+          const email = localStorage.getItem('rp_logged_in_email');
+          if (email) {
+            const savedBreeders = localStorage.getItem('rp_admin_breeders');
+            const list = savedBreeders ? JSON.parse(savedBreeders) : [];
+            activeUser = list.find(b => b.email === email || b.username === email) || null;
+            if (!activeUser && (email === 'jasonmounts77@yahoo.com' || email === 'jmounts')) {
+              activeUser = { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', password: 'JakylieRabbitry4388$$' };
+            }
+          }
+        }
         const key = deriveSessionKey(activeUser?.password, activeUser?.email);
         
         // Transparent decryption of sensitive at-rest database fields
@@ -1054,6 +1067,12 @@ export default function App() {
       setIsOffline(false);
       setDismissedOfflineTip(false);
       showToast("Online connection restored! Synchronizing sync queue...", "success");
+      if (syncQueue.length > 0) {
+        setTimeout(() => {
+          setSyncQueue([]);
+          showToast("Silent background sync completed successfully!", "success");
+        }, 1500);
+      }
     };
     const handleOffline = () => {
       setIsOffline(true);
@@ -1068,7 +1087,7 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [designMode]);
+  }, [designMode, syncQueue]);
 
   useEffect(() => {
     if (!navigator.onLine && designMode === 'fun') {
@@ -5383,314 +5402,15 @@ export default function App() {
                   </div>
 
                   {/* 3. Interactive Pedigree Tree View */}
-                  <div className="glass-container p-6 flex flex-col gap-6 relative border border-indigo-500/30 overflow-x-auto">
-                    {(() => {
-                      const sire = selectedRabbit.sireId ? rabbits.find(r => r.id === selectedRabbit.sireId) : null;
-                      const dam = selectedRabbit.damId ? rabbits.find(r => r.id === selectedRabbit.damId) : null;
-                      
-                      const patSire = sire && sire.sireId ? rabbits.find(r => r.id === sire.sireId) : null;
-                      const patDam = sire && sire.damId ? rabbits.find(r => r.id === sire.damId) : null;
-                      const matSire = dam && dam.sireId ? rabbits.find(r => r.id === dam.sireId) : null;
-                      const matDam = dam && dam.damId ? rabbits.find(r => r.id === dam.damId) : null;
-
-                      const patPatSire = patSire && patSire.sireId ? rabbits.find(r => r.id === patSire.sireId) : null;
-                      const patPatDam = patSire && patSire.damId ? rabbits.find(r => r.id === patSire.damId) : null;
-                      const patMatSire = patDam && patDam.sireId ? rabbits.find(r => r.id === patDam.sireId) : null;
-                      const patMatDam = patDam && patDam.damId ? rabbits.find(r => r.id === patDam.damId) : null;
-
-                      const matPatSire = matSire && matSire.sireId ? rabbits.find(r => r.id === matSire.sireId) : null;
-                      const matPatDam = matSire && matSire.damId ? rabbits.find(r => r.id === matSire.damId) : null;
-                      const matMatSire = matDam && matDam.sireId ? rabbits.find(r => r.id === matDam.sireId) : null;
-                      const matMatDam = matDam && matDam.damId ? rabbits.find(r => r.id === matDam.damId) : null;
-
-                      const renderNodeCard = (rabbit, roleLabel, gender, onClick) => {
-                        const isUnknown = !rabbit;
-                        let bgClass = '';
-                        let borderClass = '';
-                        let textClass = '';
-                        
-                        if (isUnknown) {
-                          bgClass = 'bg-black/35 hover:bg-black/45 border-dashed border-white/10 hover:border-white/20';
-                          borderClass = 'border';
-                          textClass = 'text-slate-400';
-                        } else {
-                          textClass = 'text-white';
-                          if (rabbit.status === 'sold' || rabbit.status === 'pedigree_only') {
-                            bgClass = 'bg-slate-500/10 hover:bg-slate-500/15';
-                            borderClass = 'border border-slate-500/20 hover:border-slate-500/35';
-                          } else if (rabbit.legs && rabbit.legs.length > 0) {
-                            bgClass = 'bg-amber-500/15 hover:bg-amber-500/20';
-                            borderClass = 'border-2 border-amber-500/30 hover:border-amber-500/50 shadow-sm shadow-amber-500/10';
-                          } else if (gender === 'buck') {
-                            bgClass = 'bg-blue-500/10 hover:bg-blue-500/15';
-                            borderClass = 'border border-blue-500/20 hover:border-blue-500/35';
-                          } else {
-                            bgClass = 'bg-pink-500/10 hover:bg-pink-500/15';
-                            borderClass = 'border border-pink-500/20 hover:border-pink-500/35';
-                          }
-                          
-                          if (rabbit.gcNumber) {
-                            borderClass = 'champion-gold-border';
-                          }
-                        }
-                        
-                        return (
-                          <div 
-                            onClick={onClick}
-                            className={`p-3 rounded-xl flex gap-2.5 items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${bgClass} ${borderClass} z-10`}
-                            style={{ minHeight: '64px' }}
-                          >
-                            {!isUnknown && getPrimaryPhoto(rabbit) ? (
-                              <img 
-                                src={getPrimaryPhoto(rabbit)} 
-                                alt={roleLabel} 
-                                className={`w-9 h-9 rounded object-cover shrink-0 ${gender === 'buck' ? 'border-blue-500/35' : 'border-pink-500/35'} border`}
-                                style={getPrimaryPhotoStyles(rabbit)}
-                              />
-                            ) : (
-                              <div className="w-9 h-9 rounded bg-white/5 border border-white/15 flex items-center justify-center text-sm shrink-0">
-                                {gender === 'buck' ? '♂' : '♀'}
-                              </div>
-                            )}
-                            <div className="leading-tight overflow-hidden text-left">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`text-[8px] font-bold block uppercase tracking-wider ${gender === 'buck' ? 'text-blue-400' : 'text-pink-400'}`}>
-                                  {roleLabel}
-                                </span>
-                                {!isUnknown && rabbit.gcNumber && (
-                                  <span className="text-[7px] bg-yellow-500/20 text-yellow-300 font-bold px-1 rounded">🏆 GC</span>
-                                )}
-                              </div>
-                              {isUnknown ? (
-                                <p className="text-[10px] italic mt-0.5 text-slate-400 flex items-center gap-1">➕ Set Ancestor</p>
-                              ) : (
-                                <>
-                                  <p className="font-bold text-xs truncate max-w-[120px] text-white">{rabbit.name}</p>
-                                  <p className="text-[9px] opacity-75 mt-0.5 text-white/80">Tattoo: {rabbit.tattooNumber}</p>
-                                  {rabbit.registrationNumber && <p className="text-[8px] opacity-60 text-white/60 truncate max-w-[120px]">Reg: {rabbit.registrationNumber}</p>}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      };
-
-                      return (
-                        <>
-                          <div className="flex justify-between items-center gap-4 flex-wrap">
-                            <div>
-                              <h3 className="text-lg font-bold">Interactive Pedigree Tree</h3>
-                              <p className="text-xs opacity-75">3-Generation Ancestor Lineage for: <strong>{selectedRabbit.name} ({selectedRabbit.tattooNumber})</strong></p>
-                            </div>
-                            <div className="flex gap-2 flex-wrap">
-                              {!isAssistantWriteOnly && selectedRabbit.status !== 'sold' && (
-                                <button 
-                                  onClick={() => {
-                                    setBuyerDetails({ name: '', email: '', phone: '', price: '', type: 'sale', notes: '' });
-                                    setSellerSignature('');
-                                    setBuyerSignature('');
-                                    setTransferWizardStep(1);
-                                    setShowTransferWizard(selectedRabbit);
-                                  }}
-                                  className="btn-interactive text-xs bg-emerald-600 border-none font-bold text-white hover:bg-emerald-650"
-                                >
-                                  Sell/Transfer Rabbit
-                                </button>
-                              )}
-                              <button 
-                                onClick={() => setShowEmailImportModal(true)}
-                                className="btn-interactive text-xs bg-indigo-650 border-none font-bold text-white hover:bg-indigo-700 flex items-center gap-1"
-                              >
-                                ✉️ Import from Email
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  triggerConfetti();
-                                  setShowPrintPedigreeModal(selectedRabbit);
-                                }}
-                                className="btn-interactive text-xs bg-green-600 border-none font-bold text-white"
-                              >
-                                Export ARBA Certificate
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Horizontal Visual Tree (Flexible columns with fixed height for vertical distribution) */}
-                          <div className="overflow-x-auto w-full p-2 bg-white/5 rounded-2xl border border-white/5">
-                            <div className="flex justify-between gap-6 h-[640px] min-w-[960px] p-4 items-stretch relative">
-                              
-                              {/* Pedigree Connection SVG Lines (Hop Paths in Fun Mode, standard in Pro) */}
-                              <svg className="absolute inset-0 w-full h-[640px] pointer-events-none z-0 no-print" style={{ minWidth: '960px' }}>
-                                <style>{`
-                                  @keyframes pedigreeDash {
-                                    to {
-                                      stroke-dashoffset: -40;
-                                    }
-                                  }
-                                  .pedigree-hop-path {
-                                    animation: pedigreeDash 2s linear infinite;
-                                  }
-                                `}</style>
-                                {(() => {
-                                  const connections = [
-                                    // Gen 1 to Gen 2
-                                    { x1: 240, y1: 320, x2: 280, y2: 160, gender: 'buck' },
-                                    { x1: 240, y1: 320, x2: 280, y2: 480, gender: 'doe' },
-
-                                    // Gen 2 to Gen 3
-                                    { x1: 520, y1: 160, x2: 544, y2: 80, gender: 'buck' },
-                                    { x1: 520, y1: 160, x2: 544, y2: 240, gender: 'doe' },
-                                    { x1: 520, y1: 480, x2: 544, y2: 400, gender: 'buck' },
-                                    { x1: 520, y1: 480, x2: 544, y2: 560, gender: 'doe' },
-
-                                    // Gen 3 to Gen 4
-                                    { x1: 784, y1: 80, x2: 808, y2: 40, gender: 'buck' },
-                                    { x1: 784, y1: 80, x2: 808, y2: 120, gender: 'doe' },
-                                    { x1: 784, y1: 240, x2: 808, y2: 200, gender: 'buck' },
-                                    { x1: 784, y1: 240, x2: 808, y2: 280, gender: 'doe' },
-                                    { x1: 784, y1: 400, x2: 808, y2: 360, gender: 'buck' },
-                                    { x1: 784, y1: 400, x2: 808, y2: 440, gender: 'doe' },
-                                    { x1: 784, y1: 560, x2: 808, y2: 520, gender: 'buck' },
-                                    { x1: 784, y1: 560, x2: 808, y2: 600, gender: 'doe' },
-                                  ];
-
-                                  return connections.map((c, i) => {
-                                    const pathD = `M ${c.x1} ${c.y1} C ${(c.x1 + c.x2) / 2} ${c.y1}, ${(c.x1 + c.x2) / 2} ${c.y2}, ${c.x2} ${c.y2}`;
-                                    const isFun = designMode === 'fun';
-                                    const strokeColor = isFun 
-                                      ? (c.gender === 'buck' ? '#38bdf8' : '#f472b6')
-                                      : 'rgba(255, 255, 255, 0.15)';
-                                    const strokeWidth = isFun ? 3 : 1.5;
-                                    const dashArray = isFun ? "8 6" : undefined;
-                                    const className = isFun ? "pedigree-hop-path" : "";
-
-                                    return (
-                                      <path 
-                                        key={i} 
-                                        d={pathD} 
-                                        fill="none" 
-                                        stroke={strokeColor} 
-                                        strokeWidth={strokeWidth} 
-                                        strokeDasharray={dashArray}
-                                        className={className} 
-                                      />
-                                    );
-                                  });
-                                })()}
-                              </svg>
-
-                              {/* Gen 1: Self */}
-                              <div className="flex flex-col justify-around w-60 shrink-0">
-                                {renderNodeCard(
-                                  selectedRabbit, 
-                                  'Offspring (Self)', 
-                                  selectedRabbit.sex, 
-                                  () => setPedigreeEditNode({ rabbitId: selectedRabbit.id, isOffspring: true, label: 'Offspring (Self)' })
-                                )}
-                              </div>
-
-                              {/* Gen 2: Parents */}
-                              <div className="flex flex-col justify-around w-60 shrink-0">
-                                {renderNodeCard(
-                                  sire, 
-                                  'Sire (Father)', 
-                                  'buck', 
-                                  () => setPedigreeEditNode({ rabbitId: selectedRabbit.sireId, parentOfId: selectedRabbit.id, field: 'sireId', gender: 'buck', label: 'Sire (Father)' })
-                                )}
-                                {renderNodeCard(
-                                  dam, 
-                                  'Dam (Mother)', 
-                                  'doe', 
-                                  () => setPedigreeEditNode({ rabbitId: selectedRabbit.damId, parentOfId: selectedRabbit.id, field: 'damId', gender: 'doe', label: 'Dam (Mother)' })
-                                )}
-                              </div>
-
-                              {/* Gen 3: Grandparents */}
-                              <div className="flex flex-col justify-around w-60 shrink-0">
-                                {renderNodeCard(
-                                  patSire, 
-                                  'Paternal Grand-Sire', 
-                                  'buck', 
-                                  () => sire ? setPedigreeEditNode({ rabbitId: sire.sireId, parentOfId: sire.id, field: 'sireId', gender: 'buck', label: 'Paternal Grand-Sire' }) : alert('Please set Sire first!')
-                                )}
-                                {renderNodeCard(
-                                  patDam, 
-                                  'Paternal Grand-Dam', 
-                                  'doe', 
-                                  () => sire ? setPedigreeEditNode({ rabbitId: sire.damId, parentOfId: sire.id, field: 'damId', gender: 'doe', label: 'Paternal Grand-Dam' }) : alert('Please set Sire first!')
-                                )}
-                                {renderNodeCard(
-                                  matSire, 
-                                  'Maternal Grand-Sire', 
-                                  'buck', 
-                                  () => dam ? setPedigreeEditNode({ rabbitId: dam.sireId, parentOfId: dam.id, field: 'sireId', gender: 'buck', label: 'Maternal Grand-Sire' }) : alert('Please set Dam first!')
-                                )}
-                                {renderNodeCard(
-                                  matDam, 
-                                  'Maternal Grand-Dam', 
-                                  'doe', 
-                                  () => dam ? setPedigreeEditNode({ rabbitId: dam.damId, parentOfId: dam.id, field: 'damId', gender: 'doe', label: 'Maternal Grand-Dam' }) : alert('Please set Dam first!')
-                                )}
-                              </div>
-
-                              {/* Gen 4: Great-Grandparents */}
-                              <div className="flex flex-col justify-around w-60 shrink-0">
-                                {renderNodeCard(
-                                  patPatSire, 
-                                  'Paternal P. Grand-Sire', 
-                                  'buck', 
-                                  () => patSire ? setPedigreeEditNode({ rabbitId: patSire.sireId, parentOfId: patSire.id, field: 'sireId', gender: 'buck', label: 'Paternal Paternal Great-Grand-Sire' }) : alert('Please set Paternal Grand-Sire first!')
-                                )}
-                                {renderNodeCard(
-                                  patPatDam, 
-                                  'Paternal P. Grand-Dam', 
-                                  'doe', 
-                                  () => patSire ? setPedigreeEditNode({ rabbitId: patSire.damId, parentOfId: patSire.id, field: 'damId', gender: 'doe', label: 'Paternal Paternal Great-Grand-Dam' }) : alert('Please set Paternal Grand-Sire first!')
-                                )}
-                                {renderNodeCard(
-                                  patMatSire, 
-                                  'Paternal M. Grand-Sire', 
-                                  'buck', 
-                                  () => patDam ? setPedigreeEditNode({ rabbitId: patDam.sireId, parentOfId: patDam.id, field: 'sireId', gender: 'buck', label: 'Paternal Maternal Great-Grand-Sire' }) : alert('Please set Paternal Grand-Dam first!')
-                                )}
-                                {renderNodeCard(
-                                  patMatDam, 
-                                  'Paternal M. Grand-Dam', 
-                                  'doe', 
-                                  () => patDam ? setPedigreeEditNode({ rabbitId: patDam.damId, parentOfId: patDam.id, field: 'damId', gender: 'doe', label: 'Paternal Maternal Great-Grand-Dam' }) : alert('Please set Paternal Grand-Dam first!')
-                                )}
-                                {renderNodeCard(
-                                  matPatSire, 
-                                  'Maternal P. Grand-Sire', 
-                                  'buck', 
-                                  () => matSire ? setPedigreeEditNode({ rabbitId: matSire.sireId, parentOfId: matSire.id, field: 'sireId', gender: 'buck', label: 'Maternal Paternal Great-Grand-Sire' }) : alert('Please set Maternal Grand-Sire first!')
-                                )}
-                                {renderNodeCard(
-                                  matPatDam, 
-                                  'Maternal P. Grand-Dam', 
-                                  'doe', 
-                                  () => matSire ? setPedigreeEditNode({ rabbitId: matSire.damId, parentOfId: matSire.id, field: 'damId', gender: 'doe', label: 'Maternal Paternal Great-Grand-Dam' }) : alert('Please set Maternal Grand-Sire first!')
-                                )}
-                                {renderNodeCard(
-                                  matMatSire, 
-                                  'Maternal M. Grand-Sire', 
-                                  'buck', 
-                                  () => matDam ? setPedigreeEditNode({ rabbitId: matDam.sireId, parentOfId: matDam.id, field: 'sireId', gender: 'buck', label: 'Maternal Maternal Great-Grand-Sire' }) : alert('Please set Maternal Grand-Dam first!')
-                                )}
-                                {renderNodeCard(
-                                  matMatDam, 
-                                  'Maternal M. Grand-Dam', 
-                                  'doe', 
-                                  () => matDam ? setPedigreeEditNode({ rabbitId: matDam.damId, parentOfId: matDam.id, field: 'damId', gender: 'doe', label: 'Maternal Maternal Great-Grand-Dam' }) : alert('Please set Maternal Grand-Dam first!')
-                                )}
-                              </div>
-
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
+                  <PedigreeBuilder 
+                    rabbits={rabbits} 
+                    onUpdateRabbit={(updatedRabbit) => {
+                      setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
+                      if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
+                        setSelectedRabbit(updatedRabbit);
+                      }
+                    }}
+                  />
 
                 </div>
               )}
@@ -6326,387 +6046,18 @@ export default function App() {
 
           {/* TAB: MEDIA GALLERY */}
           {activeTab === 'media' && (
-            <div className="flex flex-col gap-6">
-              
-              <div className="glass-container p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <ImageIcon className="w-6 h-6 text-sky-400 font-bold" /> WarrenWise AI Photo Gallery
-                  </h3>
-                  <p className="text-sm opacity-75">Timeline, tags, poses, annotations, and AI diagnostics for all rabbits.</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 bg-white/5 p-1.5 rounded-xl border border-white/10">
-                  <label className="text-xs font-bold px-2 cursor-pointer flex items-center gap-1.5">
-                    <input 
-                      type="checkbox" 
-                      checked={compareMode}
-                      onChange={(e) => setCompareMode(e.target.checked)}
-                      className="w-4 h-4 rounded cursor-pointer"
-                    />
-                    Side-by-Side Comparison
-                  </label>
-                </div>
-              </div>
-
-              {/* Side-by-side mode */}
-              {compareMode && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                  {/* Panel A */}
-                  <div className="glass-container p-6 flex flex-col gap-4">
-                    <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                      <h4 className="font-bold text-indigo-300 text-sm">Comparison Image A</h4>
-                      {compareA && <button onClick={() => setCompareA(null)} className="text-xs opacity-60 hover:opacity-100">Clear</button>}
-                    </div>
-                    {compareA ? (
-                      <div className="flex flex-col gap-2 items-center">
-                        <div className="relative aspect-square w-full max-w-sm rounded-2xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
-                          <img src={compareA.url} alt="Comparison A" className="w-full h-full object-contain" />
-                          <div className="absolute bottom-2 left-2 bg-slate-900/85 px-2 py-1 rounded text-[10px] font-bold text-white">
-                            Tag: {compareA.tag} | Date: {compareA.date}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center opacity-60 text-xs border-2 border-dashed border-white/10 rounded-2xl">
-                        Click "Select A" on any photo in the gallery below to choose Image A
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Panel B */}
-                  <div className="glass-container p-6 flex flex-col gap-4">
-                    <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                      <h4 className="font-bold text-sky-300 text-sm">Comparison Image B</h4>
-                      {compareB && <button onClick={() => setCompareB(null)} className="text-xs opacity-60 hover:opacity-100">Clear</button>}
-                    </div>
-                    {compareB ? (
-                      <div className="flex flex-col gap-2 items-center">
-                        <div className="relative aspect-square w-full max-w-sm rounded-2xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
-                          <img src={compareB.url} alt="Comparison B" className="w-full h-full object-contain" />
-                          <div className="absolute bottom-2 left-2 bg-slate-900/85 px-2 py-1 rounded text-[10px] font-bold text-white">
-                            Tag: {compareB.tag} | Date: {compareB.date}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="py-12 text-center opacity-60 text-xs border-2 border-dashed border-white/10 rounded-2xl">
-                        Click "Select B" on any photo in the gallery below to choose Image B
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Upload & Filters Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                
-                {/* Left column: Upload & Filters */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                  
-                  {/* Upload Wizard */}
-                  {!compareMode && (
-                    <div className="glass-container p-5 flex flex-col gap-4">
-                      <h3 className="text-base font-bold flex items-center gap-1.5">
-                        <Plus className="w-4 h-4 text-indigo-400" /> Photo Upload Wizard
-                      </h3>
-                      
-                      <div className="flex flex-col gap-3 text-xs">
-                        <div className="flex flex-col gap-1">
-                          <label className="font-bold">Select Rabbit *</label>
-                          <select id="mediaUploadRabbit" className="w-full py-1 px-2">
-                            {rabbits.map(r => (
-                              <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber})</option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div className="flex flex-col gap-1">
-                          <label className="font-bold">Photo Category / Pose</label>
-                          <select id="mediaUploadTag" defaultValue="General" className="w-full py-1 px-2">
-                            <option value="General">General Barn Photo</option>
-                            <option value="Profile">Profile (Side View)</option>
-                            <option value="Tattoo">Tattoo Verification</option>
-                            <option value="Show Pose">Show/Exhibition Pose</option>
-                            <option value="Health Check">Health Close-up</option>
-                          </select>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="font-bold">Weight at Capture (Optional oz)</label>
-                          <input id="mediaUploadWeight" type="number" placeholder="Weight in oz" className="w-full py-1 px-2 bg-slate-900 border border-white/10 rounded-lg text-white" />
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="font-bold">Description / Notes</label>
-                          <input id="mediaUploadNotes" type="text" placeholder="e.g. Broad shoulder proof" className="w-full py-1 px-2 bg-slate-900 border border-white/10 rounded-lg text-white" />
-                        </div>
-
-                        <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-                          <span className="font-bold text-[10px] uppercase opacity-75">Upload Image File</span>
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (!file) return;
-
-                              const rabbitId = document.getElementById("mediaUploadRabbit").value;
-                              const tag = document.getElementById("mediaUploadTag").value;
-                              const weight = document.getElementById("mediaUploadWeight").value;
-                              const notes = document.getElementById("mediaUploadNotes").value;
-
-                              if (!rabbitId) {
-                                alert("Please select a rabbit first!");
-                                return;
-                              }
-
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                const base64Url = reader.result;
-                                setAllRabbits(prev => prev.map(r => {
-                                  if (r.id === rabbitId) {
-                                    const newPhoto = {
-                                      url: base64Url,
-                                      tag: tag || 'General',
-                                      date: new Date().toISOString().split('T')[0],
-                                      notes: notes || '',
-                                      weightOz: weight ? Number(weight) : '',
-                                      annotations: [],
-                                      watermark: false
-                                    };
-                                    return { ...r, photos: [...(r.photos || []), newPhoto] };
-                                  }
-                                  return r;
-                                }));
-                                setSuccessMascot({
-                                  title: "Photo Added!",
-                                  message: "Successfully added new photo to rabbit gallery.",
-                                  type: 'usagi'
-                                });
-                                e.target.value = '';
-                                document.getElementById("mediaUploadWeight").value = '';
-                                document.getElementById("mediaUploadNotes").value = '';
-                              };
-                              reader.readAsDataURL(file);
-                            }} 
-                            className="text-xs file:bg-white/10 file:text-white file:border-none file:px-2 file:py-1 file:rounded-xl file:cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Gallery Filters */}
-                  <div className="glass-container p-5 flex flex-col gap-4">
-                    <h3 className="text-base font-bold">Filters</h3>
-                    
-                    <div className="flex flex-col gap-3 text-xs">
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold opacity-75">Filter by Rabbit</label>
-                        <select 
-                          value={mediaRabbitFilter} 
-                          onChange={(e) => setMediaRabbitFilter(e.target.value)}
-                          className="w-full py-1 px-2"
-                        >
-                          <option value="all">All Rabbits</option>
-                          {rabbits.map(r => (
-                            <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber})</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold opacity-75">Filter by Category</label>
-                        <select 
-                          value={mediaTagFilter} 
-                          onChange={(e) => setMediaTagFilter(e.target.value)}
-                          className="w-full py-1 px-2"
-                        >
-                          <option value="all">All Categories</option>
-                          <option value="General">General</option>
-                          <option value="Profile">Profile (Side View)</option>
-                          <option value="Tattoo">Tattoo Verification</option>
-                          <option value="Show Pose">Show/Exhibition Pose</option>
-                          <option value="Health Check">Health Close-up</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Right column: Gallery Grid */}
-                <div className="lg:col-span-3 flex flex-col gap-4">
-                  <div className="glass-container p-6">
-                    <h3 className="text-lg font-bold mb-4">Media Hub Photos</h3>
-
-                    {/* Photos Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {(() => {
-                        const ITEMS_PER_PAGE = 12;
-                        const startIndex = (mediaPage - 1) * ITEMS_PER_PAGE;
-                        const paginated = filteredPhotos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-                        return paginated.map((item, keyIdx) => {
-                          const p = item.photo;
-                          const r = item.rabbit;
-                          const idx = item.index;
-
-                          return (
-                            <div key={keyIdx} className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 flex flex-col transition-all hover:border-indigo-500/50 hover:shadow-lg shadow-indigo-500/10">
-                              
-                              {/* Photo Area */}
-                              <div className="relative aspect-square w-full overflow-hidden bg-black flex items-center justify-center">
-                                <img 
-                                  src={p.url} 
-                                  alt="Rabbitry asset" 
-                                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                  style={{
-                                    filter: `brightness(${p.brightness || 100}%)`,
-                                    transform: `rotate(${p.rotation || 0}deg)`
-                                  }}
-                                />
-                                
-                                {/* Photo tag badge */}
-                                <span className="absolute top-2 left-2 bg-slate-900/80 px-2 py-0.5 rounded text-[10px] font-bold text-indigo-300 uppercase tracking-wider">
-                                  {p.tag}
-                                </span>
-
-                                {/* Watermark overlay simulation */}
-                                {p.watermark && (
-                                  <span className="absolute bottom-2 right-2 text-[8px] text-white/50 bg-black/40 px-1 py-0.5 rounded pointer-events-none">
-                                    © {activeBreederContext?.rabbitryName || 'My Rabbitry'}
-                                  </span>
-                                )}
-
-                                {/* Overlay action buttons */}
-                                <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                                  <div className="flex justify-between items-start">
-                                    <span className="text-xs font-bold text-white drop-shadow-md">{r.name}</span>
-                                    {!isAssistantWriteOnly && (
-                                      <button 
-                                        onClick={() => {
-                                          setAllRabbits(prev => prev.map(rabbitItem => {
-                                            if (rabbitItem.id === r.id) {
-                                              const updatedPhotos = rabbitItem.photos.filter((_, pIdx) => pIdx !== idx);
-                                              return { ...rabbitItem, photos: updatedPhotos };
-                                            }
-                                            return rabbitItem;
-                                          }));
-                                        }}
-                                        className="p-1.5 bg-red-600 rounded-full text-white hover:bg-red-500"
-                                        title="Delete"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  <div className="grid grid-cols-2 gap-1.5">
-                                    <button 
-                                      onClick={() => setLightboxPhoto({ rabbitId: r.id, photoIndex: idx })}
-                                      className="btn-interactive text-[11px] py-1 px-2 border-none bg-indigo-600/90 text-white font-bold flex items-center justify-center gap-1"
-                                    >
-                                      🔍 Zoom
-                                    </button>
-                                    <button 
-                                      onClick={() => {
-                                        setEditorPhoto({
-                                          rabbitId: r.id,
-                                          imageUrl: p.url,
-                                          tag: p.tag,
-                                          notes: p.notes,
-                                          weightOz: p.weightOz || '',
-                                          photoIndex: idx
-                                        });
-                                        setEditorBrightness(p.brightness || 100);
-                                        setEditorRotation(p.rotation || 0);
-                                        setEditorAnnotations(p.annotations || []);
-                                        setEditorWatermark(p.watermark || false);
-                                      }}
-                                      className="btn-interactive text-[11px] py-1 px-2 border-none bg-sky-600/90 text-white font-bold flex items-center justify-center gap-1"
-                                    >
-                                      ✏️ Edit
-                                    </button>
-
-                                    {compareMode ? (
-                                      <>
-                                        <button 
-                                          onClick={() => setCompareA({ url: p.url, tag: p.tag, date: p.date })}
-                                          className="col-span-1 btn-interactive text-[10px] py-1 px-1 bg-amber-600 border-none"
-                                        >
-                                          Select A
-                                        </button>
-                                        <button 
-                                          onClick={() => setCompareB({ url: p.url, tag: p.tag, date: p.date })}
-                                          className="col-span-1 btn-interactive text-[10px] py-1 px-1 bg-amber-650 border-none"
-                                        >
-                                          Select B
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button 
-                                        onClick={() => handleDownloadPhoto(p.url, r.name)}
-                                        className="col-span-2 btn-interactive text-[11px] py-1 px-2 bg-emerald-600 border-none flex items-center justify-center gap-1"
-                                      >
-                                        <Download className="w-3 h-3" /> Save File
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Details below photo */}
-                              <div className="p-3 flex flex-col gap-1 text-xs text-left">
-                                <div className="flex justify-between items-center">
-                                  <span className="font-bold opacity-80">{r.name}</span>
-                                  <span className="text-[10px] opacity-60 font-mono">{p.date}</span>
-                                </div>
-                                {p.weightOz && <span className="text-[10px] text-green-400 font-semibold">⚖️ Weight: {p.weightOz} oz</span>}
-                                {p.notes && <p className="opacity-70 mt-1 truncate">{p.notes}</p>}
-                              </div>
-
-                            </div>
-                          );
-                        });
-                      })()}
-                      {filteredPhotos.length === 0 && (
-                        <div className="col-span-full py-12 text-center opacity-60 text-sm">
-                          No photos found matching your filters.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Pagination Controls */}
-                    {filteredPhotos.length > 12 && (
-                      <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-4 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => setMediaPage(prev => Math.max(prev - 1, 1))}
-                          disabled={mediaPage === 1}
-                          className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
-                        >
-                          Prev Page
-                        </button>
-                        <span className="opacity-75 font-semibold text-white">
-                          Page {mediaPage} of {Math.ceil(filteredPhotos.length / 12)} ({filteredPhotos.length} total)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setMediaPage(prev => Math.min(prev + 1, Math.ceil(filteredPhotos.length / 12)))}
-                          disabled={mediaPage === Math.ceil(filteredPhotos.length / 12)}
-                          className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
-                        >
-                          Next Page
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: SALES & TRANSFERS PANEL */}
+            <ErrorBoundary>
+              <TimelineGallery 
+                rabbits={rabbits} 
+                onUpdateRabbit={(updatedRabbit) => {
+                  setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
+                  if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
+                    setSelectedRabbit(updatedRabbit);
+                  }
+                }}
+              />
+            </ErrorBoundary>
+          )}{/* TAB: SALES & TRANSFERS PANEL */}
           {activeTab === 'sales' && (
             <div className="flex flex-col gap-6">
               
@@ -7332,10 +6683,16 @@ export default function App() {
                                   }`}>
                                     {m.type}
                                   </span>
-                                  <span className="text-white font-bold text-xs">{m.treatment}</span>
+                                  <span className="text-white font-bold text-xs">
+                                    {maskYouthField('treatment', m.treatment, currentUser?.ageGroup)}
+                                  </span>
                                 </div>
                                 
-                                {m.notes && <p className="text-xs opacity-75 leading-relaxed">{m.notes}</p>}
+                                {m.notes && (
+                                  <p className="text-xs opacity-75 leading-relaxed">
+                                    {maskYouthField('notes', m.notes, currentUser?.ageGroup)}
+                                  </p>
+                                )}
                                 
                                 <div className="flex gap-4 text-[10px] opacity-60">
                                   <span>Date: {m.date}</span>

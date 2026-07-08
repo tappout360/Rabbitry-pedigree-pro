@@ -108,27 +108,51 @@ export const DEFAULT_RABBITS = [
   { 
     id: 'r-30', breederId: 'ab-2', tattooNumber: 'CL01', name: 'Clover Opal', breed: 'Mini Rex', variety: 'Opal', sex: 'doe', dob: '2025-05-10', weightOz: 58, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-MR101', gcNumber: '', location: 'C-10', notes: 'Very soft opal coat.',
     photos: ['/assets/mini_rex.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-30-1', date: '2025-05-10', photo: '/assets/mini_rex.png', weightOz: 2.1, notes: 'Birth entry - Clover Opal' },
+      { id: 't-30-2', date: '2025-09-10', photo: '/assets/mini_rex.png', weightOz: 40, notes: 'Official senior weight log' },
+      { id: 't-30-3', date: '2026-01-10', photo: '/assets/mini_rex.png', weightOz: 58, notes: 'Pre-breeding check' }
+    ]
   },
   { 
     id: 'r-31', breederId: 'ab-2', tattooNumber: 'CL02', name: 'Castor King', breed: 'Mini Rex', variety: 'Castor', sex: 'buck', dob: '2025-02-12', weightOz: 60, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-MR102', gcNumber: 'GC-MR01', location: 'C-11', notes: 'Grand Champion lineage castor buck.',
     photos: ['/assets/mini_rex.png'],
-    legs: [{ id: 'leg-mr1', date: '2025-11-20', showName: 'Midwest Mini Rex Specialty', judge: 'Adam West', award: 'Best of Variety', classSize: 15 }]
+    legs: [{ id: 'leg-mr1', date: '2025-11-20', showName: 'Midwest Mini Rex Specialty', judge: 'Adam West', award: 'Best of Variety', classSize: 15 }],
+    timeline: [
+      { id: 't-31-1', date: '2025-02-12', photo: '/assets/mini_rex.png', weightOz: 2.2, notes: 'Birth entry - Castor King' },
+      { id: 't-31-2', date: '2025-11-20', photo: '/assets/mini_rex.png', weightOz: 60, notes: 'Championship show weight check' }
+    ]
   },
   { 
     id: 'r-32', breederId: 'ab-2', tattooNumber: 'CL03', name: 'Clover Shadow', breed: 'Mini Rex', variety: 'Black', sex: 'doe', dob: '2025-06-01', weightOz: 56, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-12', notes: 'Jet black plush coat.',
     photos: ['/assets/mini_rex.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-32-1', date: '2025-06-01', photo: '/assets/mini_rex.png', weightOz: 2.0, notes: 'Birth entry - Clover Shadow' },
+      { id: 't-32-2', date: '2026-03-01', photo: '/assets/mini_rex.png', weightOz: 56, notes: 'Junior hutch weight logging' }
+    ]
   },
   { 
     id: 'r-33', breederId: 'ab-2', tattooNumber: 'CL-L1', name: 'Clover Velvet', breed: 'Mini Rex', variety: 'Castor', sex: 'doe', dob: '2026-03-15', weightOz: 35, status: 'active', sireId: 'r-31', damId: 'r-30', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-13', notes: 'Promising castor junior doe.',
     photos: ['/assets/mini_rex.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-33-1', date: '2026-03-15', photo: '/assets/mini_rex.png', weightOz: 2.3, notes: 'Birth entry - Castor kit weaned.' },
+      { id: 't-33-2', date: '2026-04-15', photo: '/assets/mini_rex.png', weightOz: 12.0, notes: '4 weeks old - Transitioning to solid hay.' },
+      { id: 't-33-3', date: '2026-05-15', photo: '/assets/mini_rex.png', weightOz: 24.0, notes: '8 weeks old - Official hutch weight log.' },
+      { id: 't-33-4', date: '2026-06-15', photo: '/assets/mini_rex.png', weightOz: 35.0, notes: 'Junior weight check.' }
+    ]
   },
   { 
     id: 'r-34', breederId: 'ab-2', tattooNumber: 'CL-L2', name: 'Clover Prince', breed: 'Mini Rex', variety: 'Castor', sex: 'buck', dob: '2026-03-15', weightOz: 36, status: 'active', sireId: 'r-31', damId: 'r-30', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-14', notes: 'Energetic castor junior buck.',
     photos: ['/assets/mini_rex.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-34-1', date: '2026-03-15', photo: '/assets/mini_rex.png', weightOz: 2.4, notes: 'Birth entry - Clover Prince' },
+      { id: 't-34-2', date: '2026-05-15', photo: '/assets/mini_rex.png', weightOz: 25.0, notes: '8 weeks old - Transitioning successfully.' },
+      { id: 't-34-3', date: '2026-06-15', photo: '/assets/mini_rex.png', weightOz: 36.0, notes: 'Hutch junior check' }
+    ]
   },
   { 
     id: 'r-40', breederId: 'ab-4', tattooNumber: 'NZ01', name: 'Blue Cyclone', breed: 'New Zealand', variety: 'Blue', sex: 'buck', dob: '2025-01-15', weightOz: 152, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-NZ101', gcNumber: 'GC-NZ01', location: 'Cage-NZ1', notes: 'Stunning New Zealand Blue buck, massive build.',

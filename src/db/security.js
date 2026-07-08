@@ -104,3 +104,17 @@ export const recordAuditLog = async (db, action, table, recordId, userId, detail
     console.error('Failed to write audit log:', err);
   }
 };
+
+/**
+ * Mask sensitive veterinary notes, location values, and specific description fields for junior/youth helper accounts
+ */
+export const maskYouthField = (fieldName, value, ageGroup) => {
+  if (!value) return '';
+  if (ageGroup === 'junior' || ageGroup === 'teen') {
+    const lower = fieldName.toLowerCase();
+    if (lower === 'notes' || lower === 'treatment' || lower === 'location' || lower === 'details') {
+      return '[Protected Youth Profile Value]';
+    }
+  }
+  return value;
+};
