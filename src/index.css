@@ -469,8 +469,13 @@ select option {
   border: 2px solid var(--glass-border) !important;
   padding: 10px 16px !important;
   transition: all 0.2s ease;
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  color: #0f172a !important; /* Force dark text color on white bubble inputs */
+}
+
+.fun-mode-active input::placeholder,
+.fun-mode-active textarea::placeholder {
+  color: #475569 !important; /* Force readable slate placeholder text */
 }
 .fun-mode-active input:focus, 
 .fun-mode-active select:focus, 
