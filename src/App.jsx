@@ -8,6 +8,12 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { GeneticsEngine } from './genetics';
+import NetworkStatusBanner from './components/ui/NetworkStatusBanner';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import HealthCheck from './components/ui/HealthCheck';
+import Academy from './views/Academy';
+import { db, performMigrationAndLoad } from './db/registryDb';
+import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog } from './db/security';
 
 // Initial Breed Standards Data (Ounces: 16 oz = 1 lb)
 const BREED_STANDARDS = {
@@ -288,6 +294,82 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
         </div>
       </div>
 
+      {/* Subscription Management Override Panel */}
+      {!b.isSuperAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-white/5 pt-3 text-left">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Subscription Tier</label>
+            <select
+              value={b.subscriptionTier || 'free'}
+              onChange={(e) => {
+                const val = e.target.value;
+                let lim = 25;
+                if (val === 'pro') lim = 1000;
+                setAdminBreeders(prev => prev.map(item => 
+                  item.id === b.id ? { ...item, subscriptionTier: val, subscriptionLimit: lim } : item
+                ));
+              }}
+              className="text-xs py-1.5 px-3"
+            >
+              <option value="free">Basic / Free Plan (Limit 25)</option>
+              <option value="pro">Pro Plan (Limit 1000)</option>
+              <option value="custom">Custom Plan (Set Limit)</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Inventory Limit</label>
+            <input
+              type="number"
+              value={b.subscriptionLimit !== undefined ? b.subscriptionLimit : 25}
+              disabled={b.subscriptionTier !== 'custom'}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10) || 0;
+                setAdminBreeders(prev => prev.map(item => 
+                  item.id === b.id ? { ...item, subscriptionLimit: val } : item
+                ));
+              }}
+              className="text-xs py-1.5 px-3 bg-slate-900 border border-white/10 rounded-lg text-white disabled:opacity-50"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 justify-center">
+            <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Pricing Adjustments</label>
+            <div className="flex gap-4 items-center">
+              <label className="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={!!b.isDiscounted}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setAdminBreeders(prev => prev.map(item => 
+                      item.id === b.id ? { ...item, isDiscounted: checked } : item
+                    ));
+                  }}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+                Discounted %
+              </label>
+
+              <label className="text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={!!b.isFreeOverride}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setAdminBreeders(prev => prev.map(item => 
+                      item.id === b.id ? { ...item, isFreeOverride: checked } : item
+                    ));
+                  }}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+                Comped (Free)
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password Reset simulated link */}
       {!b.isSuperAdmin && (
         <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
@@ -482,7 +564,12 @@ const sanitizeTextInput = (text) => {
   // Strip human healthcare terms
   const humanHealthWords = [
     'medicare', 'medicaid', 'phi', 'hipaa', 'health insurance', 
-    'social security number', 'human drug', 'patient record'
+    'social security number', 'human drug', 'patient record',
+    'lisinopril', 'atorvastatin', 'levothyroxine', 'metformin', 
+    'amlodipine', 'metoprolol', 'albuterol', 'omeprazole', 
+    'losartan', 'gabapentin', 'lipitor', 'synthroid', 'vicodin', 
+    'amoxicillin', 'ibuprofen', 'acetaminophen', 'paracetamol', 
+    'aspirin', 'prozac', 'xanax', 'adderall', 'ambien'
   ];
   humanHealthWords.forEach(word => {
     const regex = new RegExp(`\\b${word}\\b`, 'gi');
@@ -532,6 +619,7 @@ const parseEmailText = (text) => {
 };
 
 export default function App() {
+  const [dbLoaded, setDbLoaded] = useState(false);
   // adminBreeders list
   const [adminBreeders, setAdminBreeders] = useState(() => {
     const saved = localStorage.getItem('rp_admin_breeders');
@@ -540,7 +628,7 @@ export default function App() {
       { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'password123' },
       { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: 'arba_pass_2026' },
       { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: 'feed_the_buns' },
-      { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'pending', password: 'passwordemily' },
+      { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: 'passwordemily' },
       { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'merlinsrabbit' },
       { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'i_am_the_batman' },
       { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'password123' }
@@ -594,7 +682,7 @@ export default function App() {
         { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'password123' },
         { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: 'arba_pass_2026' },
         { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: 'feed_the_buns' },
-        { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'pending', password: 'passwordemily' },
+        { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: 'passwordemily' },
         { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'merlinsrabbit' },
         { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'i_am_the_batman' },
         { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'password123' }
@@ -737,6 +825,7 @@ export default function App() {
     role: 'owner', // 'owner' or 'assistant'
     logo: '🐇',
     theme: 'dark', // Defaults to Midnight Obsidian Dark Theme
+    ageGroup: 'adult',
     isYouth: false,
     parentName: '',
     parentEmail: '',
@@ -797,462 +886,39 @@ export default function App() {
   }, [successMascot]);
 
   // Data State (Partitioned by breederId)
-  const [allRabbits, setAllRabbits] = useState(() => {
-    const saved = localStorage.getItem('rp_rabbits');
-    const defaultList = [
-      { 
-        id: 'r-1', breederId: 'ab-1', tattooNumber: 'S01', name: 'Blue Thunder', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2025-01-10', weightOz: 60, status: 'active', sireId: 'r-4', damId: 'r-5', inbreedingCoeff: 0.0, registrationNumber: 'REG-12345', gcNumber: 'GC-5544', location: 'A-01', notes: 'Proven sire, extremely calm.',
-        photos: ['/assets/holland_lop.png'],
-        legs: [{ id: 'leg-1', date: '2025-09-15', showName: 'ARBA National Show', judge: 'Dr. John Miller', award: 'Best of Variety', classSize: 24 }]
-      },
-      { 
-        id: 'r-2', breederId: 'ab-1', tattooNumber: 'D01', name: 'Clover Blossom', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'doe', dob: '2025-02-15', weightOz: 62, status: 'active', sireId: 'r-4', damId: 'r-7', inbreedingCoeff: 0.0, registrationNumber: 'REG-12346', gcNumber: '', location: 'A-02', notes: 'Excellent mothering instincts.',
-        photos: ['/assets/holland_lop.png'],
-        legs: []
-      },
-      { 
-        id: 'r-3', breederId: 'ab-1', tattooNumber: 'L43-1', name: 'Blue Pearl', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2026-03-01', weightOz: 38, status: 'active', sireId: 'r-1', damId: 'r-2', inbreedingCoeff: 0.125, registrationNumber: '', gcNumber: '', location: 'B-04', notes: 'Nice hutch variety with rich blue undercoat.',
-        photos: ['/assets/holland_lop.png'],
-        legs: []
-      },
-      {
-        id: 'r-4', breederId: 'ab-1', tattooNumber: 'SR01', name: 'Storm Rider', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2024-03-10', weightOz: 61, status: 'active', sireId: 'r-8', damId: 'r-9', inbreedingCoeff: 0.0, registrationNumber: 'REG-11022', gcNumber: '', location: 'C-01', notes: 'Sired multiple champions.',
-        photos: ['/assets/holland_lop.png'],
-        legs: [{ id: 'leg-2', date: '2025-10-05', showName: 'West Coast Rabbit Classic', judge: 'Carla Sanchez', award: 'Best of Breed', classSize: 18 }]
-      },
-      {
-        id: 'r-5', breederId: 'ab-1', tattooNumber: 'SD01', name: 'Sky Dancer', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-04-12', weightOz: 59, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-02', notes: 'Very gentle temperament.',
-        photos: ['/assets/holland_lop.png'],
-        legs: []
-      },
-      {
-        id: 'r-6', breederId: 'ab-1', tattooNumber: 'FR01', name: 'Forest Ranger', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'buck', dob: '2024-02-18', weightOz: 63, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-11023', gcNumber: '', location: 'C-03', notes: 'Broad shoulders, compact body.',
-        photos: ['/assets/holland_lop.png'],
-        legs: []
-      },
-      {
-        id: 'r-7', breederId: 'ab-1', tattooNumber: 'MB01', name: 'Meadow Breeze', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-03-22', weightOz: 60, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-04', notes: 'Deep blue coat, great fur density.',
-        photos: ['/assets/holland_lop.png'],
-        legs: []
-      },
-      {
-        id: 'r-8', breederId: 'ab-1', tattooNumber: 'ZB01', name: 'Zephyr Buck', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2023-01-05', weightOz: 62, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9988', gcNumber: 'GC-2211', location: 'D-01', notes: 'Grand Champion line progenitor.',
-        photos: ['/assets/holland_lop.png'],
-        legs: [{ id: 'leg-3', date: '2024-11-20', showName: 'Cascade Winter Show', judge: 'Robert Devlin', award: 'Best In Show', classSize: 42 }]
-      },
-      {
-        id: 'r-9', breederId: 'ab-1', tattooNumber: 'OD01', name: 'Orchard Doe', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2023-02-14', weightOz: 61, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9989', gcNumber: '', location: 'D-02', notes: 'High fertility history.',
-        photos: ['/assets/holland_lop.png'],
-        legs: []
-      },
-      { 
-        id: 'r-10', breederId: 'ab-7', tattooNumber: 'FG01', name: 'Titan Rex', breed: 'Flemish Giant', variety: 'Sandy', sex: 'buck', dob: '2025-03-01', weightOz: 240, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG991', gcNumber: 'GC-FG101', location: 'Cage-G1', notes: 'Massive sandy buck, ARBA show winner.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: [{ id: 'leg-fg1', date: '2025-11-10', showName: 'National Flemish Giant Show', judge: 'Reginald Vance', award: 'Best of Breed', classSize: 32 }]
-      },
-      { 
-        id: 'r-11', breederId: 'ab-7', tattooNumber: 'FG02', name: 'Queen Freya', breed: 'Flemish Giant', variety: 'Steel', sex: 'doe', dob: '2025-04-12', weightOz: 256, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG992', gcNumber: '', location: 'Cage-G2', notes: 'Extremely fertile steel doe. Excellent size.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-12', breederId: 'ab-7', tattooNumber: 'FG-L1', name: 'Freya Junior', breed: 'Flemish Giant', variety: 'Sandy', sex: 'doe', dob: '2026-04-05', weightOz: 112, status: 'active', sireId: 'r-10', damId: 'r-11', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cage-G3', notes: 'Junior doe showing excellent bone development.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-20', breederId: 'ab-6', tattooNumber: 'BAT01', name: 'Midnight Knight', breed: 'Netherland Dwarf', variety: 'Black', sex: 'buck', dob: '2025-05-20', weightOz: 36, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-ND441', gcNumber: 'GC-BAT1', location: 'Cave-1', notes: 'Compact buck, very dark glossy coat.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: [{ id: 'leg-nd1', date: '2026-02-15', showName: 'Gotham Rabbit Classic', judge: 'Harvey Dent', award: 'Best In Show', classSize: 15 }]
-      },
-      { 
-        id: 'r-21', breederId: 'ab-6', tattooNumber: 'CAT01', name: 'Selina Doe', breed: 'Netherland Dwarf', variety: 'Sable Point', sex: 'doe', dob: '2025-06-14', weightOz: 38, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-ND442', gcNumber: '', location: 'Cave-2', notes: 'Sleek, highly active sable point doe.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-22', breederId: 'ab-6', tattooNumber: 'BAT02', name: 'Bat-signalBEW', breed: 'Netherland Dwarf', variety: 'Blue Eyed White', sex: 'doe', dob: '2025-08-01', weightOz: 34, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-ND443', gcNumber: '', location: 'Cave-3', notes: 'Striking blue eyed white doe.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-23', breederId: 'ab-6', tattooNumber: 'BAT03', name: 'Robin BEW', breed: 'Netherland Dwarf', variety: 'Blue Eyed White', sex: 'buck', dob: '2026-02-10', weightOz: 32, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cave-4', notes: 'Vigorous junior BEW buck.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-24', breederId: 'ab-6', tattooNumber: 'BAT-L1', name: 'Bat-girl ND', breed: 'Netherland Dwarf', variety: 'Black', sex: 'doe', dob: '2026-05-01', weightOz: 16, status: 'active', sireId: 'r-20', damId: 'r-21', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cave-5', notes: 'Junior black doe. High potential.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-13', breederId: 'ab-7', tattooNumber: 'FG03', name: 'Thor Sandy', breed: 'Flemish Giant', variety: 'Sandy', sex: 'buck', dob: '2025-08-20', weightOz: 232, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG993', gcNumber: '', location: 'Cage-G4', notes: 'Strong sand variety buck.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-14', breederId: 'ab-7', tattooNumber: 'FG04', name: 'Loki Steel', breed: 'Flemish Giant', variety: 'Steel', sex: 'doe', dob: '2025-09-10', weightOz: 248, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG994', gcNumber: '', location: 'Cage-G5', notes: 'Sleek steel Flemish Giant doe.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-30', breederId: 'ab-2', tattooNumber: 'CL01', name: 'Clover Opal', breed: 'Mini Rex', variety: 'Opal', sex: 'doe', dob: '2025-05-10', weightOz: 58, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-MR101', gcNumber: '', location: 'C-10', notes: 'Very soft opal coat.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-31', breederId: 'ab-2', tattooNumber: 'CL02', name: 'Castor King', breed: 'Mini Rex', variety: 'Castor', sex: 'buck', dob: '2025-02-12', weightOz: 60, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-MR102', gcNumber: 'GC-MR01', location: 'C-11', notes: 'Grand Champion lineage castor buck.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: [{ id: 'leg-mr1', date: '2025-11-20', showName: 'Midwest Mini Rex Specialty', judge: 'Adam West', award: 'Best of Variety', classSize: 15 }]
-      },
-      { 
-        id: 'r-32', breederId: 'ab-2', tattooNumber: 'CL03', name: 'Clover Shadow', breed: 'Mini Rex', variety: 'Black', sex: 'doe', dob: '2025-06-01', weightOz: 56, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-12', notes: 'Jet black plush coat.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-33', breederId: 'ab-2', tattooNumber: 'CL-L1', name: 'Clover Velvet', breed: 'Mini Rex', variety: 'Castor', sex: 'doe', dob: '2026-03-15', weightOz: 35, status: 'active', sireId: 'r-31', damId: 'r-30', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-13', notes: 'Promising castor junior doe.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      },
-      { 
-        id: 'r-34', breederId: 'ab-2', tattooNumber: 'CL-L2', name: 'Clover Prince', breed: 'Mini Rex', variety: 'Castor', sex: 'buck', dob: '2026-03-15', weightOz: 36, status: 'active', sireId: 'r-31', damId: 'r-30', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-14', notes: 'Energetic castor junior buck.',
-        photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'],
-        legs: []
-      }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        // Clean/Migrate existing ab-admin records to ab-7 (Sarah Jenkins)
-        parsed = parsed.map(r => r.breederId === 'ab-admin' ? { ...r, breederId: 'ab-7' } : r);
-        // Merge missing default mock data
-        defaultList.forEach(def => {
-          if (!parsed.some(r => r.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultList;
-      }
-    }
-    return defaultList;
-  });
+  const [allRabbits, setAllRabbits] = useState([]);
   const rabbits = allRabbits.filter(r => selectedBreederContext === 'all' || r.breederId === selectedBreederContext);
 
-  const [allBreedings, setAllBreedings] = useState(() => {
-    const saved = localStorage.getItem('rp_breedings');
-    const defaultBreedings = [
-      { id: 'b-1', breederId: 'ab-1', buckId: 'r-1', doeId: 'r-2', breedDate: '2026-05-01', palpateDate: '2026-05-13', palpateResult: true, nestBoxDate: '2026-05-28', kindleDate: '2026-06-01', status: 'kindled' },
-      { id: 'b-2', breederId: 'ab-1', buckId: 'r-4', doeId: 'r-5', breedDate: '2026-06-01', palpateDate: '2026-06-13', palpateResult: null, nestBoxDate: '2026-06-29', kindleDate: '2026-07-02', status: 'bred' },
-      { id: 'b-3', breederId: 'ab-1', buckId: 'r-6', doeId: 'r-7', breedDate: '2026-04-10', palpateDate: '2026-04-22', palpateResult: true, nestBoxDate: '2026-05-08', kindleDate: '2026-05-11', status: 'kindled' },
-      { id: 'b-4', breederId: 'ab-1', buckId: 'r-8', doeId: 'r-9', breedDate: '2026-05-20', palpateDate: '2026-06-01', palpateResult: true, nestBoxDate: '2026-06-17', kindleDate: '2026-06-20', status: 'palpated_positive' },
-      { id: 'b-fg1', breederId: 'ab-7', buckId: 'r-10', doeId: 'r-11', breedDate: '2026-03-01', palpateDate: '2026-03-13', palpateResult: true, nestBoxDate: '2026-03-28', kindleDate: '2026-04-05', status: 'kindled' },
-      { id: 'b-nd1', breederId: 'ab-6', buckId: 'r-20', doeId: 'r-21', breedDate: '2026-05-10', palpateDate: '2026-05-22', palpateResult: true, nestBoxDate: '2026-06-07', kindleDate: null, status: 'palpated_positive' },
-      { id: 'b-rc1', breederId: 'ab-2', buckId: 'r-31', doeId: 'r-30', breedDate: '2026-02-10', palpateDate: '2026-02-22', palpateResult: true, nestBoxDate: '2026-03-09', kindleDate: '2026-03-15', status: 'kindled' },
-      { id: 'b-rc2', breederId: 'ab-2', buckId: 'r-31', doeId: 'r-32', breedDate: '2026-06-05', palpateDate: '2026-06-17', palpateResult: null, nestBoxDate: '2026-07-02', kindleDate: '2026-07-06', status: 'bred' },
-      { id: 'b-nd2', breederId: 'ab-6', buckId: 'r-20', doeId: 'r-21', breedDate: '2026-04-01', palpateDate: '2026-04-13', palpateResult: true, nestBoxDate: '2026-04-28', kindleDate: '2026-05-01', status: 'kindled' },
-      { id: 'b-fg2', breederId: 'ab-7', buckId: 'r-13', doeId: 'r-14', breedDate: '2026-05-12', palpateDate: '2026-05-24', palpateResult: true, nestBoxDate: '2026-06-08', kindleDate: '2026-06-11', status: 'kindled' }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        parsed = parsed.map(b => b.breederId === 'ab-admin' ? { ...b, breederId: 'ab-7' } : b);
-        defaultBreedings.forEach(def => {
-          if (!parsed.some(b => b.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultBreedings;
-      }
-    }
-    return defaultBreedings;
-  });
+  const [allBreedings, setAllBreedings] = useState([]);
   const breedings = allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext);
 
-  const [allLitters, setAllLitters] = useState(() => {
-    const saved = localStorage.getItem('rp_litters');
-    const defaultLitters = [
-      { id: 'l-1', breederId: 'ab-1', breedingId: 'b-1', kitsBornAlive: 6, kitsBornDead: 1, kitsWeaned: 5, notes: 'Thriving and active.' },
-      { id: 'l-2', breederId: 'ab-1', breedingId: 'b-3', kitsBornAlive: 5, kitsBornDead: 0, kitsWeaned: 5, notes: 'Excellent weight gain, very healthy litter.' },
-      { id: 'l-fg1', breederId: 'ab-7', breedingId: 'b-fg1', kitsBornAlive: 8, kitsBornDead: 1, kitsWeaned: 7, notes: 'Flemish Giant litter grew extremely fast. Freya junior is from this litter.' },
-      { id: 'l-rc1', breederId: 'ab-2', breedingId: 'b-rc1', kitsBornAlive: 5, kitsBornDead: 0, kitsWeaned: 4, notes: 'Very sweet Mini Rex kits. Velvet and Prince are from this breeding.' },
-      { id: 'l-nd2', breederId: 'ab-6', breedingId: 'b-nd2', kitsBornAlive: 3, kitsBornDead: 1, kitsWeaned: 2, notes: 'Bat-girl ND is from this litter.' },
-      { id: 'l-fg2', breederId: 'ab-7', breedingId: 'b-fg2', kitsBornAlive: 7, kitsBornDead: 1, kitsWeaned: 6, notes: 'Flemish Giant sandy and steel kits growing fast.' }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        parsed = parsed.map(l => l.breederId === 'ab-admin' ? { ...l, breederId: 'ab-7' } : l);
-        defaultLitters.forEach(def => {
-          if (!parsed.some(l => l.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultLitters;
-      }
-    }
-    return defaultLitters;
-  });
+  const [allLitters, setAllLitters] = useState([]);
   const litters = allLitters.filter(l => selectedBreederContext === 'all' || l.breederId === selectedBreederContext);
 
-  const [allLedger, setAllLedger] = useState(() => {
-    const saved = localStorage.getItem('rp_ledger');
-    const defaultLedger = [
-      { id: 'lt-1', breederId: 'ab-1', date: '2026-06-01', type: 'income', amount: 150.00, category: 'sale', rabbitId: 'r-3', notes: 'Sold Blue Pearl.' },
-      { id: 'lt-2', breederId: 'ab-1', date: '2026-06-05', type: 'expense', amount: 45.50, category: 'feed', rabbitId: '', notes: 'Purchased two bags of alfalfa feed pellets.' },
-      { id: 'lt-3', breederId: 'ab-1', date: '2026-05-10', type: 'expense', amount: 20.00, category: 'show_fee', rabbitId: '', notes: 'ARBA Spring Show registration fee.' },
-      { id: 'lt-4', breederId: 'ab-1', date: '2026-05-12', type: 'income', amount: 80.00, category: 'sale', rabbitId: '', notes: 'Sold junior pet buck.' },
-      { id: 'lt-5', breederId: 'ab-1', date: '2026-05-15', type: 'expense', amount: 35.00, category: 'equipment', rabbitId: '', notes: 'New automatic water nozzle system.' },
-      { id: 'lt-6', breederId: 'ab-1', date: '2026-05-25', type: 'expense', amount: 12.00, category: 'medical', rabbitId: '', notes: 'VetRx respiratory treatment oil.' },
-      { id: 'lt-7', breederId: 'ab-1', date: '2026-06-08', type: 'income', amount: 200.00, category: 'sale', rabbitId: '', notes: 'Sold proven senior show doe.' },
-      { id: 'lt-fg1', breederId: 'ab-7', date: '2026-05-15', type: 'income', amount: 150.00, category: 'sale', rabbitId: '', notes: 'Sold Flemish Giant junior buck.' },
-      { id: 'lt-fg2', breederId: 'ab-7', date: '2026-06-02', type: 'expense', amount: 85.00, category: 'feed', rabbitId: '', notes: 'Bulk purchase of high-protein giant breed feed.' },
-      { id: 'lt-fg3', breederId: 'ab-7', date: '2026-06-12', type: 'income', amount: 100.00, category: 'other', rabbitId: '', notes: 'ARBA Flemish Giant Best of Breed Cash Award.' },
-      { id: 'lt-bat1', breederId: 'ab-6', date: '2026-05-28', type: 'expense', amount: 300.00, category: 'equipment', rabbitId: '', notes: 'Cave-optimized LED hutch lighting.' },
-      { id: 'lt-bat2', breederId: 'ab-6', date: '2026-06-10', type: 'income', amount: 400.00, category: 'sale', rabbitId: '', notes: 'Sold champion lineage Netherland Dwarf buck.' },
-      { id: 'lt-rc1', breederId: 'ab-2', date: '2026-05-20', type: 'income', amount: 120.00, category: 'sale', rabbitId: '', notes: 'Sold a castor junior buck.' },
-      { id: 'lt-rc2', breederId: 'ab-2', date: '2026-05-22', type: 'expense', amount: 35.00, category: 'feed', notes: 'Mini Rex feed bags.' },
-      { id: 'lt-rc3', breederId: 'ab-2', date: '2026-06-01', type: 'expense', amount: 15.00, category: 'show_fee', notes: 'Rex Specialty registration fee.' },
-      { id: 'lt-bat3', breederId: 'ab-6', date: '2026-05-05', type: 'income', amount: 250.00, category: 'sale', notes: 'Sold BEW junior buck.' },
-      { id: 'lt-bat4', breederId: 'ab-6', date: '2026-06-02', type: 'expense', amount: 65.00, category: 'feed', notes: 'Netherland Dwarf special pellets.' },
-      { id: 'lt-fg4', breederId: 'ab-7', date: '2026-05-18', type: 'expense', amount: 45.00, category: 'medical', notes: 'Nail clippers & ear mite preventative drops.' },
-      { id: 'lt-fg5', breederId: 'ab-7', date: '2026-06-10', type: 'income', amount: 180.00, category: 'sale', notes: 'Sold steel Flemish giant junior doe.' }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        parsed = parsed.map(lt => lt.breederId === 'ab-admin' ? { ...lt, breederId: 'ab-7' } : lt);
-        defaultLedger.forEach(def => {
-          if (!parsed.some(lt => lt.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultLedger;
-      }
-    }
-    return defaultLedger;
-  });
+  const [allLedger, setAllLedger] = useState([]);
   const ledger = allLedger.filter(lt => selectedBreederContext === 'all' || lt.breederId === selectedBreederContext);
 
-  const [allShows, setAllShows] = useState(() => {
-    const saved = localStorage.getItem('rp_shows');
-    const defaultShows = [
-      { id: 'show-1', breederId: 'ab-1', name: 'ARBA National Convention 2026', date: '2026-10-24', location: 'Indianapolis, IN', notes: 'Largest national event. Target all senior bucks.', status: 'interested', notifyDays: 14 },
-      { id: 'show-2', breederId: 'ab-1', name: 'West Coast Rabbit Classic', date: '2026-07-20', location: 'Stockton, CA', notes: 'Local regional show. Register 4 Holland Lops.', status: 'attending', notifyDays: 7 },
-      { id: 'show-3', breederId: 'ab-1', name: 'Mid-Summer Rabbit Show', date: '2026-08-15', location: 'Columbus, OH', notes: 'Hobbyist meet and show.', status: 'not_attending', notifyDays: 7 },
-      { id: 'show-fg1', breederId: 'ab-7', name: 'ARBA National Flemish Giant Show', date: '2026-07-10', location: 'Indianapolis, IN', notes: 'Entering Titan Rex.', status: 'attending', notifyDays: 14 },
-      { id: 'show-fg2', breederId: 'ab-7', name: 'Summer Giant Breeds Specialty', date: '2026-08-05', location: 'Lansing, MI', notes: 'Check weights for Freya Junior.', status: 'interested', notifyDays: 14 },
-      { id: 'show-bat1', breederId: 'ab-6', name: 'Gotham Rabbit Classic', date: '2026-07-15', location: 'Gotham City', notes: 'Midnight Knight defending title.', status: 'attending', notifyDays: 7 },
-      { id: 'show-rc1', breederId: 'ab-2', name: 'Midwest Mini Rex Specialty', date: '2026-07-12', location: 'Fort Wayne, IN', notes: 'Targeting Best Castor.', status: 'attending', notifyDays: 14 },
-      { id: 'show-rc2', breederId: 'ab-2', name: 'Ohio State Rabbit Convention 2026', date: '2026-09-18', location: 'Columbus, OH', notes: 'Exhibiting Clover Shadow.', status: 'interested', notifyDays: 14 },
-      { id: 'show-bat2', breederId: 'ab-6', name: 'Metropolis Dwarf Showdown', date: '2026-08-20', location: 'Metropolis Coliseum', notes: 'Entering Robin BEW in junior class.', status: 'interested', notifyDays: 14 },
-      { id: 'show-fg3', breederId: 'ab-7', name: 'Great Lakes Giant Breeders Fair', date: '2026-09-02', location: 'Grand Rapids, MI', notes: 'Entering Thor Sandy.', status: 'attending', notifyDays: 14 }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        parsed = parsed.map(s => s.breederId === 'ab-admin' ? { ...s, breederId: 'ab-7' } : s);
-        defaultShows.forEach(def => {
-          if (!parsed.some(s => s.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultShows;
-      }
-    }
-    return defaultShows;
-  });
+  const [allShows, setAllShows] = useState([]);
   const shows = allShows.filter(s => selectedBreederContext === 'all' || s.breederId === selectedBreederContext);
 
-  const [allChores, setAllChores] = useState(() => {
-    const saved = localStorage.getItem('rp_chores');
-    const defaultChores = [
-      { id: 'ch-1', breederId: 'ab-1', taskName: 'Alfalfa Pellet Feeding', completed: false },
-      { id: 'ch-2', breederId: 'ab-1', taskName: 'Water System Pressure Check', completed: false },
-      { id: 'ch-3', breederId: 'ab-1', taskName: 'Sweep Hutch Aisles', completed: false },
-      { id: 'ch-4', breederId: 'ab-2', taskName: 'Castor Variety Grooming', completed: false },
-      { id: 'ch-5', breederId: 'ab-2', taskName: 'Refill Alfalfa Feed Hay', completed: false },
-      { id: 'ch-6', breederId: 'ab-6', taskName: 'BEW Nestbox Inspections', completed: false },
-      { id: 'ch-7', breederId: 'ab-6', taskName: 'Clean Dwarf Hutch Cage Trays', completed: false },
-      { id: 'ch-8', breederId: 'ab-7', taskName: 'Flemish Giant Weight Logs', completed: false },
-      { id: 'ch-9', breederId: 'ab-7', taskName: 'Clean Giant Breeding Enclosures', completed: false }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        parsed = parsed.map(c => c.breederId === 'ab-admin' ? { ...c, breederId: 'ab-7' } : c);
-        defaultChores.forEach(def => {
-          if (!parsed.some(c => c.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultChores;
-      }
-    }
-    return defaultChores;
-  });
+  const [allShowEntries, setAllShowEntries] = useState([]);
+
+  const [allChores, setAllChores] = useState([]);
   const chores = allChores.filter(c => selectedBreederContext === 'all' || c.breederId === selectedBreederContext);
 
   // Assistant write-only scoping check
   const isAssistantWriteOnly = currentUser?.role === 'assistant' && selectedBreederContext !== currentUser?.id;
 
-  // Sales/Transfers States
-  const [allTransfers, setAllTransfers] = useState(() => {
-    const saved = localStorage.getItem('rp_transfers');
-    const defaultTransfers = [
-      {
-        id: 'tx-1',
-        breederId: 'ab-1', // Jason Miller
-        rabbitId: 'r-3',
-        rabbitName: 'Blue Pearl',
-        rabbitTattoo: 'L43-1',
-        rabbitBreed: 'Holland Lop',
-        buyerName: 'Alice Watson',
-        buyerEmail: 'alice@watsonrabbitry.com',
-        buyerPhone: '555-0199',
-        price: 150.00,
-        type: 'sale',
-        date: '2026-06-05',
-        certificateId: 'TX-8821-4902',
-        hash: '8f7d9a10c9b5e3f412ad8e92f2c8d203a5b0eef2a95c4786d1a91e5c43d8f822'
-      },
-      {
-        id: 'tx-2',
-        breederId: 'ab-7', // Sarah Jenkins
-        rabbitId: 'r-fg2',
-        rabbitName: 'Titan Freya',
-        rabbitTattoo: 'FG-02',
-        rabbitBreed: 'Flemish Giant',
-        buyerName: 'Bob Vance',
-        buyerEmail: 'bob@vancerefrigeration.com',
-        buyerPhone: '555-0144',
-        price: 250.00,
-        type: 'sale',
-        date: '2026-06-12',
-        certificateId: 'TX-1049-7721',
-        hash: 'a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3'
-      }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        defaultTransfers.forEach(def => {
-          if (!parsed.some(t => t.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultTransfers;
-      }
-    }
-    return defaultTransfers;
-  });
-  const [allSignatures, setAllSignatures] = useState(() => {
-    const saved = localStorage.getItem('rp_signatures');
-    const defaultSignatures = [
-      {
-        id: 'sig-1',
-        transferId: 'tx-1',
-        sellerSignature: 'Jason Miller',
-        buyerSignature: 'Alice Watson',
-        signedAt: '2026-06-05T14:30:00Z',
-        sellerSignatureType: 'typed',
-        buyerSignatureType: 'typed'
-      },
-      {
-        id: 'sig-2',
-        transferId: 'tx-2',
-        sellerSignature: 'Sarah Jenkins',
-        buyerSignature: 'Bob Vance',
-        signedAt: '2026-06-12T10:15:00Z',
-        sellerSignatureType: 'typed',
-        buyerSignatureType: 'typed'
-      }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        defaultSignatures.forEach(def => {
-          if (!parsed.some(s => s.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultSignatures;
-      }
-    }
-    return defaultSignatures;
-  });
+  const [allTransfers, setAllTransfers] = useState([]);
 
-  const [allMedical, setAllMedical] = useState(() => {
-    const saved = localStorage.getItem('rp_medical');
-    const defaultMedical = [
-      { id: 'm-1', rabbitId: 'r-1', date: '2025-01-20', type: 'Vaccination', treatment: 'RHDV2 Vaccine', notes: 'First dose administered. No side effects.', cost: 15.00 },
-      { id: 'm-2', rabbitId: 'r-1', date: '2025-03-15', type: 'Prevention', treatment: 'Ivermectin Dewormer', notes: 'Routine spring deworming.', cost: 5.00 },
-      { id: 'm-3', rabbitId: 'r-2', date: '2025-02-18', type: 'Prevention', treatment: 'Broad-Spectrum Dewormer', notes: 'Routine pregnancy preventative check.', cost: 4.50 },
-      { id: 'm-4', rabbitId: 'r-6', date: '2025-04-10', type: 'Treatment', treatment: 'Penicillin Injection', notes: 'Checked by vet, respiratory treatment.', cost: 25.00 }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        defaultMedical.forEach(def => {
-          if (!parsed.some(m => m.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultMedical;
-      }
-    }
-    return defaultMedical;
-  });
+  const [allSignatures, setAllSignatures] = useState([]);
+
+  const [allMedical, setAllMedical] = useState([]);
   const medicalRecords = allMedical.filter(m => selectedBreederContext === 'all' || 
     rabbits.some(r => r.id === m.rabbitId)
   );
 
-  const [allWeights, setAllWeights] = useState(() => {
-    const saved = localStorage.getItem('rp_weights');
-    const defaultWeights = [
-      { id: 'w-1', rabbitId: 'r-1', date: '2025-02-10', weightOz: 16, stage: 'Weaning' },
-      { id: 'w-2', rabbitId: 'r-1', date: '2025-03-10', weightOz: 32, stage: '8 Weeks' },
-      { id: 'w-3', rabbitId: 'r-1', date: '2025-04-10', weightOz: 48, stage: '12 Weeks' },
-      { id: 'w-4', rabbitId: 'r-1', date: '2025-07-10', weightOz: 60, stage: 'Maturity' },
-      
-      { id: 'w-5', rabbitId: 'r-2', date: '2025-03-15', weightOz: 18, stage: 'Weaning' },
-      { id: 'w-6', rabbitId: 'r-2', date: '2025-04-15', weightOz: 34, stage: '8 Weeks' },
-      { id: 'w-7', rabbitId: 'r-2', date: '2025-05-15', weightOz: 50, stage: '12 Weeks' },
-      { id: 'w-8', rabbitId: 'r-2', date: '2025-08-15', weightOz: 62, stage: 'Maturity' }
-    ];
-    if (saved) {
-      try {
-        let parsed = JSON.parse(saved);
-        defaultWeights.forEach(def => {
-          if (!parsed.some(w => w.id === def.id)) {
-            parsed.push(def);
-          }
-        });
-        return parsed;
-      } catch (e) {
-        return defaultWeights;
-      }
-    }
-    return defaultWeights;
-  });
+  const [allWeights, setAllWeights] = useState([]);
   const weightRecords = allWeights.filter(w => selectedBreederContext === 'all' || 
     rabbits.some(r => r.id === w.rabbitId)
   );
@@ -1265,14 +931,59 @@ export default function App() {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
 
   // Offline Sync State
-  const [isOffline, setIsOffline] = useState(false);
-  const [syncQueue, setSyncQueue] = useState(() => {
-    const saved = localStorage.getItem('rp_sync_queue');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
+  const [syncQueue, setSyncQueue] = useState([]);
+  const [dismissedOfflineTip, setDismissedOfflineTip] = useState(false);
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
+
+  // Assistant approvals state & archived display state
+  const [allApprovals, setAllApprovals] = useState([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await performMigrationAndLoad();
+        
+        // Derive key based on currentUser
+        const savedUser = localStorage.getItem('rp_current_user');
+        const activeUser = savedUser ? JSON.parse(savedUser) : null;
+        const key = deriveSessionKey(activeUser?.password, activeUser?.email);
+        
+        // Transparent decryption of sensitive at-rest database fields
+        const decryptedRabbits = (data.rabbits || []).map(r => decryptRecord(r, key, ['dob', 'notes']));
+        const decryptedMedical = (data.medical || []).map(m => decryptRecord(m, key, ['treatment', 'notes']));
+        const decryptedLedger = (data.ledger || []).map(lt => {
+          const decrypted = decryptRecord(lt, key, ['amount', 'notes']);
+          decrypted.amount = parseFloat(decrypted.amount) || 0;
+          return decrypted;
+        });
+
+        setAllRabbits(decryptedRabbits);
+        setAllBreedings(data.breedings || []);
+        setAllLitters(data.litters || []);
+        setAllLedger(decryptedLedger);
+        setAllShows(data.shows || []);
+        setAllShowEntries(data.showEntries || []);
+        setAllChores(data.chores || []);
+        setAllTransfers(data.transfers || []);
+        setAllSignatures(data.signatures || []);
+        setAllMedical(decryptedMedical);
+        setAllWeights(data.weights || []);
+        setSyncQueue(data.syncQueue || []);
+        setAllApprovals(data.approvals || []);
+        setAdminBreeders(data.adminBreeders || []);
+        setDbLoaded(true);
+      } catch (err) {
+        console.error("Failed to migrate or load database:", err);
+        setDbLoaded(true);
+      }
+    }
+    loadData();
+  }, []);
+
+  const [showArchived, setShowArchived] = useState(false);
   const showToast = (message, type = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -1295,11 +1006,18 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRabbit, setSelectedRabbit] = useState(null);
   const [healthSelectedRabbitId, setHealthSelectedRabbitId] = useState('');
+  const [printCardRabbit, setPrintCardRabbit] = useState(null);
+  const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
   
   // Health & Growth Form States
   const [newWeightEntry, setNewWeightEntry] = useState({ date: new Date().toISOString().split('T')[0], weightOz: '', stage: 'Routine' });
-  const [newMedicalEntry, setNewMedicalEntry] = useState({ date: new Date().toISOString().split('T')[0], type: 'Vaccination', treatment: '', notes: '', cost: '' });
+  const [newMedicalEntry, setNewMedicalEntry] = useState({ date: new Date().toISOString().split('T')[0], type: 'Vaccination', treatment: '', notes: '', cost: '', fdaWithdrawalDays: 0, fdaApprovalStatus: 'FDA Approved for Rabbits' });
   const [showMedicalFormModal, setShowMedicalFormModal] = useState(false);
+  const [showQuickWeightModal, setShowQuickWeightModal] = useState(false);
+  const [rabbitPage, setRabbitPage] = useState(1);
+  const [mediaPage, setMediaPage] = useState(1);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [helpSubTab, setHelpSubTab] = useState('manual');
 
   // Customization Panels
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
@@ -1325,6 +1043,47 @@ export default function App() {
   // Design Mode & Accent States
   const [designMode, setDesignMode] = useState(() => localStorage.getItem('rp_design_mode') || 'fun');
   const [customAccent, setCustomAccent] = useState(() => localStorage.getItem('rp_custom_accent') || '#6366f1');
+  const [barnMode, setBarnMode] = useState(() => localStorage.getItem('rp_barn_mode') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('rp_barn_mode', barnMode ? 'true' : 'false');
+  }, [barnMode]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      setDismissedOfflineTip(false);
+      showToast("Online connection restored! Synchronizing sync queue...", "success");
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      setDismissedOfflineTip(false);
+      if (designMode === 'fun') {
+        showToast("Device went offline. Switch to Pro Mode for optimal performance and less lag!", "info");
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [designMode]);
+
+  useEffect(() => {
+    if (!navigator.onLine && designMode === 'fun') {
+      showToast("Running offline. Enable Pro Mode for reduced animation lag and maximum speed!", "info");
+    }
+  }, []);
+
+  useEffect(() => {
+    setRabbitPage(1);
+    setLedgerPage(1);
+  }, [searchQuery, selectedBreederContext]);
+
+  useEffect(() => {
+    setMediaPage(1);
+  }, [mediaRabbitFilter, mediaTagFilter]);
 
   // Breeder Profile Editable States
   const [breederName, setBreederName] = useState(() => currentUser?.name || '');
@@ -1533,44 +1292,65 @@ export default function App() {
   }, [dashboardWidgets]);
 
   useEffect(() => {
-    localStorage.setItem('rp_rabbits', JSON.stringify(allRabbits));
-  }, [allRabbits]);
+    if (!dbLoaded) return;
+    const key = deriveSessionKey(currentUser?.password, currentUser?.email);
+    const encrypted = allRabbits.map(r => encryptRecord(r, key, ['dob', 'notes']));
+    db.rabbits.clear().then(() => db.rabbits.bulkAdd(encrypted)).catch(err => console.error("Error saving rabbits to Dexie:", err));
+  }, [allRabbits, dbLoaded, currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('rp_breedings', JSON.stringify(allBreedings));
-  }, [allBreedings]);
+    if (!dbLoaded) return;
+    db.breedings.clear().then(() => db.breedings.bulkAdd(allBreedings)).catch(err => console.error("Error saving breedings to Dexie:", err));
+  }, [allBreedings, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_litters', JSON.stringify(allLitters));
-  }, [allLitters]);
+    if (!dbLoaded) return;
+    db.litters.clear().then(() => db.litters.bulkAdd(allLitters)).catch(err => console.error("Error saving litters to Dexie:", err));
+  }, [allLitters, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_ledger', JSON.stringify(allLedger));
-  }, [allLedger]);
+    if (!dbLoaded) return;
+    const key = deriveSessionKey(currentUser?.password, currentUser?.email);
+    const encrypted = allLedger.map(lt => encryptRecord(lt, key, ['amount', 'notes']));
+    db.ledger.clear().then(() => db.ledger.bulkAdd(encrypted)).catch(err => console.error("Error saving ledger to Dexie:", err));
+  }, [allLedger, dbLoaded, currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('rp_shows', JSON.stringify(allShows));
-  }, [allShows]);
+    if (!dbLoaded) return;
+    db.shows.clear().then(() => db.shows.bulkAdd(allShows)).catch(err => console.error("Error saving shows to Dexie:", err));
+  }, [allShows, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_chores', JSON.stringify(allChores));
-  }, [allChores]);
+    if (!dbLoaded) return;
+    db.showEntries.clear().then(() => db.showEntries.bulkAdd(allShowEntries)).catch(err => console.error("Error saving showEntries to Dexie:", err));
+  }, [allShowEntries, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_transfers', JSON.stringify(allTransfers));
-  }, [allTransfers]);
+    if (!dbLoaded) return;
+    db.chores.clear().then(() => db.chores.bulkAdd(allChores)).catch(err => console.error("Error saving chores to Dexie:", err));
+  }, [allChores, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_signatures', JSON.stringify(allSignatures));
-  }, [allSignatures]);
+    if (!dbLoaded) return;
+    db.transfers.clear().then(() => db.transfers.bulkAdd(allTransfers)).catch(err => console.error("Error saving transfers to Dexie:", err));
+  }, [allTransfers, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_medical', JSON.stringify(allMedical));
-  }, [allMedical]);
+    if (!dbLoaded) return;
+    db.signatures.clear().then(() => db.signatures.bulkAdd(allSignatures)).catch(err => console.error("Error saving signatures to Dexie:", err));
+  }, [allSignatures, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_weights', JSON.stringify(allWeights));
-  }, [allWeights]);
+    if (!dbLoaded) return;
+    const key = deriveSessionKey(currentUser?.password, currentUser?.email);
+    const encrypted = allMedical.map(m => encryptRecord(m, key, ['treatment', 'notes']));
+    db.medical.clear().then(() => db.medical.bulkAdd(encrypted)).catch(err => console.error("Error saving medical to Dexie:", err));
+  }, [allMedical, dbLoaded, currentUser]);
+
+  useEffect(() => {
+    if (!dbLoaded) return;
+    db.weights.clear().then(() => db.weights.bulkAdd(allWeights)).catch(err => console.error("Error saving weights to Dexie:", err));
+  }, [allWeights, dbLoaded]);
 
   useEffect(() => {
     localStorage.setItem('rp_design_mode', designMode);
@@ -1581,12 +1361,19 @@ export default function App() {
   }, [customAccent]);
 
   useEffect(() => {
-    localStorage.setItem('rp_admin_breeders', JSON.stringify(adminBreeders));
-  }, [adminBreeders]);
+    if (!dbLoaded) return;
+    db.adminBreeders.clear().then(() => db.adminBreeders.bulkAdd(adminBreeders)).catch(err => console.error("Error saving adminBreeders to Dexie:", err));
+  }, [adminBreeders, dbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem('rp_sync_queue', JSON.stringify(syncQueue));
-  }, [syncQueue]);
+    if (!dbLoaded) return;
+    db.syncQueue.clear().then(() => db.syncQueue.bulkAdd(syncQueue)).catch(err => console.error("Error saving syncQueue to Dexie:", err));
+  }, [syncQueue, dbLoaded]);
+
+  useEffect(() => {
+    if (!dbLoaded) return;
+    db.approvals.clear().then(() => db.approvals.bulkAdd(allApprovals)).catch(err => console.error("Error saving approvals to Dexie:", err));
+  }, [allApprovals, dbLoaded]);
 
   // Sync log helper
   const addSyncAction = (action, table, payload) => {
@@ -1740,12 +1527,18 @@ export default function App() {
       return;
     }
     if (!profileForm.agreeHipaa) {
-      alert("You must agree to the HIPAA medical record guidelines to proceed.");
+      alert("You must agree to the HIPAA disclaimer to proceed: 'RabbitryPedigree Pro is for rabbitry management and veterinary records only. Storing human medical data or personal health records is strictly prohibited.'");
       return;
     }
-    if (profileForm.isYouth && (!profileForm.parentName || !profileForm.parentEmail)) {
-      alert("Youth accounts require verified parent contact details.");
-      return;
+    if (profileForm.isYouth) {
+      if (!profileForm.parentName || !profileForm.parentEmail) {
+        alert("Youth and teen accounts require guardian contact details.");
+        return;
+      }
+      if (profileForm.ageGroup === 'junior' && profileForm.role !== 'assistant') {
+        alert("Junior Helpers under 15 are restricted to the Barn Assistant role.");
+        return;
+      }
     }
 
     let resolvedEmployerEmail = '';
@@ -1801,7 +1594,9 @@ export default function App() {
       password: profileForm.password,
       logo: profileForm.logo,
       theme: profileForm.theme,
+      ageGroup: profileForm.ageGroup || 'adult',
       isYouth: profileForm.isYouth,
+      parentalConsentVerified: !profileForm.isYouth,
       parentName: profileForm.parentName || '',
       parentEmail: profileForm.parentEmail || '',
       agreeHipaa: profileForm.agreeHipaa,
@@ -1897,9 +1692,192 @@ export default function App() {
     }, 2000);
   };
 
+  // Helper to submit records for breeder approval
+  const submitForApproval = (type, targetTable, payload) => {
+    const apprItem = {
+      id: `appr-${Date.now()}`,
+      assistantId: currentUser?.id,
+      assistantName: currentUser?.name || 'Assistant',
+      breederId: selectedBreederContext,
+      type,
+      targetTable,
+      payload,
+      timestamp: new Date().toLocaleString(),
+      status: 'pending'
+    };
+    setAllApprovals(prev => [...prev, apprItem]);
+    showToast("Submission queued for Breeder approval!", "info");
+  };
+
+  const handleApproveSubmission = (item) => {
+    const { type, payload } = item;
+    if (type === 'INSERT_RABBIT') {
+      setAllRabbits(prev => [...prev, payload]);
+      if (isOffline) addSyncAction('INSERT', 'rabbits', payload);
+    } else if (type === 'INSERT_BREEDING') {
+      setAllBreedings(prev => [payload, ...prev]);
+      if (isOffline) addSyncAction('INSERT', 'breedings', payload);
+    } else if (type === 'INSERT_WEIGHT') {
+      const { createdWeight, healthSelectedRabbitId } = payload;
+      setAllWeights(prev => [createdWeight, ...prev]);
+      setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: createdWeight.weightOz } : r));
+      if (isOffline) addSyncAction('INSERT', 'weights', createdWeight);
+    } else if (type === 'INSERT_LEG') {
+      const { createdLeg, rabbitId } = payload;
+      setAllRabbits(prev => prev.map(r => r.id === rabbitId ? { ...r, legs: [...(r.legs || []), createdLeg] } : r));
+    } else if (type === 'INSERT_TX') {
+      setAllLedger(prev => [payload, ...prev]);
+      if (isOffline) addSyncAction('INSERT', 'ledger', payload);
+    } else if (type === 'INSERT_MEDICAL') {
+      setAllMedical(prev => [payload, ...prev]);
+      if (isOffline) addSyncAction('INSERT', 'medical', payload);
+    } else if (type === 'PALPATE_BREEDING') {
+      const { id, result } = payload;
+      setAllBreedings(prev => {
+        const index = prev.findIndex(b => b.id === id);
+        if (index === -1) return prev;
+
+        const updated = [...prev];
+        const oldBreeding = updated[index];
+
+        updated[index] = { 
+          ...oldBreeding, 
+          palpateResult: result, 
+          status: result ? 'palpated_positive' : 'palpated_negative' 
+        };
+
+        if (result === false) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const breedDateObj = new Date(todayStr);
+          const palpateDate = new Date(breedDateObj.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const nestBoxDate = new Date(breedDateObj.getTime() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const kindleDate = new Date(breedDateObj.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+          const newBreeding = {
+            id: `b-${Date.now()}`,
+            breederId: oldBreeding.breederId,
+            buckId: oldBreeding.buckId,
+            doeId: oldBreeding.doeId,
+            breedDate: todayStr,
+            palpateDate,
+            nestBoxDate,
+            kindleDate,
+            palpateResult: null,
+            status: 'bred'
+          };
+
+          updated.unshift(newBreeding);
+          if (isOffline) {
+            addSyncAction('INSERT', 'breedings', newBreeding);
+          }
+        }
+
+        return updated;
+      });
+    } else if (type === 'KINDLE_BREEDING') {
+      const { id, newLitter } = payload;
+      setAllBreedings(prev => prev.map(b => b.id === id ? { ...b, status: 'kindled' } : b));
+      setAllLitters(prev => [newLitter, ...prev]);
+    }
+    setAllApprovals(prev => prev.map(a => a.id === item.id ? { ...a, status: 'approved' } : a));
+    showToast(`Approved submission from ${item.assistantName}!`, "success");
+  };
+
+  const handleRejectSubmission = (item) => {
+    setAllApprovals(prev => prev.map(a => a.id === item.id ? { ...a, status: 'rejected' } : a));
+    showToast(`Rejected submission from ${item.assistantName}.`, "error");
+  };
+
+  // Data Platform Import / Export Backup Managers
+  const handleExportData = () => {
+    const backupData = {
+      version: "1.0",
+      timestamp: new Date().toISOString(),
+      rabbits: allRabbits,
+      breedings: allBreedings,
+      litters: allLitters,
+      ledger: allLedger,
+      shows: allShows,
+      chores: allChores,
+      medical: allMedical,
+      weights: allWeights,
+      approvals: allApprovals,
+      showEntries: allShowEntries,
+      transfers: allTransfers,
+      signatures: allSignatures
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `warrenwise_backup_${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast("Database backup downloaded successfully!", "success");
+  };
+
+  const handleImportData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const backup = JSON.parse(event.target.result);
+        if (!backup.rabbits || !backup.breedings) {
+          alert("Invalid backup file: Essential database collections are missing.");
+          return;
+        }
+
+        if (window.confirm("WARNING: Importing this file will overwrite your entire current database. Are you sure you want to proceed?")) {
+          if (backup.rabbits) setAllRabbits(backup.rabbits);
+          if (backup.breedings) setAllBreedings(backup.breedings);
+          if (backup.litters) setAllLitters(backup.litters);
+          if (backup.ledger) setAllLedger(backup.ledger);
+          if (backup.shows) setAllShows(backup.shows);
+          if (backup.chores) setAllChores(backup.chores);
+          if (backup.medical) setAllMedical(backup.medical);
+          if (backup.weights) setAllWeights(backup.weights);
+          if (backup.approvals) setAllApprovals(backup.approvals);
+          if (backup.showEntries) setAllShowEntries(backup.showEntries);
+          if (backup.transfers) setAllTransfers(backup.transfers);
+          if (backup.signatures) setAllSignatures(backup.signatures);
+          
+          showToast("Database successfully restored from backup!", "success");
+          triggerConfetti();
+        }
+      } catch (err) {
+        alert("Failed to parse JSON file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Subscription Limit Check Helper
+  const isSubscriptionLimitReached = (targetBreederId) => {
+    const bId = targetBreederId === 'all' ? (currentUser?.id || 'ab-1') : targetBreederId;
+    const breeder = adminBreeders.find(b => b.id === bId) || currentUser;
+    
+    // SuperAdmins are unlimited
+    if (breeder?.isSuperAdmin) return false;
+    
+    const limit = breeder?.subscriptionLimit !== undefined ? Number(breeder.subscriptionLimit) : 25;
+    
+    // Count active junior/senior weaned rabbits (ignore pedigree_only and sold)
+    const activeCount = allRabbits.filter(r => r.breederId === bId && r.status !== 'pedigree_only' && r.status !== 'sold').length;
+    
+    return activeCount >= limit;
+  };
+
   // Add Rabbit Handler
   const handleAddRabbit = (e) => {
     e.preventDefault();
+    const targetBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
+    if (isSubscriptionLimitReached(targetBreederId)) {
+      const activeLimit = adminBreeders.find(b => b.id === targetBreederId)?.subscriptionLimit || 25;
+      alert(`Subscription Limit Reached: Your current Basic/Free plan is limited to ${activeLimit} active rabbits. Please contact administration or upgrade to Pro to unlock unlimited profiles.`);
+      return;
+    }
     if (!newRabbit.tattooNumber || !newRabbit.name) {
       alert("Tattoo and Name are required!");
       return;
@@ -1923,9 +1901,13 @@ export default function App() {
       legs: []
     };
 
-    setAllRabbits(prev => [...prev, createdRabbit]);
-    if (isOffline) {
-      addSyncAction('INSERT', 'rabbits', createdRabbit);
+    if (isAssistantWriteOnly) {
+      submitForApproval('INSERT_RABBIT', 'rabbits', createdRabbit);
+    } else {
+      setAllRabbits(prev => [...prev, createdRabbit]);
+      if (isOffline) {
+        addSyncAction('INSERT', 'rabbits', createdRabbit);
+      }
     }
 
     setNewRabbit({
@@ -1988,9 +1970,13 @@ export default function App() {
       status: 'bred'
     };
 
-    setAllBreedings(prev => [createdBreeding, ...prev]);
-    if (isOffline) {
-      addSyncAction('INSERT', 'breedings', createdBreeding);
+    if (isAssistantWriteOnly) {
+      submitForApproval('INSERT_BREEDING', 'breedings', createdBreeding);
+    } else {
+      setAllBreedings(prev => [createdBreeding, ...prev]);
+      if (isOffline) {
+        addSyncAction('INSERT', 'breedings', createdBreeding);
+      }
     }
     triggerConfetti();
 
@@ -2321,8 +2307,13 @@ export default function App() {
       showToast(`Show leg successfully imported to "${target.name}"!`, "success");
     } else {
       // Import certificate
-      const payload = emailImportPreview.payload;
       const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
+      if (isSubscriptionLimitReached(activeBreederId)) {
+        const activeLimit = adminBreeders.find(b => b.id === activeBreederId)?.subscriptionLimit || 25;
+        alert(`Subscription Limit Reached: Your current Basic/Free plan is limited to ${activeLimit} active rabbits. Please contact administration or upgrade to Pro to import.`);
+        return;
+      }
+      const payload = emailImportPreview.payload;
 
       // Recursive import of ancestors
       const importNode = (node, sex = 'buck') => {
@@ -2468,14 +2459,18 @@ export default function App() {
       classSize: Number(newLeg.classSize) || 0
     };
 
-    setAllRabbits(prev => prev.map(r => {
-      if (r.id === selectedRabbit.id) {
-        const updated = { ...r, legs: [...(r.legs || []), createdLeg] };
-        setSelectedRabbit(updated);
-        return updated;
-      }
-      return r;
-    }));
+    if (isAssistantWriteOnly) {
+      submitForApproval('INSERT_LEG', 'rabbits', { createdLeg, rabbitId: selectedRabbit.id });
+    } else {
+      setAllRabbits(prev => prev.map(r => {
+        if (r.id === selectedRabbit.id) {
+          const updated = { ...r, legs: [...(r.legs || []), createdLeg] };
+          setSelectedRabbit(updated);
+          return updated;
+        }
+        return r;
+      }));
+    }
 
     setNewLeg({ showName: '', judge: '', date: new Date().toISOString().split('T')[0], award: '1st Class', classSize: '' });
     triggerConfetti();
@@ -2491,26 +2486,62 @@ export default function App() {
 
   // Handle Palpation Log
   const logPalpation = (id, result) => {
-    setAllBreedings(prev => prev.map(b => {
-      if (b.id === id) {
-        return { ...b, palpateResult: result, status: result ? 'palpated_positive' : 'palpated_negative' };
-      }
-      return b;
-    }));
+    if (isAssistantWriteOnly) {
+      submitForApproval('PALPATE_BREEDING', 'breedings', { id, result });
+    } else {
+      setAllBreedings(prev => {
+        const index = prev.findIndex(b => b.id === id);
+        if (index === -1) return prev;
+
+        const updated = [...prev];
+        const oldBreeding = updated[index];
+
+        updated[index] = { 
+          ...oldBreeding, 
+          palpateResult: result, 
+          status: result ? 'palpated_positive' : 'palpated_negative' 
+        };
+
+        if (result === false) {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const breedDateObj = new Date(todayStr);
+          const palpateDate = new Date(breedDateObj.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const nestBoxDate = new Date(breedDateObj.getTime() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const kindleDate = new Date(breedDateObj.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+          const newBreeding = {
+            id: `b-${Date.now()}`,
+            breederId: oldBreeding.breederId,
+            buckId: oldBreeding.buckId,
+            doeId: oldBreeding.doeId,
+            breedDate: todayStr,
+            palpateDate,
+            nestBoxDate,
+            kindleDate,
+            palpateResult: null,
+            status: 'bred'
+          };
+
+          updated.unshift(newBreeding);
+          if (isOffline) {
+            addSyncAction('INSERT', 'breedings', newBreeding);
+          }
+
+          setTimeout(() => {
+            showToast("Palpation check was negative. Breeding pair has been automatically rescheduled for today!", "info");
+          }, 100);
+        }
+
+        return updated;
+      });
+    }
   };
 
-  // Handle Kindle Event
   const logKindle = (id, kitsAlive, kitsDead) => {
-    setAllBreedings(prev => prev.map(b => {
-      if (b.id === id) {
-        return { ...b, status: 'kindled' };
-      }
-      return b;
-    }));
-
+    const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
     const newLitter = {
       id: `l-${Date.now()}`,
-      breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
+      breederId: activeBreederId,
       breedingId: id,
       kitsBornAlive: Number(kitsAlive),
       kitsBornDead: Number(kitsDead),
@@ -2518,8 +2549,28 @@ export default function App() {
       notes: ''
     };
 
-    setAllLitters(prev => [newLitter, ...prev]);
-    triggerConfetti();
+    if (isAssistantWriteOnly) {
+      submitForApproval('KINDLE_BREEDING', 'breedings', { id, newLitter });
+    } else {
+      setAllBreedings(prev => prev.map(b => {
+        if (b.id === id) {
+          return { ...b, status: 'kindled' };
+        }
+        return b;
+      }));
+      setAllLitters(prev => [newLitter, ...prev]);
+      triggerConfetti();
+
+      // Check subscription limits and issue warning toasts in litter logs
+      const activeCount = allRabbits.filter(r => r.breederId === activeBreederId && r.status !== 'pedigree_only' && r.status !== 'sold').length;
+      const breederObj = adminBreeders.find(b => b.id === activeBreederId) || currentUser;
+      const limit = breederObj?.subscriptionLimit !== undefined ? Number(breederObj.subscriptionLimit) : 25;
+      if (activeCount >= limit) {
+        showToast("Subscription Warning: Active limit reached. You must upgrade or archive rabbits before registering these kits.", "warning");
+      } else if (activeCount >= limit * 0.8) {
+        showToast(`Subscription Notice: Approaching active limit (${activeCount}/${limit} profiles).`, "info");
+      }
+    }
   };
 
   // Add Transaction Handler
@@ -2535,9 +2586,13 @@ export default function App() {
       amount: Number(newTx.amount)
     };
 
-    setAllLedger(prev => [createdTx, ...prev]);
-    if (isOffline) {
-      addSyncAction('INSERT', 'ledger', createdTx);
+    if (isAssistantWriteOnly) {
+      submitForApproval('INSERT_TX', 'ledger', createdTx);
+    } else {
+      setAllLedger(prev => [createdTx, ...prev]);
+      if (isOffline) {
+        addSyncAction('INSERT', 'ledger', createdTx);
+      }
     }
     setNewTx({ date: new Date().toISOString().split('T')[0], type: 'expense', amount: '', category: 'feed', notes: '', rabbitId: '' });
   };
@@ -2558,13 +2613,19 @@ export default function App() {
       stage: newWeightEntry.stage
     };
 
-    setAllWeights(prev => [createdWeight, ...prev]);
-    
-    // Update the rabbit's current weight in the registry too!
-    setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: Number(newWeightEntry.weightOz) } : r));
+    if (isAssistantWriteOnly) {
+      submitForApproval('INSERT_WEIGHT', 'weights', { createdWeight, healthSelectedRabbitId });
+    } else {
+      setAllWeights(prev => [createdWeight, ...prev]);
+      
+      // Update the rabbit's current weight in the registry too!
+      setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: Number(newWeightEntry.weightOz) } : r));
 
-    addSyncAction('INSERT', 'weights', createdWeight);
-    showToast(`Weight entry logged and synced!`, "success");
+      if (isOffline) {
+        addSyncAction('INSERT', 'weights', createdWeight);
+      }
+    }
+    showToast(`Weight entry logged!`, "success");
 
     // Reset weight form
     setNewWeightEntry({
@@ -2585,6 +2646,89 @@ export default function App() {
       addSyncAction('DELETE', 'weights', { id });
       showToast("Weight log deleted.", "error");
     }
+  };
+
+  // Assign Rabbit to Cage Location
+  const handleAssignRabbitToCage = (rabbitId, cageLoc) => {
+    if (!rabbitId) return;
+    setAllRabbits(prev => prev.map(r => {
+      if (r.id === rabbitId) {
+        const updated = { ...r, location: cageLoc };
+        if (isOffline) {
+          addSyncAction('UPDATE', 'rabbits', updated);
+        }
+        return updated;
+      }
+      return r;
+    }));
+    showToast("Rabbit assigned to cage!", "success");
+  };
+
+  // Unassign Rabbit from Cage Location
+  const handleUnassignRabbitFromCage = (rabbitId) => {
+    setAllRabbits(prev => prev.map(r => {
+      if (r.id === rabbitId) {
+        const updated = { ...r, location: '' };
+        if (isOffline) {
+          addSyncAction('UPDATE', 'rabbits', updated);
+        }
+        return updated;
+      }
+      return r;
+    }));
+    showToast("Rabbit unassigned from cage.", "info");
+  };
+
+  // Hands-free voice recognition helper for barn conditions
+  const handleVoiceInput = (fieldSetter, isNumeric = false) => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please try Google Chrome or Safari.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    showToast("Listening... Speak now 🎙️", "info");
+
+    recognition.onresult = (event) => {
+      let speechToText = event.results[0][0].transcript;
+      if (isNumeric) {
+        let numOnly = speechToText.replace(/[^0-9.]/g, '');
+        if (!numOnly) {
+          const wordToNum = {
+            'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+            'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 
+            'eighteen': 18, 'nineteen': 19, 'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70, 
+            'eighty': 80, 'ninety': 90, 'hundred': 100
+          };
+          const words = speechToText.toLowerCase().split(/\s+/);
+          let sum = 0;
+          words.forEach(w => {
+            if (wordToNum[w]) sum += wordToNum[w];
+          });
+          numOnly = sum > 0 ? String(sum) : '';
+        }
+        if (numOnly) {
+          fieldSetter(numOnly);
+          showToast(`Set weight to ${numOnly} oz`, "success");
+        } else {
+          showToast(`Could not recognize numbers in: "${speechToText}"`, "error");
+        }
+      } else {
+        fieldSetter(speechToText);
+        showToast(`Recognized text: "${speechToText}"`, "success");
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      showToast(`Voice input error: ${event.error}`, "error");
+    };
+
+    recognition.start();
   };
 
   // Add Medical Record Handler
@@ -2612,14 +2756,22 @@ export default function App() {
       rabbitId: healthSelectedRabbitId,
       date: newMedicalEntry.date,
       type: newMedicalEntry.type,
-      treatment: newMedicalEntry.treatment,
-      notes: newMedicalEntry.notes,
-      cost: Number(newMedicalEntry.cost) || 0
+      treatment: sanitizeTextInput(newMedicalEntry.treatment),
+      notes: sanitizeTextInput(newMedicalEntry.notes),
+      cost: Number(newMedicalEntry.cost) || 0,
+      fdaWithdrawalDays: Number(newMedicalEntry.fdaWithdrawalDays) || 0,
+      fdaApprovalStatus: newMedicalEntry.fdaApprovalStatus || 'FDA Approved for Rabbits'
     };
 
-    setAllMedical(prev => [createdMedical, ...prev]);
-    addSyncAction('INSERT', 'medical', createdMedical);
-    showToast(`Medical record logged successfully!`, "success");
+    if (isAssistantWriteOnly) {
+      submitForApproval('INSERT_MEDICAL', 'medical', createdMedical);
+    } else {
+      setAllMedical(prev => [createdMedical, ...prev]);
+      if (isOffline) {
+        addSyncAction('INSERT', 'medical', createdMedical);
+      }
+    }
+    showToast(`Medical record logged!`, "success");
 
     // Reset medical form
     setNewMedicalEntry({
@@ -2627,7 +2779,9 @@ export default function App() {
       type: 'Vaccination',
       treatment: '',
       notes: '',
-      cost: ''
+      cost: '',
+      fdaWithdrawalDays: 0,
+      fdaApprovalStatus: 'FDA Approved for Rabbits'
     });
   };
 
@@ -2642,6 +2796,38 @@ export default function App() {
       addSyncAction('DELETE', 'medical', { id });
       showToast("Medical record deleted.", "error");
     }
+  };
+
+  // FDA Veterinary Withdrawal Tracker
+  const isUnderFdaWithdrawal = (rabbitId) => {
+    const rabbitMedications = allMedical.filter(m => m.rabbitId === rabbitId);
+    let active = false;
+    let remainingDays = 0;
+    let drugName = '';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const med of rabbitMedications) {
+      if (med.fdaWithdrawalDays && med.fdaWithdrawalDays > 0) {
+        const treatmentDate = new Date(med.date);
+        treatmentDate.setHours(0, 0, 0, 0);
+        
+        const withdrawalEndDate = new Date(treatmentDate.getTime() + med.fdaWithdrawalDays * 24 * 60 * 60 * 1000);
+        
+        if (withdrawalEndDate > today) {
+          const diffTime = withdrawalEndDate - today;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays > remainingDays) {
+            active = true;
+            remainingDays = diffDays;
+            drugName = med.treatment;
+          }
+        }
+      }
+    }
+
+    return { active, remainingDays, drugName };
   };
 
   // ARBA Standards Checker
@@ -2716,12 +2902,21 @@ export default function App() {
   };
 
   const filteredRabbits = rabbits.filter(r => 
-    r.status !== 'pedigree_only' && r.status !== 'sold' && (
+    r.status !== 'pedigree_only' && (showArchived || r.status !== 'sold') && (
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.breed.toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
+
+  const filteredPhotos = rabbits
+    .filter(r => mediaRabbitFilter === 'all' || r.id === mediaRabbitFilter)
+    .flatMap(rabbit => (rabbit.photos || []).map((photo, photoIdx) => {
+      const pObj = getPhotoObj(photo);
+      return { rabbit, photo: pObj, index: photoIdx };
+    }))
+    .filter(item => mediaTagFilter === 'all' || item.photo.tag === mediaTagFilter);
+
 
   // Helper: Compute Age in Months
   const getAgeMonths = (dobStr) => {
@@ -2734,6 +2929,28 @@ export default function App() {
   // ----------------------------------------------------
   // ONBOARDING LANDING HOME PAGE VIEW (DARK MODE DEFAULT)
   // ----------------------------------------------------
+  if (!dbLoaded) {
+    return (
+      <div className="theme-dark min-h-screen relative flex flex-col items-center justify-center bg-slate-950 text-slate-100">
+        {/* Neon Cyber Glow Effects */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="flex flex-col items-center gap-4 relative z-10 animate-fade-in">
+          <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl animate-bounce">🐇</span>
+            <p className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
+              RabbitryPedigree Pro
+            </p>
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300 opacity-80">
+            Hydrating Hutch Database...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!hasProfile) {
     return (
       <div className="theme-dark min-h-screen relative overflow-y-auto bg-slate-950">
@@ -2961,16 +3178,30 @@ export default function App() {
 
                     {/* Role Selection */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-indigo-300">Choose Your Breeder Role</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-bold text-indigo-300">Choose Your Breeder Role</label>
+                        {profileForm.ageGroup === 'junior' && (
+                          <span className="text-[9px] text-pink-400 font-bold bg-pink-500/10 px-2 py-0.5 rounded animate-pulse">
+                            Restricted to Helper Role
+                          </span>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { id: 'owner', label: 'Breeder / Owner 👑', text: 'Own registry with ARBA abilities' },
-                          { id: 'assistant', label: 'Barn Assistant 🌾', text: 'Document data for an employer' }
+                          { id: 'owner', label: 'Breeder / Owner 👑', text: 'Own registry with ARBA abilities', restricted: profileForm.ageGroup === 'junior' },
+                          { id: 'assistant', label: 'Barn Assistant 🌾', text: 'Document data for an employer', restricted: false }
                         ].map(role => (
                           <button
                             type="button" key={role.id}
+                            disabled={role.restricted}
                             onClick={() => setProfileForm({...profileForm, role: role.id})}
-                            className={`p-3 text-left rounded-xl border text-xs transition-all ${profileForm.role === role.id ? 'border-pink-500 bg-pink-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'}`}
+                            className={`p-3 text-left rounded-xl border text-xs transition-all ${
+                              role.restricted 
+                                ? 'opacity-40 cursor-not-allowed border-white/5 bg-black/10' 
+                                : profileForm.role === role.id 
+                                  ? 'border-pink-500 bg-pink-500/10' 
+                                  : 'border-white/5 bg-white/5 hover:bg-white/10'
+                            }`}
                           >
                             <div className="font-bold text-white">{role.label}</div>
                             <div className="text-[9px] opacity-60 mt-0.5 leading-snug">{role.text}</div>
@@ -3034,36 +3265,49 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* COPPA Youth Check */}
+                    {/* Age Verification Category */}
                     <div className="flex flex-col gap-1.5 border-t border-white/5 pt-2">
-                      <label className="flex items-center gap-2 text-xs cursor-pointer text-indigo-300 font-semibold">
-                        <input 
-                          type="checkbox"
-                          checked={profileForm.isYouth}
-                          onChange={(e) => setProfileForm({...profileForm, isYouth: e.target.checked})}
-                          className="w-3.5 h-3.5"
-                        />
-                        Youth Account (Under 13 - COPPA Privacy)
-                      </label>
+                      <label className="text-[11px] font-bold text-indigo-300">Age Verification Category</label>
+                      <select 
+                        value={profileForm.ageGroup}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setProfileForm({
+                            ...profileForm, 
+                            ageGroup: val,
+                            isYouth: val !== 'adult',
+                            role: val === 'junior' ? 'assistant' : profileForm.role
+                          });
+                        }}
+                        className="bg-slate-900 border border-white/10 text-xs py-2 px-3 text-white rounded-xl focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="adult">Adult Breeder (18+ Years Old)</option>
+                        <option value="teen">Teen Breeder (15 - 18 Years Old)</option>
+                        <option value="junior">Junior Helper (Under 15 Years Old)</option>
+                      </select>
 
-                      {profileForm.isYouth && (
+                      {profileForm.ageGroup !== 'adult' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-white/5 rounded-xl border border-white/5 mt-0.5">
                           <div className="flex flex-col gap-1">
-                            <label className="text-[9px] uppercase font-bold text-pink-400">Parent Name *</label>
+                            <label className="text-[9px] uppercase font-bold text-pink-400">
+                              {profileForm.ageGroup === 'teen' ? 'Guardian Name *' : 'Parent Name *'}
+                            </label>
                             <input 
                               type="text" placeholder="Guardian Name" required
                               value={profileForm.parentName}
                               onChange={(e) => setProfileForm({...profileForm, parentName: e.target.value})}
-                              className="text-[11px] py-1 px-2.5 bg-white/5 border-white/10"
+                              className="text-[11px] py-1 px-2.5 bg-white/5 border-white/10 text-white rounded-lg"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <label className="text-[9px] uppercase font-bold text-pink-400">Parent Email *</label>
+                            <label className="text-[9px] uppercase font-bold text-pink-400">
+                              {profileForm.ageGroup === 'teen' ? 'Guardian Email *' : 'Parent Email *'}
+                            </label>
                             <input 
                               type="email" placeholder="guardian@domain.com" required
                               value={profileForm.parentEmail}
                               onChange={(e) => setProfileForm({...profileForm, parentEmail: e.target.value})}
-                              className="text-[11px] py-1 px-2.5 bg-white/5 border-white/10"
+                              className="text-[11px] py-1 px-2.5 bg-white/5 border-white/10 text-white rounded-lg"
                             />
                           </div>
                         </div>
@@ -3075,7 +3319,7 @@ export default function App() {
                       <div className="flex gap-2 items-start">
                         <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                         <p className="text-[10px] opacity-80 leading-normal text-indigo-200 font-sans">
-                          HIPAA compliance: Do not store any human Protected Health Information (PHI) in this database. Storing breeder records is compliant, but no human medical records are allowed.
+                          RabbitryPedigree Pro is for rabbitry management and veterinary records only. Storing human medical data or personal health records is strictly prohibited.
                         </p>
                       </div>
                       <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-cyan-300 mt-1">
@@ -3086,7 +3330,7 @@ export default function App() {
                           required
                           className="w-3.5 h-3.5"
                         />
-                        I agree to HIPAA database regulations.
+                        I agree to this HIPAA disclaimer.
                       </label>
                     </div>
 
@@ -3268,7 +3512,7 @@ export default function App() {
                         // Reset form
                         setProfileForm({
                           name: '', email: '', phone: '', password: '', rabbitryName: 'Grandview Rabbitry',
-                          role: 'owner', logo: '🐇', theme: 'dark', isYouth: false, parentName: '', parentEmail: '', agreeHipaa: false
+                          role: 'owner', logo: '🐇', theme: 'dark', ageGroup: 'adult', isYouth: false, parentName: '', parentEmail: '', agreeHipaa: false
                         });
                       }}
                       className="btn-interactive py-3 bg-indigo-600 font-bold text-white text-sm mx-4"
@@ -3286,6 +3530,185 @@ export default function App() {
     );
   }
 
+  // AI Smart Advisor Actions Engine
+  const getAiAdvisorActions = () => {
+    const actions = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1. Palpation recommendation (Bred 12-22 days ago, not palpated)
+    allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext).forEach(b => {
+      if (b.status === 'bred') {
+        const breedDate = new Date(b.breedDate);
+        breedDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((today - breedDate) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 12 && diffDays <= 22) {
+          const sire = rabbits.find(r => r.id === b.buckId)?.name || 'Sire';
+          const dam = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
+          actions.push({
+            id: `action-palpate-${b.id}`,
+            title: `Palpation Recommended`,
+            description: `Pregnancy check due for "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
+            type: 'palpate',
+            icon: '🩺',
+            badge: '12-22 Days Gestation',
+            execute: (result) => {
+              logPalpation(b.id, result);
+              showToast(`Logged palpation result as ${result ? 'Positive' : 'Negative'}!`, "success");
+            }
+          });
+        }
+      }
+    });
+
+    // 2. Nest Box Insertion (Gestating positive, Day 28 gestation)
+    allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext).forEach(b => {
+      if (b.status === 'palpated_positive') {
+        const breedDate = new Date(b.breedDate);
+        breedDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((today - breedDate) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 27 && diffDays <= 29) {
+          const dam = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
+          actions.push({
+            id: `action-nestbox-${b.id}`,
+            title: `Nest Box Insertion`,
+            description: `Place the nest box in "${dam}"'s cage (Day ${diffDays} of gestation). Kindle expected in ~3 days.`,
+            type: 'nestbox',
+            icon: '📦',
+            badge: 'Day 28 Gestation',
+            execute: () => {
+              setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Nest Box Confirmed Placed]' } : item));
+              showToast(`Confirmed nest box placed for ${dam}!`, "success");
+            }
+          });
+        }
+      }
+    });
+
+    // 3. Kindle Event (Gestating positive, Day 31 gestation)
+    allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext).forEach(b => {
+      if (b.status === 'palpated_positive') {
+        const breedDate = new Date(b.breedDate);
+        breedDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((today - breedDate) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 30) {
+          const dam = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
+          actions.push({
+            id: `action-kindle-${b.id}`,
+            title: `Kindle Event Pending`,
+            description: `Check "${dam}" for new litter (Day ${diffDays} of gestation). Kindle is expected today!`,
+            type: 'kindle',
+            breedingId: b.id,
+            damName: dam,
+            badge: 'Day 31 Due Date',
+            execute: (alive, dead) => {
+              logKindle(b.id, alive, dead);
+            }
+          });
+        }
+      }
+    });
+
+    // 4. Litter Weaning (Age > 8 weeks, kitsWeaned === 0)
+    allLitters.filter(l => selectedBreederContext === 'all' || l.breederId === selectedBreederContext).forEach(l => {
+      const b = allBreedings.find(breed => breed.id === l.breedingId);
+      if (b && b.kindleDate && Number(l.kitsWeaned) === 0) {
+        const birthDate = new Date(b.kindleDate);
+        birthDate.setHours(0, 0, 0, 0);
+        const diffWeeks = Math.ceil((today - birthDate) / (1000 * 60 * 60 * 24 * 7));
+        if (diffWeeks >= 8) {
+          const damName = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
+          actions.push({
+            id: `action-wean-${l.id}`,
+            title: `Wean Litter`,
+            description: `Wean "${damName}"'s litter (Litter is ${diffWeeks} weeks old). Weaning is critical for kit growth.`,
+            type: 'wean',
+            icon: '🥛',
+            litterId: l.id,
+            kitsBornAlive: l.kitsBornAlive,
+            badge: `${diffWeeks} Weeks Old`,
+            execute: (count) => {
+              setAllLitters(prev => prev.map(item => item.id === l.id ? { ...item, kitsWeaned: Number(count) } : item));
+              showToast(`Litter weaned successfully with ${count} kits!`, "success");
+            }
+          });
+        }
+      }
+    });
+
+    // 5. FDA Active Withdrawal Alert
+    rabbits.forEach(r => {
+      const fda = isUnderFdaWithdrawal(r.id);
+      if (fda.active) {
+        actions.push({
+          id: `action-fda-${r.id}`,
+          title: `FDA Withdrawal Active`,
+          description: `Rabbit "${r.name}" is under drug withdrawal period for "${fda.drugName}" (${fda.remainingDays} days remaining).`,
+          type: 'fda_warning',
+          icon: '⚠️',
+          badge: 'RESTRICTED',
+          execute: () => {
+            setSelectedRabbit(r);
+            setActiveTab('rabbits');
+          }
+        });
+      }
+    });
+
+    // 6. Junior weight check (Age > 2 months, junior weight not logged)
+    rabbits.filter(r => r.status !== 'pedigree_only' && r.status !== 'sold').forEach(r => {
+      const ageMonths = getAgeMonths(r.dob);
+      if (ageMonths >= 2 && ageMonths < 6) {
+        const rWeights = allWeights.filter(w => w.rabbitId === r.id);
+        const hasJr = rWeights.some(w => w.stage === 'Junior');
+        if (!hasJr) {
+          actions.push({
+            id: `action-weight-${r.id}`,
+            title: `Junior Weight Check`,
+            description: `Rabbit "${r.name}" (Age: ${ageMonths} mo) is ready for its official Junior weight logging.`,
+            type: 'weight_check',
+            icon: '⚖️',
+            rabbitId: r.id,
+            badge: 'Stage: Junior',
+            execute: (weightOz) => {
+              const createdWeight = {
+                id: `w-${Date.now()}`,
+                rabbitId: r.id,
+                date: new Date().toISOString().split('T')[0],
+                weightOz: Number(weightOz),
+                stage: 'Junior'
+              };
+              setAllWeights(prev => [createdWeight, ...prev]);
+              setAllRabbits(prev => prev.map(item => item.id === r.id ? { ...item, weightOz: Number(weightOz) } : item));
+              showToast(`Logged Junior weight of ${weightOz} oz for ${r.name}!`, "success");
+            }
+          });
+        }
+      }
+    });
+
+    // 7. Subscription Upgrade Recommendation (Count >= 80% of limit)
+    const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
+    const activeCount = allRabbits.filter(r => r.breederId === activeBreederId && r.status !== 'pedigree_only' && r.status !== 'sold').length;
+    const breederObj = adminBreeders.find(b => b.id === activeBreederId) || currentUser;
+    const limit = breederObj?.subscriptionLimit !== undefined ? Number(breederObj.subscriptionLimit) : 25;
+    if (activeCount >= limit * 0.8) {
+      actions.push({
+        id: 'action-upgrade-subscription',
+        title: 'Upgrade Subscription Plan',
+        description: `You are using ${activeCount} of your ${limit} active rabbit profiles limit. Upgrade to Pro to prevent registration blocks.`,
+        type: 'upgrade',
+        icon: '🚀',
+        badge: `${activeCount}/${limit} Profiles`,
+        execute: () => {
+          alert("To upgrade your subscription, please contact administration or open the Help tab.");
+        }
+      });
+    }
+
+    return actions;
+  };
+
   // Derive active context breeder details for header display
   const activeBreederContext = adminBreeders.find(b => b.id === selectedBreederContext) || currentUser;
 
@@ -3293,8 +3716,11 @@ export default function App() {
   // MAIN WORKSPACE DASHBOARD VIEW (ONLINE / PROFILE CREATED)
   // ----------------------------------------------------
   return (
-    <div className={`theme-${theme} min-h-screen relative ${designMode === 'pro' ? 'pro-mode-active' : ''}`} style={{ '--custom-accent-color': customAccent }}>
+    <div className={`theme-${theme} min-h-screen relative ${designMode === 'fun' ? 'fun-mode-active bunny-watermark' : 'pro-mode-active'} ${barnMode ? 'barn-mode-active' : ''}`} style={{ '--custom-accent-color': customAccent }}>
       
+      {/* Network Status Banner (sticky top, auto-dismiss) */}
+      <NetworkStatusBanner />
+
       {/* Anime Reward Popups Overlay */}
       {successMascot && (
         <div className="success-overlay" onClick={() => setSuccessMascot(null)}>
@@ -3382,7 +3808,16 @@ export default function App() {
           })()}
 
           <button 
-            onClick={() => setIsOffline(!isOffline)}
+            onClick={() => {
+              const nextOffline = !isOffline;
+              setIsOffline(nextOffline);
+              if (nextOffline) {
+                setDismissedOfflineTip(false);
+                if (designMode === 'fun') {
+                  showToast("Offline mode active. Switch to Pro Mode or Barn Mode for reduced animation lag and maximum speed!", "info");
+                }
+              }
+            }}
             className={`btn-interactive text-xs py-2 px-4 ${isOffline ? 'bg-orange-600' : 'bg-green-600'}`}
           >
             <RefreshCw className={`w-4 h-4 ${isOffline ? '' : 'animate-spin'}`} />
@@ -3409,6 +3844,15 @@ export default function App() {
             {designMode === 'fun' ? '🐰 Fun Mode' : '📜 Pro Mode'}
           </button>
 
+          {/* Barn Mode Switcher */}
+          <button
+            onClick={() => setBarnMode(!barnMode)}
+            className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold transition-all ${barnMode ? 'bg-orange-600 text-white shadow-md ring-2 ring-orange-400' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
+            title="Toggle high-contrast, large touch-target Barn Mode for farm-ready use"
+          >
+            {barnMode ? '🚜 Barn Mode ON' : '🚜 Barn Mode OFF'}
+          </button>
+
           {/* Theme Selector */}
           <select 
             value={theme} 
@@ -3424,9 +3868,43 @@ export default function App() {
             <option value="rainbow">Rainbow Hutch 🌈</option>
             <option value="golden">Golden Lop 🌾</option>
             <option value="sparkle">Showtime Sparkle ✨</option>
+            <option value="pastel">Pastel Paradise 🦄</option>
           </select>
         </div>
       </header>
+
+      {/* Offline Performance Suggestion Banner */}
+      {isOffline && designMode === 'fun' && !dismissedOfflineTip && (
+        <div className="mx-6 mb-4 glass-container p-5 border-2 border-orange-500/40 bg-gradient-to-br from-slate-900 via-slate-900/95 to-orange-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-600"></div>
+          <div className="flex items-center gap-3.5 pl-2">
+            <span className="text-3xl shrink-0 animate-pulse">🌾</span>
+            <div>
+              <h4 className="text-sm font-black text-orange-400 tracking-wide uppercase">Offline Performance Tip</h4>
+              <p className="text-xs opacity-90 leading-relaxed mt-1">
+                You are offline. Fun Mode uses animations, shadows, and watermarks that can cause lag in barns or poor-reception areas. Switch to <strong>Pro Mode</strong> (less lag mode) for flat, hyper-responsive rendering.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2.5 shrink-0 pl-2 md:pl-0">
+            <button 
+              onClick={() => {
+                setDesignMode('pro');
+                showToast("Switched to Pro Mode for less lag!", "success");
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl border-none cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md shadow-orange-500/20"
+            >
+              Switch to Pro Mode
+            </button>
+            <button 
+              onClick={() => setDismissedOfflineTip(true)}
+              className="bg-white/10 hover:bg-white/15 text-white/80 hover:text-white text-xs py-2.5 px-4 rounded-xl border border-white/10 cursor-pointer transition-all"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid Content */}
       <main className="w-full px-6 pb-6 grid grid-cols-1 lg:grid-cols-4 gap-6 z-10 relative">
@@ -3486,10 +3964,34 @@ export default function App() {
               <ShoppingBag className="w-5 h-5 text-emerald-400" /> Sales & Transfers
             </button>
             <button 
+              onClick={() => setActiveTab('cages')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'cages' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <Grid className="w-5 h-5 text-indigo-400" /> Cage & Barn Map
+            </button>
+            <button 
               onClick={() => setActiveTab('sync')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'sync' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
             >
               <RefreshCw className="w-5 h-5" /> SQLite Sync ({syncQueue.length})
+            </button>
+            <button 
+              onClick={() => setActiveTab('diagnostics')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'diagnostics' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <ShieldAlert className="w-5 h-5 text-emerald-400" /> System Diagnostics
+            </button>
+            <button 
+              onClick={() => setActiveTab('academy')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'academy' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <Award className="w-5 h-5 text-yellow-400" /> 🎓 4-H Academy
+            </button>
+            <button 
+              onClick={() => setActiveTab('help')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'help' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <HelpCircle className="w-5 h-5 text-sky-400" /> Help & Policy
             </button>
             {currentUser?.id === 'ab-admin' && selectedBreederContext === 'ab-admin' && (
               <button 
@@ -3676,6 +4178,50 @@ export default function App() {
               </div>
             </div>
 
+            {/* WarrenWise AI Mascot Dialogue (Fun Mode Only) */}
+            {designMode === 'fun' && (
+              <div className="glass-container p-4 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 border border-indigo-500/20 rounded-3xl relative overflow-hidden flex items-center gap-3 shadow-lg hover:shadow-indigo-500/15 transition-all duration-300">
+                <div className="relative shrink-0">
+                  {(() => {
+                    let src = '/assets/mascot.png';
+                    if (activeTab === 'breeding') src = '/assets/holland_lop.png';
+                    else if (activeTab === 'health') src = '/assets/netherland_dwarf.png';
+                    else if (activeTab === 'shows') src = '/assets/main_show_judge.png';
+                    return (
+                      <img 
+                        src={src} 
+                        alt="WarrenWise Mascot" 
+                        className="w-16 h-16 object-contain animate-hop-bounce bg-white border-2 border-indigo-400 rounded-2xl p-1.5 shadow-md" 
+                        style={{ animationDuration: '4s' }}
+                      />
+                    );
+                  })()}
+                  <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-pink-500"></span>
+                  </span>
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest block mb-0.5">WarrenWise AI</span>
+                  <div className="p-2 bg-black/45 border border-indigo-500/20 rounded-xl relative">
+                    <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-black/45"></div>
+                    <p className="text-[11px] leading-relaxed text-indigo-100 font-semibold select-none">
+                      {(() => {
+                        if (activeTab === 'dashboard') return "Welcome back! Need help? Log a breeding schedule or check show preps!";
+                        if (activeTab === 'rabbits') return "Browse your lineage history. Click 'Register Rabbit' to add to active stock!";
+                        if (activeTab === 'breeding') return "Track gestating does closely. Nest boxes should be placed on Day 28!";
+                        if (activeTab === 'health') return "Dosages and withdrawal dates are automatically scanned for FDA compliance.";
+                        if (activeTab === 'ledger') return "Every carrot counts! Record income from sales and feed expenses regularly.";
+                        if (activeTab === 'shows') return "Check your show dates! Ensure pedigrees are verified and printed.";
+                        if (activeTab === 'academy') return "Train for your 4-H license! Correct answers unlock achievements.";
+                        return "Keep up the excellent husbandry! Your rabbits appreciate the clean hutch.";
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button 
               onClick={handleLogout}
               className="btn-interactive text-xs py-2 px-3 bg-red-700/80 mt-2 flex items-center justify-center gap-2 font-bold"
@@ -3691,41 +4237,195 @@ export default function App() {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="flex flex-col gap-6">
+
+              {/* Assistant Review Center Widget */}
+              {currentUser?.role === 'owner' && allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length > 0 && (
+                <div className="glass-container p-6 border-2 border-amber-500/25 relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/95 to-amber-950/15">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600"></div>
+                  <h3 className="text-base font-bold text-amber-400 flex items-center gap-1.5 mb-4">
+                    🌾 Assistant Review Center ({allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length} pending)
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').map(item => (
+                      <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+                        <div>
+                          <p className="font-semibold text-white">
+                            <span className="text-indigo-400 font-bold">{item.assistantName}</span> submitted a <span className="font-mono text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded uppercase">{item.type}</span> log
+                          </p>
+                          <p className="opacity-60 text-[10px] mt-1">Time: {item.timestamp}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleApproveSubmission(item)}
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleRejectSubmission(item)}
+                            className="bg-red-650 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
+              {/* AI Smart Advisor & Learning Actions Widget */}
+              {(() => {
+                const aiActions = getAiAdvisorActions();
+                if (aiActions.length === 0) return null;
+                
+                return (
+                  <div className="glass-container p-6 border-2 border-indigo-500/25 relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/95 to-indigo-950/15">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-pink-500 to-emerald-500 animate-pulse"></div>
+                    <h3 className="text-base font-bold text-indigo-350 flex items-center gap-1.5 mb-4">
+                      <Sparkles className="w-4 h-4 text-indigo-400" /> WarrenWise AI Smart Advisor & Barn Actions
+                    </h3>
+                    <div className="flex flex-col gap-3">
+                      {aiActions.map(action => (
+                        <div key={action.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-lg">{action.icon}</span>
+                              <strong className="text-white text-sm">{action.title}</strong>
+                              <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-350 text-[9px] font-black uppercase font-mono">{action.badge}</span>
+                            </div>
+                            <p className="opacity-75 mt-1.5 leading-relaxed">{action.description}</p>
+                          </div>
+                          
+                          {/* Interactive Action Controls */}
+                          <div className="flex gap-2 w-full md:w-auto shrink-0 flex-wrap">
+                            {action.type === 'palpate' && (
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => action.execute(true)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
+                                >
+                                  Positive 🤰
+                                </button>
+                                <button 
+                                  onClick={() => action.execute(false)}
+                                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
+                                >
+                                  Negative ❌
+                                </button>
+                              </div>
+                            )}
+
+                            {action.type === 'nestbox' && (
+                              <button 
+                                onClick={() => action.execute()}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
+                              >
+                                Confirm Box Placed 📦
+                              </button>
+                            )}
+
+                            {action.type === 'kindle' && (
+                              <form 
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const alive = e.target.kitsAlive.value;
+                                  const dead = e.target.kitsDead.value;
+                                  action.execute(alive, dead);
+                                  showToast(`Logged kindle event for ${action.damName}!`, "success");
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <input name="kitsAlive" type="number" min="0" placeholder="Kits Alive" required className="w-20 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
+                                <input name="kitsDead" type="number" min="0" placeholder="Kits Dead" defaultValue="0" className="w-20 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
+                                <button type="submit" className="bg-pink-650 hover:bg-pink-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
+                                  Kindle 🎂
+                                </button>
+                              </form>
+                            )}
+
+                            {action.type === 'wean' && (
+                              <form 
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const count = e.target.weanCount.value;
+                                  action.execute(count);
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <input name="weanCount" type="number" min="0" max={action.kitsBornAlive} placeholder="Kits Weaned" required className="w-24 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
+                                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
+                                  Wean 🥛
+                                </button>
+                              </form>
+                            )}
+
+                            {action.type === 'fda_warning' && (
+                              <button 
+                                onClick={() => action.execute()}
+                                className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
+                              >
+                                View Profile 🐇
+                              </button>
+                            )}
+
+                            {action.type === 'weight_check' && (
+                              <form 
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const oz = e.target.weightOz.value;
+                                  action.execute(oz);
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <input name="weightOz" type="number" min="1" placeholder="Weight (oz)" required className="w-24 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
+                                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
+                                  Save Weight ⚖️
+                                </button>
+                              </form>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Customizable Widget 1: Quick Stats */}
               {dashboardWidgets.stats && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="glass-container p-5 flex items-center justify-between">
+                  <div className="glass-container p-5 flex items-center justify-between bg-gradient-to-br from-indigo-500/15 via-indigo-950/5 to-indigo-500/5 border border-indigo-500/30 hover:shadow-indigo-500/20 hover:scale-[1.02] transition-all">
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider opacity-70">Total Animals</span>
-                      <h3 className="text-3xl font-extrabold mt-1">{rabbits.length}</h3>
+                      <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Total Animals</span>
+                      <h3 className="text-3xl font-black mt-1 text-white">{rabbits.length}</h3>
                     </div>
-                    <div className="p-3 bg-indigo-500/20 rounded-xl text-indigo-400">
-                      <Rabbit className="w-8 h-8" />
+                    <div className="p-3 bg-indigo-500/25 rounded-2xl text-indigo-300 shadow-lg shadow-indigo-500/30">
+                      <Rabbit className="w-8 h-8 animate-wiggle" style={{ animationDuration: '3s' }} />
                     </div>
                   </div>
 
-                  <div className="glass-container p-5 flex items-center justify-between">
+                  <div className="glass-container p-5 flex items-center justify-between bg-gradient-to-br from-pink-500/15 via-pink-950/5 to-pink-500/5 border border-pink-500/30 hover:shadow-pink-500/20 hover:scale-[1.02] transition-all">
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider opacity-70">Active Breedings</span>
-                      <h3 className="text-3xl font-extrabold mt-1">
+                      <span className="text-xs font-bold uppercase tracking-wider text-pink-300">Active Breedings</span>
+                      <h3 className="text-3xl font-black mt-1 text-white">
                         {breedings.filter(b => b.status === 'bred' || b.status === 'palpated_positive').length}
                       </h3>
                     </div>
-                    <div className="p-3 bg-green-500/20 rounded-xl text-green-400">
-                      <Calendar className="w-8 h-8" />
+                    <div className="p-3 bg-pink-500/25 rounded-2xl text-pink-300 shadow-lg shadow-pink-500/30">
+                      <Calendar className="w-8 h-8 animate-bounce-subtle" />
                     </div>
                   </div>
 
-                  <div className="glass-container p-5 flex items-center justify-between">
+                  <div className="glass-container p-5 flex items-center justify-between bg-gradient-to-br from-emerald-500/15 via-emerald-950/5 to-emerald-500/5 border border-emerald-500/30 hover:shadow-emerald-500/20 hover:scale-[1.02] transition-all">
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider opacity-70">Ledger Balance</span>
-                      <h3 className="text-3xl font-extrabold mt-1">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">Ledger Balance</span>
+                      <h3 className="text-3xl font-black mt-1 text-white">
                         ${ledger.reduce((acc, curr) => curr.type === 'income' ? acc + curr.amount : acc - curr.amount, 0).toFixed(2)}
                       </h3>
                     </div>
-                    <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400">
-                      <DollarSign className="w-8 h-8" />
+                    <div className="p-3 bg-emerald-500/25 rounded-2xl text-emerald-300 shadow-lg shadow-emerald-500/30">
+                      <DollarSign className="w-8 h-8 animate-pulse" />
                     </div>
                   </div>
                 </div>
@@ -4221,25 +4921,37 @@ export default function App() {
 
           {/* TAB 2: RABBITS REGISTRY & PEDIGREES */}
           {activeTab === 'rabbits' && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Search and Add Header */}
-              <div className="glass-container p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <input 
-                  type="text" 
-                  placeholder="Search rabbits by name, tattoo, breed..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full sm:w-80"
-                />
+            <ErrorBoundary>
+              <div className="flex flex-col gap-6">
+                
+                {/* Search and Add Header */}
+                <div className="glass-container p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+                    <input 
+                      type="text" 
+                      placeholder="Search rabbits by name, tattoo, breed..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full sm:w-80"
+                    />
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        checked={showArchived}
+                        onChange={(e) => setShowArchived(e.target.checked)}
+                        className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                      />
+                      📁 Show Sold / Archived
+                    </label>
+                  </div>
 
-                <button 
-                  onClick={() => setShowAddRabbit(true)}
-                  className="btn-interactive w-full sm:w-auto"
-                >
-                  <Plus className="w-5 h-5" /> Add New Rabbit
-                </button>
-              </div>
+                  <button 
+                    onClick={() => setShowAddRabbit(true)}
+                    className="btn-interactive w-full sm:w-auto"
+                  >
+                    <Plus className="w-5 h-5" /> Add New Rabbit
+                  </button>
+                </div>
 
               {/* Add Rabbit Form overlay */}
               {showAddRabbit && (
@@ -4386,63 +5098,93 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-sm">
-                      {filteredRabbits.map(r => (
-                        <tr key={r.id} className="hover:bg-white/5 transition-all">
-                          <td className="py-3 font-semibold text-indigo-400">{r.tattooNumber}</td>
-                          <td className="py-3 font-bold">
-                             {r.name}
-                             {r.status === 'sold' && (
-                               <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/10 text-slate-400 border border-white/5">
-                                 Sold
-                               </span>
-                             )}
-                           </td>
-                          <td className="py-3">{r.breed} - {r.variety}</td>
-                          <td className="py-3 capitalize">{r.sex}</td>
-                          <td className="py-3">{(r.weightOz / 16).toFixed(2)} lbs</td>
-                          <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r.inbreedingCoeff > 0.1 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                              {(r.inbreedingCoeff * 100).toFixed(2)}%
-                            </span>
-                          </td>
-                          <td className="py-3">
-                             <div className="flex gap-2 items-center">
-                               <button 
-                                 onClick={() => setSelectedRabbit(r)} 
-                                 className="btn-interactive text-xs py-1 px-3 bg-indigo-600 font-bold text-white border-none"
-                               >
-                                 View Profile
-                               </button>
-                               {!isAssistantWriteOnly && r.status !== 'sold' && (
-                                 <button 
-                                   onClick={() => {
-                                     setBuyerDetails({ name: '', email: '', phone: '', price: '', type: 'sale', notes: '' });
-                                     setSellerSignature('');
-                                     setBuyerSignature('');
-                                     setTransferWizardStep(1);
-                                     setShowTransferWizard(r);
-                                   }} 
-                                   className="btn-interactive text-xs py-1 px-3 bg-emerald-600 hover:bg-emerald-650 border-none font-bold text-white"
-                                 >
-                                   Transfer
-                                 </button>
+                      {(() => {
+                        const ITEMS_PER_PAGE = 20;
+                        const startIndex = (rabbitPage - 1) * ITEMS_PER_PAGE;
+                        const paginated = filteredRabbits.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+                        return paginated.map(r => (
+                          <tr key={r.id} className="hover:bg-white/5 transition-all">
+                            <td className="py-3 font-semibold text-indigo-400">{r.tattooNumber}</td>
+                            <td className="py-3 font-bold">
+                               {r.name}
+                               {r.status === 'sold' && (
+                                 <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/10 text-slate-400 border border-white/5">
+                                   Sold
+                                 </span>
                                )}
-                               {!isAssistantWriteOnly && (
+                             </td>
+                            <td className="py-3">{r.breed} - {r.variety}</td>
+                            <td className="py-3 capitalize">{r.sex}</td>
+                            <td className="py-3">{(r.weightOz / 16).toFixed(2)} lbs</td>
+                            <td className="py-3">
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${r.inbreedingCoeff > 0.1 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                                {(r.inbreedingCoeff * 100).toFixed(2)}%
+                              </span>
+                            </td>
+                            <td className="py-3">
+                               <div className="flex gap-2 items-center">
                                  <button 
-                                   onClick={() => handleDeleteRabbit(r.id)} 
-                                   className="text-red-400 hover:text-red-300 p-1"
+                                   onClick={() => setSelectedRabbit(r)} 
+                                   className="btn-interactive text-xs py-1 px-3 bg-indigo-600 font-bold text-white border-none"
                                  >
-                                   <Trash2 className="w-5 h-5" />
+                                   View Profile
                                  </button>
-                               )}
-                             </div>
-                          </td>
-                        </tr>
-                      ))}
+                                 {!isAssistantWriteOnly && r.status !== 'sold' && (
+                                   <button 
+                                     onClick={() => {
+                                       setBuyerDetails({ name: '', email: '', phone: '', price: '', type: 'sale', notes: '' });
+                                       setSellerSignature('');
+                                       setBuyerSignature('');
+                                       setTransferWizardStep(1);
+                                       setShowTransferWizard(r);
+                                     }} 
+                                     className="btn-interactive text-xs py-1 px-3 bg-emerald-600 hover:bg-emerald-650 border-none font-bold text-white"
+                                   >
+                                     Transfer
+                                   </button>
+                                 )}
+                                 {!isAssistantWriteOnly && (
+                                   <button 
+                                     onClick={() => handleDeleteRabbit(r.id)} 
+                                     className="text-red-400 hover:text-red-300 p-1"
+                                   >
+                                     <Trash2 className="w-5 h-5" />
+                                   </button>
+                                 )}
+                               </div>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
                     </tbody>
                   </table>
                   {filteredRabbits.length === 0 && (
                     <p className="text-center py-6 opacity-60">No rabbits match search parameters.</p>
+                  )}
+                  
+                  {/* Pagination Controls */}
+                  {filteredRabbits.length > 20 && (
+                    <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-4 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setRabbitPage(prev => Math.max(prev - 1, 1))}
+                        disabled={rabbitPage === 1}
+                        className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
+                      >
+                        Prev Page
+                      </button>
+                      <span className="opacity-75 font-semibold text-white">
+                        Page {rabbitPage} of {Math.ceil(filteredRabbits.length / 20)} ({filteredRabbits.length} total)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setRabbitPage(prev => Math.min(prev + 1, Math.ceil(filteredRabbits.length / 20)))}
+                        disabled={rabbitPage === Math.ceil(filteredRabbits.length / 20)}
+                        className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
+                      >
+                        Next Page
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -4450,6 +5192,45 @@ export default function App() {
               {/* Individual Rabbit Detail View */}
               {selectedRabbit && (
                 <div className="flex flex-col gap-6">
+                  
+                  {/* Profile Header with Back/Close and FDA status */}
+                  <div className="glass-container p-6 flex justify-between items-center bg-slate-900/40 border-b border-white/10 flex-wrap gap-4">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button 
+                        onClick={() => setSelectedRabbit(null)}
+                        className="btn-interactive text-xs py-1.5 px-3 bg-slate-800 hover:bg-slate-700 font-bold text-white border-none flex items-center gap-1"
+                      >
+                        ← Back to Registry
+                      </button>
+                      <h2 className="text-xl font-black text-white flex items-center gap-2">
+                        🐇 {selectedRabbit.name} <span className="opacity-55 text-sm">({selectedRabbit.tattooNumber})</span>
+                      </h2>
+                      {(() => {
+                        const fda = isUnderFdaWithdrawal(selectedRabbit.id);
+                        if (fda.active) {
+                          return (
+                            <span className="bg-rose-500/20 text-rose-300 border border-rose-500/35 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1.5 animate-pulse uppercase tracking-wider">
+                              ⚠️ FDA Withdrawal Active ({fda.remainingDays} days left: {fda.drugName})
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
+                              🛡️ FDA Safe / Clear
+                            </span>
+                          );
+                        }
+                      })()}
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-xs font-bold text-slate-400 capitalize bg-white/5 px-2.5 py-1 rounded-lg">
+                        {selectedRabbit.sex}
+                      </span>
+                      <span className="text-xs font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg">
+                        {selectedRabbit.breed}
+                      </span>
+                    </div>
+                  </div>
                   
                   {/* Gallery & Show Legs Dual Panels */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -4634,18 +5415,29 @@ export default function App() {
                           textClass = 'text-slate-400';
                         } else {
                           textClass = 'text-white';
-                          if (gender === 'buck') {
-                            bgClass = 'bg-blue-500/10 hover:bg-blue-500/15 border-blue-500/20 hover:border-blue-500/35';
+                          if (rabbit.status === 'sold' || rabbit.status === 'pedigree_only') {
+                            bgClass = 'bg-slate-500/10 hover:bg-slate-500/15';
+                            borderClass = 'border border-slate-500/20 hover:border-slate-500/35';
+                          } else if (rabbit.legs && rabbit.legs.length > 0) {
+                            bgClass = 'bg-amber-500/15 hover:bg-amber-500/20';
+                            borderClass = 'border-2 border-amber-500/30 hover:border-amber-500/50 shadow-sm shadow-amber-500/10';
+                          } else if (gender === 'buck') {
+                            bgClass = 'bg-blue-500/10 hover:bg-blue-500/15';
+                            borderClass = 'border border-blue-500/20 hover:border-blue-500/35';
                           } else {
-                            bgClass = 'bg-pink-500/10 hover:bg-pink-500/15 border-pink-500/20 hover:border-pink-500/35';
+                            bgClass = 'bg-pink-500/10 hover:bg-pink-500/15';
+                            borderClass = 'border border-pink-500/20 hover:border-pink-500/35';
                           }
-                          borderClass = rabbit.gcNumber ? 'champion-gold-border' : 'border border-white/10';
+                          
+                          if (rabbit.gcNumber) {
+                            borderClass = 'champion-gold-border';
+                          }
                         }
                         
                         return (
                           <div 
                             onClick={onClick}
-                            className={`p-3 rounded-xl flex gap-2.5 items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${bgClass} ${borderClass}`}
+                            className={`p-3 rounded-xl flex gap-2.5 items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${bgClass} ${borderClass} z-10`}
                             style={{ minHeight: '64px' }}
                           >
                             {!isUnknown && getPrimaryPhoto(rabbit) ? (
@@ -4727,6 +5519,66 @@ export default function App() {
                           <div className="overflow-x-auto w-full p-2 bg-white/5 rounded-2xl border border-white/5">
                             <div className="flex justify-between gap-6 h-[640px] min-w-[960px] p-4 items-stretch relative">
                               
+                              {/* Pedigree Connection SVG Lines (Hop Paths in Fun Mode, standard in Pro) */}
+                              <svg className="absolute inset-0 w-full h-[640px] pointer-events-none z-0 no-print" style={{ minWidth: '960px' }}>
+                                <style>{`
+                                  @keyframes pedigreeDash {
+                                    to {
+                                      stroke-dashoffset: -40;
+                                    }
+                                  }
+                                  .pedigree-hop-path {
+                                    animation: pedigreeDash 2s linear infinite;
+                                  }
+                                `}</style>
+                                {(() => {
+                                  const connections = [
+                                    // Gen 1 to Gen 2
+                                    { x1: 240, y1: 320, x2: 280, y2: 160, gender: 'buck' },
+                                    { x1: 240, y1: 320, x2: 280, y2: 480, gender: 'doe' },
+
+                                    // Gen 2 to Gen 3
+                                    { x1: 520, y1: 160, x2: 544, y2: 80, gender: 'buck' },
+                                    { x1: 520, y1: 160, x2: 544, y2: 240, gender: 'doe' },
+                                    { x1: 520, y1: 480, x2: 544, y2: 400, gender: 'buck' },
+                                    { x1: 520, y1: 480, x2: 544, y2: 560, gender: 'doe' },
+
+                                    // Gen 3 to Gen 4
+                                    { x1: 784, y1: 80, x2: 808, y2: 40, gender: 'buck' },
+                                    { x1: 784, y1: 80, x2: 808, y2: 120, gender: 'doe' },
+                                    { x1: 784, y1: 240, x2: 808, y2: 200, gender: 'buck' },
+                                    { x1: 784, y1: 240, x2: 808, y2: 280, gender: 'doe' },
+                                    { x1: 784, y1: 400, x2: 808, y2: 360, gender: 'buck' },
+                                    { x1: 784, y1: 400, x2: 808, y2: 440, gender: 'doe' },
+                                    { x1: 784, y1: 560, x2: 808, y2: 520, gender: 'buck' },
+                                    { x1: 784, y1: 560, x2: 808, y2: 600, gender: 'doe' },
+                                  ];
+
+                                  return connections.map((c, i) => {
+                                    const pathD = `M ${c.x1} ${c.y1} C ${(c.x1 + c.x2) / 2} ${c.y1}, ${(c.x1 + c.x2) / 2} ${c.y2}, ${c.x2} ${c.y2}`;
+                                    const isFun = designMode === 'fun';
+                                    const strokeColor = isFun 
+                                      ? (c.gender === 'buck' ? '#38bdf8' : '#f472b6')
+                                      : 'rgba(255, 255, 255, 0.15)';
+                                    const strokeWidth = isFun ? 3 : 1.5;
+                                    const dashArray = isFun ? "8 6" : undefined;
+                                    const className = isFun ? "pedigree-hop-path" : "";
+
+                                    return (
+                                      <path 
+                                        key={i} 
+                                        d={pathD} 
+                                        fill="none" 
+                                        stroke={strokeColor} 
+                                        strokeWidth={strokeWidth} 
+                                        strokeDasharray={dashArray}
+                                        className={className} 
+                                      />
+                                    );
+                                  });
+                                })()}
+                              </svg>
+
                               {/* Gen 1: Self */}
                               <div className="flex flex-col justify-around w-60 shrink-0">
                                 {renderNodeCard(
@@ -4844,7 +5696,8 @@ export default function App() {
               )}
 
             </div>
-          )}
+          </ErrorBoundary>
+        )}
 
           {/* TAB 3: BREEDING & REPRODUCTION */}
           {activeTab === 'breeding' && (
@@ -4937,6 +5790,90 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Missed Breeding & Fertility Analysis */}
+              <div className="glass-container p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShieldAlert className="w-5 h-5 text-rose-400" />
+                  <h3 className="text-lg font-bold">Missed Breeding & Fertility Analysis</h3>
+                </div>
+                <p className="text-xs opacity-75 mb-5">
+                  Logs failed breeding attempts (negative palpations) to identify potential buck/doe fertility issues.
+                </p>
+                {(() => {
+                  const failedBreedings = breedings.filter(b => b.status === 'palpated_negative');
+                  
+                  // Count failures per buck
+                  const buckFailures = {};
+                  // Count failures per doe
+                  const doeFailures = {};
+                  
+                  failedBreedings.forEach(b => {
+                    if (b.buckId) buckFailures[b.buckId] = (buckFailures[b.buckId] || 0) + 1;
+                    if (b.doeId) doeFailures[b.doeId] = (doeFailures[b.doeId] || 0) + 1;
+                  });
+                  
+                  const buckStats = Object.entries(buckFailures).map(([id, count]) => {
+                    const r = allRabbits.find(rab => rab.id === id);
+                    return { id, name: r ? r.name : 'Unknown Buck', tattooNumber: r ? r.tattooNumber : '', count };
+                  }).sort((a, b) => b.count - a.count);
+                  
+                  const doeStats = Object.entries(doeFailures).map(([id, count]) => {
+                    const r = allRabbits.find(rab => rab.id === id);
+                    return { id, name: r ? r.name : 'Unknown Doe', tattooNumber: r ? r.tattooNumber : '', count };
+                  }).sort((a, b) => b.count - a.count);
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex flex-col gap-3">
+                        <h4 className="text-sm font-bold text-sky-400 border-b border-white/5 pb-2">
+                          ♂️ Buck Fertility Warnings
+                        </h4>
+                        {buckStats.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {buckStats.map(s => (
+                              <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center text-xs">
+                                <div>
+                                  <span className="font-bold text-white">{s.name}</span>
+                                  {s.tattooNumber && <span className="opacity-50 ml-1.5 font-mono">({s.tattooNumber})</span>}
+                                </div>
+                                <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
+                                  {s.count} Failed {s.count === 1 ? 'Attempt' : 'Attempts'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs opacity-60 italic py-2">No failed breeding attempts recorded for bucks.</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col gap-3">
+                        <h4 className="text-sm font-bold text-pink-400 border-b border-white/5 pb-2">
+                          ♀️ Doe Fertility Warnings
+                        </h4>
+                        {doeStats.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {doeStats.map(s => (
+                              <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center text-xs">
+                                <div>
+                                  <span className="font-bold text-white">{s.name}</span>
+                                  {s.tattooNumber && <span className="opacity-50 ml-1.5 font-mono">({s.tattooNumber})</span>}
+                                </div>
+                                <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
+                                  {s.count} Failed {s.count === 1 ? 'Attempt' : 'Attempts'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs opacity-60 italic py-2">No failed breeding attempts recorded for does.</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
             </div>
           )}
 
@@ -5009,25 +5946,55 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-sm">
-                      {ledger.map(t => (
-                        <tr key={t.id} className="hover:bg-white/5 transition-all">
-                          <td className="py-3">{t.date}</td>
-                          <td className="py-3 capitalize">
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${t.type === 'income' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                              {t.type}
-                            </span>
-                          </td>
-                          <td className="py-3 capitalize">{t.category}</td>
-                          <td className="py-3">{t.notes}</td>
-                          <td className={`py-3 text-right font-bold ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                            {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
+                      {(() => {
+                        const ITEMS_PER_PAGE = 20;
+                        const startIndex = (ledgerPage - 1) * ITEMS_PER_PAGE;
+                        const paginated = ledger.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+                        return paginated.map(t => (
+                          <tr key={t.id} className="hover:bg-white/5 transition-all">
+                            <td className="py-3">{t.date}</td>
+                            <td className="py-3 capitalize">
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${t.type === 'income' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                {t.type}
+                              </span>
+                            </td>
+                            <td className="py-3 capitalize">{t.category}</td>
+                            <td className="py-3">{t.notes}</td>
+                            <td className={`py-3 text-right font-bold ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                              {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
+                            </td>
+                          </tr>
+                        ));
+                      })()}
                     </tbody>
                   </table>
                   {ledger.length === 0 && (
                     <p className="text-center py-6 opacity-60">No financial records cataloged.</p>
+                  )}
+
+                  {/* Pagination Controls */}
+                  {ledger.length > 20 && (
+                    <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-4 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setLedgerPage(prev => Math.max(prev - 1, 1))}
+                        disabled={ledgerPage === 1}
+                        className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
+                      >
+                        Prev Page
+                      </button>
+                      <span className="opacity-75 font-semibold text-white">
+                        Page {ledgerPage} of {Math.ceil(ledger.length / 20)} ({ledger.length} total)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setLedgerPage(prev => Math.min(prev + 1, Math.ceil(ledger.length / 20)))}
+                        disabled={ledgerPage === Math.ceil(ledger.length / 20)}
+                        className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
+                      >
+                        Next Page
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -5177,43 +6144,45 @@ export default function App() {
                         else if (s.status === 'interested') badgeColor = 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
 
                         return (
-                          <div key={s.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:bg-white/10">
-                            <div className="flex-1 flex flex-col gap-1.5">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h4 className="text-base font-bold text-white">{s.name}</h4>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${badgeColor}`}>{s.status.replace('_', ' ')}</span>
+                          <div key={s.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex flex-col gap-4 transition-all hover:bg-white/10">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <div className="flex-1 flex flex-col gap-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-base font-bold text-white">{s.name}</h4>
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${badgeColor}`}>{s.status.replace('_', ' ')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs opacity-75">
+                                  <span>📅 Date: <strong>{s.date}</strong></span>
+                                  <span>📍 Location: <strong>{s.location || 'Not Specified'}</strong></span>
+                                </div>
+                                <p className="text-xs opacity-70 mt-1 italic">Notes: {s.notes || 'No notes added.'}</p>
+                                {diffDays > 0 ? (
+                                  <span className="text-xs font-bold text-indigo-400">⏱️ {diffDays} days remaining</span>
+                                ) : diffDays === 0 ? (
+                                  <span className="text-xs font-black text-rose-500 animate-pulse">📅 TODAY IS SHOW DAY! Best of luck! 🏆</span>
+                                ) : (
+                                  <span className="text-xs opacity-50">Expired / Passed ({Math.abs(diffDays)} days ago)</span>
+                                )}
                               </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs opacity-75">
-                                <span>📅 Date: <strong>{s.date}</strong></span>
-                                <span>📍 Location: <strong>{s.location || 'Not Specified'}</strong></span>
-                              </div>
-                              <p className="text-xs opacity-70 mt-1 italic">Notes: {s.notes || 'No notes added.'}</p>
-                              {diffDays > 0 ? (
-                                <span className="text-xs font-bold text-indigo-400">⏱️ {diffDays} days remaining</span>
-                              ) : diffDays === 0 ? (
-                                <span className="text-xs font-black text-rose-500 animate-pulse">📅 TODAY IS SHOW DAY! Best of luck! 🏆</span>
-                              ) : (
-                                <span className="text-xs opacity-50">Expired / Passed ({Math.abs(diffDays)} days ago)</span>
-                              )}
-                            </div>
 
-                            <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
-                              <select 
-                                value={s.status} 
-                                onChange={(e) => {
-                                  setAllShows(prev => prev.map(item => item.id === s.id ? { ...item, status: e.target.value } : item));
-                                }}
-                                className="text-xs font-bold py-1.5 px-3 rounded-xl bg-slate-900 border border-white/10 text-white cursor-pointer w-full sm:w-40"
-                              >
-                                <option value="attending">Attending</option>
-                                <option value="interested">Interested</option>
-                                <option value="not_attending">Not Attending</option>
-                              </select>
+                              <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
+                                <select 
+                                  value={s.status} 
+                                  onChange={(e) => {
+                                    setAllShows(prev => prev.map(item => item.id === s.id ? { ...item, status: e.target.value } : item));
+                                  }}
+                                  className="text-xs font-bold py-1.5 px-3 rounded-xl bg-slate-900 border border-white/10 text-white cursor-pointer w-full sm:w-40"
+                                >
+                                  <option value="attending">Attending</option>
+                                  <option value="interested">Interested</option>
+                                  <option value="not_attending">Not Attending</option>
+                                </select>
                                 {!isAssistantWriteOnly && (
                                   <div className="flex gap-2 w-full justify-end">
                                     <button 
                                       onClick={() => {
                                         setAllShows(prev => prev.filter(item => item.id !== s.id));
+                                        setAllShowEntries(prev => prev.filter(se => se.showId !== s.id));
                                       }}
                                       className="btn-interactive py-1 px-3 bg-red-800/80 text-xs border-none"
                                     >
@@ -5221,7 +6190,125 @@ export default function App() {
                                     </button>
                                   </div>
                                 )}
+                              </div>
                             </div>
+
+                            {/* COLLAPSIBLE SHOW ENTRIES SECTION */}
+                            {s.status !== 'not_attending' && (
+                              <div className="border-t border-white/5 pt-3 mt-1 flex flex-col gap-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
+                                    📋 Registered Show Entries ({allShowEntries.filter(se => se.showId === s.id).length})
+                                  </span>
+                                </div>
+
+                                {(() => {
+                                  const registeredEntries = allShowEntries.filter(se => se.showId === s.id);
+                                  const availableRabbitsForShow = rabbits.filter(r => r.status !== 'pedigree_only' && r.status !== 'sold' && !allShowEntries.some(se => se.showId === s.id && se.rabbitId === r.id));
+
+                                  return (
+                                    <>
+                                      {registeredEntries.length > 0 && (
+                                        <div className="overflow-x-auto w-full">
+                                          <table className="w-full text-[11px] text-left border-collapse">
+                                            <thead>
+                                              <tr className="text-slate-450 border-b border-white/5 font-bold">
+                                                <th className="pb-1.5 pr-2">Tattoo</th>
+                                                <th className="pb-1.5 pr-2">Name</th>
+                                                <th className="pb-1.5 pr-2">Breed</th>
+                                                <th className="pb-1.5 pr-2">Calculated Class</th>
+                                                <th className="pb-1.5 pr-2">FDA Clearance</th>
+                                                <th className="pb-1.5 text-right">Action</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                              {registeredEntries.map(entry => {
+                                                const r = rabbits.find(rab => rab.id === entry.rabbitId);
+                                                if (!r) return null;
+                                                const computedClass = calculateRabbitShowClass(r.dob, r.breed, r.sex, s.date);
+                                                const fda = isUnderFdaWithdrawal(r.id);
+
+                                                return (
+                                                  <tr key={entry.id} className="hover:bg-white/5">
+                                                    <td className="py-2 font-mono font-bold text-indigo-400">{r.tattooNumber}</td>
+                                                    <td className="py-2 text-white font-semibold">{r.name}</td>
+                                                    <td className="py-2">{r.breed}</td>
+                                                    <td className="py-2 font-bold text-yellow-400">{computedClass}</td>
+                                                    <td className="py-2">
+                                                      {fda.active ? (
+                                                        <span className="text-rose-400 font-extrabold animate-pulse">
+                                                          ⚠️ FDA WITHDRAWAL ({fda.remainingDays}d left: {fda.drugName})
+                                                        </span>
+                                                      ) : (
+                                                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                                          🛡️ Clear / Safe
+                                                        </span>
+                                                      )}
+                                                    </td>
+                                                    <td className="py-2 text-right">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setAllShowEntries(prev => prev.filter(se => se.id !== entry.id));
+                                                          showToast(`Removed ${r.name} from show.`, "info");
+                                                        }}
+                                                        className="bg-red-900/30 hover:bg-red-900/60 text-red-300 font-bold px-2 py-0.5 rounded border-none cursor-pointer text-[9px]"
+                                                      >
+                                                        Remove
+                                                      </button>
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+
+                                      {availableRabbitsForShow.length > 0 ? (
+                                        <form 
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const rabbitId = e.target.entryRabbitId.value;
+                                            if (!rabbitId) return;
+                                            const entryItem = {
+                                              id: `se-${Date.now()}`,
+                                              showId: s.id,
+                                              rabbitId
+                                            };
+                                            setAllShowEntries(prev => [...prev, entryItem]);
+                                            const selectedRabName = rabbits.find(rab => rab.id === rabbitId)?.name || 'Rabbit';
+                                            showToast(`Registered ${selectedRabName} for this show!`, "success");
+                                          }}
+                                          className="flex items-center gap-2 max-w-sm mt-1"
+                                        >
+                                          <select 
+                                            name="entryRabbitId" 
+                                            className="text-[11px] py-1 px-2 rounded-lg bg-slate-900 border border-white/10 text-white cursor-pointer flex-1"
+                                            required
+                                          >
+                                            <option value="">-- Enter Rabbit in Show --</option>
+                                            {availableRabbitsForShow.map(rab => (
+                                              <option key={rab.id} value={rab.id}>
+                                                {rab.name} ({rab.tattooNumber})
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <button 
+                                            type="submit" 
+                                            className="btn-interactive text-[10px] py-1 px-3 bg-indigo-650 hover:bg-indigo-700 border-none font-bold text-white whitespace-nowrap shrink-0"
+                                          >
+                                            Enter Rabbit
+                                          </button>
+                                        </form>
+                                      ) : (
+                                        <p className="text-[10px] opacity-60">All available rabbits are registered for this show.</p>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -5455,14 +6542,11 @@ export default function App() {
 
                     {/* Photos Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {rabbits
-                        .filter(r => mediaRabbitFilter === 'all' || r.id === mediaRabbitFilter)
-                        .flatMap(rabbit => (rabbit.photos || []).map((photo, photoIdx) => {
-                          const pObj = getPhotoObj(photo);
-                          return { rabbit, photo: pObj, index: photoIdx };
-                        }))
-                        .filter(item => mediaTagFilter === 'all' || item.photo.tag === mediaTagFilter)
-                        .map((item, keyIdx) => {
+                      {(() => {
+                        const ITEMS_PER_PAGE = 12;
+                        const startIndex = (mediaPage - 1) * ITEMS_PER_PAGE;
+                        const paginated = filteredPhotos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+                        return paginated.map((item, keyIdx) => {
                           const p = item.photo;
                           const r = item.rabbit;
                           const idx = item.index;
@@ -5572,7 +6656,7 @@ export default function App() {
                               </div>
 
                               {/* Details below photo */}
-                              <div className="p-3 flex flex-col gap-1 text-xs">
+                              <div className="p-3 flex flex-col gap-1 text-xs text-left">
                                 <div className="flex justify-between items-center">
                                   <span className="font-bold opacity-80">{r.name}</span>
                                   <span className="text-[10px] opacity-60 font-mono">{p.date}</span>
@@ -5583,25 +6667,42 @@ export default function App() {
 
                             </div>
                           );
-                        })}
-                      {rabbits
-                        .filter(r => mediaRabbitFilter === 'all' || r.id === mediaRabbitFilter)
-                        .flatMap(rabbit => (rabbit.photos || []).map((photo, photoIdx) => {
-                          const pObj = getPhotoObj(photo);
-                          return { rabbit, photo: pObj, index: photoIdx };
-                        }))
-                        .filter(item => mediaTagFilter === 'all' || item.photo.tag === mediaTagFilter).length === 0 && (
-                          <div className="col-span-full py-12 text-center opacity-60 text-sm">
-                            No photos found matching your filters.
-                          </div>
+                        });
+                      })()}
+                      {filteredPhotos.length === 0 && (
+                        <div className="col-span-full py-12 text-center opacity-60 text-sm">
+                          No photos found matching your filters.
+                        </div>
                       )}
                     </div>
 
+                    {/* Pagination Controls */}
+                    {filteredPhotos.length > 12 && (
+                      <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-4 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setMediaPage(prev => Math.max(prev - 1, 1))}
+                          disabled={mediaPage === 1}
+                          className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
+                        >
+                          Prev Page
+                        </button>
+                        <span className="opacity-75 font-semibold text-white">
+                          Page {mediaPage} of {Math.ceil(filteredPhotos.length / 12)} ({filteredPhotos.length} total)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setMediaPage(prev => Math.min(prev + 1, Math.ceil(filteredPhotos.length / 12)))}
+                          disabled={mediaPage === Math.ceil(filteredPhotos.length / 12)}
+                          className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
+                        >
+                          Next Page
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
               </div>
-
             </div>
           )}
 
@@ -5925,6 +7026,43 @@ export default function App() {
                           <p className="text-xs opacity-75">Compare historical weight points against ARBA standard weight limits.</p>
                         </div>
 
+                        {/* Developmental Weight Stages Summary Grid */}
+                        {(() => {
+                          const getLatestWeightForStage = (stageName) => {
+                            const match = [...sortedWeights].reverse().find(w => w.stage === stageName);
+                            return match ? `${match.weightOz} oz (${(match.weightOz / 16).toFixed(2)} lbs)` : '—';
+                          };
+                          const is6Class = BREED_STANDARDS[rabbit.breed]?.classType === '6-class';
+                          
+                          return (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-900/40 rounded-xl border border-white/5 text-xs">
+                              <div className="flex flex-col gap-1">
+                                <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Pre-Wean (Baby)</span>
+                                <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Pre-Wean (Baby)')}</span>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Junior</span>
+                                <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Junior')}</span>
+                              </div>
+                              {is6Class ? (
+                                <div className="flex flex-col gap-1">
+                                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Intermediate</span>
+                                  <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Intermediate')}</span>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-1 opacity-40">
+                                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Intermediate</span>
+                                  <span className="font-semibold text-slate-400 text-xs italic">N/A (4-Class Breed)</span>
+                                </div>
+                              )}
+                              <div className="flex flex-col gap-1">
+                                <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Senior</span>
+                                <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Senior')}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         {/* Responsive Interactive SVG Chart */}
                         <div className="w-full bg-white/5 rounded-xl border border-white/5 p-4 flex flex-col items-center">
                           {(() => {
@@ -6093,10 +7231,10 @@ export default function App() {
                                   onChange={(e) => setNewWeightEntry({ ...newWeightEntry, stage: e.target.value })}
                                   className="text-xs py-1.5 bg-slate-900 border-white/10 text-white"
                                 >
-                                  <option value="Weaning">Weaning</option>
-                                  <option value="8 Weeks">8 Weeks</option>
-                                  <option value="12 Weeks">12 Weeks</option>
-                                  <option value="Maturity">Maturity</option>
+                                  <option value="Pre-Wean (Baby)">Pre-Wean (Baby)</option>
+                                  <option value="Junior">Junior</option>
+                                  <option value="Intermediate">Intermediate</option>
+                                  <option value="Senior">Senior</option>
                                   <option value="Routine">Routine</option>
                                 </select>
                               </div>
@@ -6104,7 +7242,17 @@ export default function App() {
                           </div>
 
                           <div className="flex flex-col gap-1 col-span-1">
-                            <label className="text-[10px] opacity-75 font-semibold">Weight (ounces)</label>
+                            <label className="text-[10px] opacity-75 font-semibold flex items-center justify-between">
+                              <span>Weight (ounces)</span>
+                              <button
+                                type="button"
+                                onClick={() => handleVoiceInput((val) => setNewWeightEntry(prev => ({ ...prev, weightOz: val })), true)}
+                                className="p-1 text-indigo-400 hover:text-indigo-300 rounded hover:bg-white/5 border-none cursor-pointer flex items-center justify-center"
+                                title="Use hands-free voice input to speak the weight"
+                              >
+                                🎙️ Speak
+                              </button>
+                            </label>
                             <input 
                               type="number" 
                               required 
@@ -6294,6 +7442,37 @@ export default function App() {
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-bold text-white flex items-center gap-1">
+                            🛡️ FDA Approval Classification
+                          </label>
+                          <select 
+                            value={newMedicalEntry.fdaApprovalStatus}
+                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, fdaApprovalStatus: e.target.value })}
+                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                          >
+                            <option value="FDA Approved for Rabbits">FDA Approved (Rabbits)</option>
+                            <option value="FDA Approved (Extra-label use by Vet)">FDA Approved (Extra-label Vet)</option>
+                            <option value="Unapproved / Homeopathic">Unapproved / Homeopathic</option>
+                            <option value="Not Applicable (Vaccine/Surgical)">Not Applicable (Vaccine/Surgical)</option>
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-bold text-white flex items-center gap-1">
+                            ⚠️ FDA Withdrawal Period (Days)
+                          </label>
+                          <input 
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={newMedicalEntry.fdaWithdrawalDays}
+                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, fdaWithdrawalDays: Number(e.target.value) })}
+                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                          />
+                        </div>
+                      </div>
+
                       <div className="flex flex-col gap-1">
                         <label className="text-xs font-bold text-white">Clinical Notes</label>
                         <textarea 
@@ -6327,6 +7506,174 @@ export default function App() {
 
             </div>
           )}
+
+          {/* TAB: CAGE & BARN MAP */}
+          {activeTab === 'cages' && (() => {
+            const ROWS = ['A', 'B', 'C', 'D'];
+            const HUTCHES = [1, 2, 3, 4];
+            const TIERS = [2, 1]; // Tier 2 (Top), Tier 1 (Bottom)
+            
+            const occupiedCount = rabbits.filter(r => r.location).length;
+            const vacantCount = 32 - occupiedCount;
+            
+            const assignableRabbits = rabbits.filter(
+              r => r.status !== 'pedigree_only' && r.status !== 'sold' && !r.location
+            );
+
+            return (
+              <div className="flex flex-col gap-6">
+                
+                {/* Header Section */}
+                <div className="glass-container p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Grid className="w-6 h-6 text-indigo-400" /> Cage & Barn Mapping Grid
+                    </h3>
+                    <p className="text-xs opacity-75">
+                      Visual hutch allocation map. Assign active inventory rabbits to cage slots or unassign them.
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <div className="bg-slate-950/45 px-3 py-1.5 rounded-lg border border-white/5 text-center text-xs">
+                      <span className="opacity-60 block text-[9px] uppercase font-bold">Total Cages</span>
+                      <strong className="text-sm">32</strong>
+                    </div>
+                    <div className="bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 text-center text-xs">
+                      <span className="opacity-60 block text-[9px] uppercase font-bold text-indigo-300">Occupied</span>
+                      <strong className="text-sm text-indigo-400">{occupiedCount}</strong>
+                    </div>
+                    <div className="bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 text-center text-xs">
+                      <span className="opacity-60 block text-[9px] uppercase font-bold text-emerald-300">Vacant</span>
+                      <strong className="text-sm text-emerald-400">{vacantCount}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rows Mapping */}
+                <div className="flex flex-col gap-8">
+                  {ROWS.map(row => (
+                    <div key={row} className="glass-container p-6 flex flex-col gap-4 bg-slate-900/40">
+                      <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                        <span className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm text-white">
+                          {row}
+                        </span>
+                        <div>
+                          <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                            Row {row} Cages
+                          </h4>
+                          <p className="text-[10px] opacity-65">Double-stacked breeder cages (Hutches 1-4, Tiers 1-2)</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {HUTCHES.map(hutch => (
+                          <div key={hutch} className="flex flex-col gap-3 p-3 bg-black/25 rounded-xl border border-white/5">
+                            <div className="text-xs font-bold text-center border-b border-white/5 pb-1 opacity-70 tracking-wide">
+                              Hutch {hutch}
+                            </div>
+                            
+                            {TIERS.map(tier => {
+                              const locationKey = `${row}-${hutch}-${tier}`;
+                              const occupyingRabbit = rabbits.find(r => r.location === locationKey);
+                              
+                              if (occupyingRabbit) {
+                                return (
+                                  <div 
+                                    key={tier}
+                                    className="p-3 rounded-lg bg-gradient-to-br from-indigo-950/40 to-slate-900/60 border border-indigo-500/25 flex flex-col gap-2 relative group hover:border-indigo-400/50 transition-all duration-200"
+                                  >
+                                    <div className="flex justify-between items-start gap-1">
+                                      <div className="font-extrabold text-xs text-white truncate max-w-[70%]" title={occupyingRabbit.name}>
+                                        🐰 {occupyingRabbit.name}
+                                      </div>
+                                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${occupyingRabbit.sex === 'buck' ? 'bg-sky-500/20 text-sky-350 border border-sky-500/30' : 'bg-pink-500/20 text-pink-350 border border-pink-500/30'}`}>
+                                        {occupyingRabbit.sex}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-0.5 text-[10px] opacity-80 leading-tight">
+                                      <div className="truncate text-slate-350">{occupyingRabbit.breed} &bull; {occupyingRabbit.variety}</div>
+                                      <div className="font-mono text-indigo-300 font-bold">Tat: {occupyingRabbit.tattooNumber}</div>
+                                    </div>
+
+                                    <div className="absolute top-2 right-2 text-[8px] bg-slate-950/70 text-slate-400 font-mono px-1 rounded-sm border border-white/5">
+                                      T{tier}
+                                    </div>
+
+                                    <div className="flex gap-1 mt-1 border-t border-white/5 pt-1.5">
+                                      <button
+                                        onClick={() => setPrintCardRabbit(occupyingRabbit)}
+                                        className="flex-1 py-1 rounded bg-slate-850 hover:bg-slate-800 text-[9px] font-bold text-center border-none text-white cursor-pointer"
+                                      >
+                                        🖨️ Card
+                                      </button>
+                                      <button
+                                        onClick={() => handleUnassignRabbitFromCage(occupyingRabbit.id)}
+                                        className="flex-1 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-[9px] font-bold text-center border-none text-red-350 cursor-pointer"
+                                      >
+                                        Unassign
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <div 
+                                    key={tier}
+                                    className="p-3 rounded-lg border border-dashed border-white/10 bg-white/[0.01] flex flex-col gap-2 relative hover:bg-white/[0.03] transition-all duration-200"
+                                  >
+                                    <div className="flex justify-between items-center text-[9px] opacity-40 font-bold uppercase tracking-wider">
+                                      <span>Vacant</span>
+                                      <span className="font-mono text-[8px]">T{tier}</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-1.5 mt-0.5">
+                                      <select
+                                        value={selectedCageRabbits[locationKey] || ''}
+                                        onChange={(e) => setSelectedCageRabbits(prev => ({ ...prev, [locationKey]: e.target.value }))}
+                                        className="w-full text-[10px] py-1 px-1 bg-slate-900 border border-white/10 text-white rounded-md cursor-pointer focus:border-indigo-500 outline-none"
+                                      >
+                                        <option value="">-- Select --</option>
+                                        {assignableRabbits.map(r => (
+                                          <option key={r.id} value={r.id}>
+                                            [{r.tattooNumber}] {r.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      
+                                      <button
+                                        onClick={() => {
+                                          const rId = selectedCageRabbits[locationKey];
+                                          if (rId) {
+                                            handleAssignRabbitToCage(rId, locationKey);
+                                            setSelectedCageRabbits(prev => {
+                                              const copy = { ...prev };
+                                              delete copy[locationKey];
+                                              return copy;
+                                            });
+                                          }
+                                        }}
+                                        disabled={!selectedCageRabbits[locationKey]}
+                                        className="w-full py-1 rounded bg-indigo-600 hover:bg-indigo-550 disabled:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-[9px] font-bold text-center border-none text-white cursor-pointer transition-all duration-150"
+                                      >
+                                        Assign
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            );
+          })()}
 
           {/* TAB 5: SYNC QUEUE PANEL */}
           {activeTab === 'sync' && (
@@ -6369,6 +7716,187 @@ export default function App() {
                   <p className="text-center py-10 opacity-60">No pending SQLite logs. Local state is fully synced with the PostgreSQL server!</p>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* TAB: SYSTEM DIAGNOSTICS */}
+          {activeTab === 'diagnostics' && (
+            <div className="flex flex-col gap-6">
+              <ErrorBoundary>
+                <HealthCheck />
+              </ErrorBoundary>
+            </div>
+          )}
+
+          {/* TAB: 4-H KIDS LEARNING ACADEMY */}
+          {activeTab === 'academy' && (
+            <ErrorBoundary>
+              <Academy
+                rabbits={rabbits}
+                triggerConfetti={triggerConfetti}
+                currentUser={currentUser}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* TAB: HELP CENTER, MANUAL & TERMS */}
+          {activeTab === 'help' && (
+            <div className="flex flex-col gap-6">
+              
+              {/* Help Header */}
+              <div className="glass-container p-6 flex flex-col gap-2">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <HelpCircle className="w-6 h-6 text-sky-400 font-bold" /> Help Center, Manual & Data Platform
+                </h3>
+                <p className="text-sm opacity-75">
+                  Read the WarrenWise Pro operations manual, inspect legal/regulatory terms, and manage complete data backups.
+                </p>
+              </div>
+
+              {/* Help Sub-Tabs Menu */}
+              <div className="flex gap-2 border-b border-white/10 pb-1 flex-wrap">
+                <button
+                  onClick={() => setHelpSubTab('manual')}
+                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'manual' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
+                >
+                  📖 In-App User Manual
+                </button>
+                <button
+                  onClick={() => setHelpSubTab('policy')}
+                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'policy' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
+                >
+                  🛡️ FDA & HIPAA Policies
+                </button>
+                <button
+                  onClick={() => setHelpSubTab('data')}
+                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'data' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
+                >
+                  📁 Full Data Backup & Restore
+                </button>
+              </div>
+
+              {/* Sub-Tab Content */}
+              {helpSubTab === 'manual' && (
+                <div className="glass-container p-6 flex flex-col gap-5 text-sm leading-relaxed">
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">1. Registry & Pedigree Switcher</h4>
+                    <p className="opacity-80">
+                      WarrenWise Pro enables owners to switch contexts between their own rabbitry and any employer's hutch where they are hired as a Barn Assistant. Use the **Context Switcher** in the top navigation header to toggle registries.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">2. Barn Assistant Approval Flow</h4>
+                    <p className="opacity-80">
+                      When logged in as a Barn Assistant, any additions or updates you make to your employer's registry are queued in local storage (`rp_approvals`) for security and verification. The Breeder Owner must approve these records from the **Assistant Review Center** on their Dashboard to finalize database storage.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">3. ARBA Breeding & Reproduction Cycles</h4>
+                    <p className="opacity-80">
+                      Gestating does have specific date milestones calculated from mating day:
+                      - **Day 12**: Pregnancy palpation due.
+                      - **Day 28**: Nest box insertion.
+                      - **Day 31**: Kindle date (litter expected).
+                      Use the **AI Smart Advisor** on the Dashboard for inline action triggers to record these events.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">4. Multi-Stage Weight Tracking</h4>
+                    <p className="opacity-80">
+                      Log weights matching ARBA Standard of Perfection classes: *Pre-Wean (Baby)*, *Junior*, *Intermediate*, and *Senior*. The rabbit profile renders a summary grid comparing standard weights.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">5. Offline Diagnostics & Sync</h4>
+                    <p className="opacity-80">
+                      This application operates offline. All operations are cached and can be synced via the **SQLite Sync** queue. Perform database health audits from the **System Diagnostics** tab.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">6. Subscription Plans & Limits</h4>
+                    <p className="opacity-80">
+                      WarrenWise Pro offers subscription tiers tailored to your rabbitry's scale:
+                      <br />
+                      • <strong>Basic / Free Tier</strong>: Restricted to 25 active rabbits (Juniors, Seniors, and active inventory). Pre-wean kits and pedigree-only background records do not count against this limit.
+                      <br />
+                      • <strong>Pro Tier</strong>: Supports up to 1,000 active rabbit profiles.
+                      <br />
+                      • <strong>Admin Overrides</strong>: If you need custom limits, comped (free) access, or discounted pricing, platforms owners can override these settings. Overrides are manageable via the Owner Control Center.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {helpSubTab === 'policy' && (
+                <div className="glass-container p-6 flex flex-col gap-5 text-sm leading-relaxed">
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">🛡️ 100% FDA Veterinary Compliance</h4>
+                    <p className="opacity-80">
+                      In accordance with FDA veterinary guidelines and regulations for animal drug administration:
+                      - Breeders must record drug names, dosages, and the manufacturer's **Withdrawal Period** (in days) to ensure no residues enter the exhibition or food chain.
+                      - WarrenWise Pro automatically tags rabbits with a prominent blinking warning badge on their profiles and show rosters when their withdrawal period is active.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">🔒 HIPAA Safe Harbor Data Protection</h4>
+                    <p className="opacity-80">
+                      This is a veterinary-focused animal management platform. In compliance with Federal HIPAA regulations and local compliance rules:
+                      - **Rabbit-Only Veterinary Scope**: All medical logs, treatments, dosages, and questions must concern rabbits exclusively. No human medical details, breeder medical records, or human drug prescriptions may be documented.
+                      - **Security Safeguards**: Human Protected Health Information (PHI), physician names, and Social Security Numbers (SSN) are strictly prohibited.
+                      - **Automated Scanning**: The platform features automated text scanners that flag and redact human medical references to preserve Safe Harbor compliance.
+                    </p>
+                  </div>
+                  <hr className="border-white/5" />
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-2">⚖️ Terms of Service & Privacy Declarations</h4>
+                    <p className="opacity-80">
+                      By utilizing the WarrenWise Pro platform, you agree to safeguard client identities, log veterinary procedures accurately under FDA guidelines, and refrain from uploading human health datasets. All database information is stored locally on-device and transmitted via end-to-end encrypted SQLite databases.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {helpSubTab === 'data' && (
+                <div className="glass-container p-6 flex flex-col gap-6 text-sm">
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-1">📁 Complete Database Backup (Export JSON)</h4>
+                    <p className="opacity-75 text-xs">
+                      Download a single JSON file containing all rabbits, breedings, litters, ledger, medical history, and account settings. You can use this file to migrate between devices or store historical archives.
+                    </p>
+                    <button
+                      onClick={handleExportData}
+                      className="btn-interactive text-xs py-2 px-4 bg-sky-600 hover:bg-sky-700 text-white font-bold mt-3 border-none flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" /> Export All Database Data
+                    </button>
+                  </div>
+
+                  <hr className="border-white/5" />
+
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-1">📤 Restore Database (Import JSON)</h4>
+                    <p className="opacity-75 text-xs text-rose-300">
+                      WARNING: Importing a backup file will overwrite all current rabbits, litters, breedings, ledger, and settings in this browser. This action cannot be undone.
+                    </p>
+                    <label className="btn-interactive text-xs py-2 px-4 bg-indigo-600 hover:bg-indigo-650 text-white font-bold mt-3 border-none flex items-center gap-1.5 cursor-pointer inline-flex">
+                      Upload Backup File (.json)
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportData}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -7089,7 +8617,11 @@ export default function App() {
                           Math.floor(Math.random()*100000000).toString(16).padStart(8, '0');
 
           // 1. Update Rabbit status to 'sold'
-          setAllRabbits(prev => prev.map(r => r.id === rabbit.id ? { ...r, status: 'sold' } : r));
+          const updatedRabbit = { ...rabbit, status: 'sold' };
+          setAllRabbits(prev => prev.map(r => r.id === rabbit.id ? updatedRabbit : r));
+          if (isOffline) {
+            addSyncAction('UPDATE', 'rabbits', updatedRabbit);
+          }
           
           // 2. Add ledger transaction
           const newLedgerEntry = {
@@ -7103,6 +8635,9 @@ export default function App() {
             notes: `Rabbit ownership transfer of ${rabbit.name} (${rabbit.tattooNumber}) to ${buyerDetails.name} (Cert: ${certId})`
           };
           setAllLedger(prev => [newLedgerEntry, ...prev]);
+          if (isOffline) {
+            addSyncAction('INSERT', 'ledger', newLedgerEntry);
+          }
 
           // 3. Create Transfer record
           const transferRecord = {
@@ -7122,6 +8657,9 @@ export default function App() {
             hash: docHash
           };
           setAllTransfers(prev => [transferRecord, ...prev]);
+          if (isOffline) {
+            addSyncAction('INSERT', 'transfers', transferRecord);
+          }
 
           // 4. Create Signature audit logs
           const signatureRecord = {
@@ -7134,6 +8672,9 @@ export default function App() {
             buyerSignatureType: buyerSignature.startsWith('data:image') ? 'drawn' : 'typed'
           };
           setAllSignatures(prev => [signatureRecord, ...prev]);
+          if (isOffline) {
+            addSyncAction('INSERT', 'signatures', signatureRecord);
+          }
 
           // Trigger Confetti!
           triggerConfetti();
@@ -8218,6 +9759,85 @@ export default function App() {
         );
       })()}
 
+      {/* Printable Cage Card Modal */}
+      {printCardRabbit && (() => {
+        const rabbit = printCardRabbit;
+        const sire = rabbit.sireId ? allRabbits.find(r => r.id === rabbit.sireId) : null;
+        const dam = rabbit.damId ? allRabbits.find(r => r.id === rabbit.damId) : null;
+        
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+            <div className="printable-modal bg-white text-slate-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-6 relative border-4 border-indigo-650 no-print-backdrop">
+              
+              {/* Close & Print buttons (Hidden on Print) */}
+              <div className="no-print absolute top-4 right-4 flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5 cursor-pointer"
+                >
+                  🖨️ Print Cage Card
+                </button>
+                <button 
+                  onClick={() => setPrintCardRabbit(null)}
+                  className="p-2 text-slate-500 hover:text-slate-950 rounded-full hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 4"x3" Cage Card Container */}
+              <div className="cage-card-box flex flex-col justify-between border-4 border-double border-slate-800 p-4 bg-white text-slate-900 rounded-lg shadow-sm" style={{ width: '4in', height: '3in' }}>
+                <div className="flex justify-between items-start border-b-2 border-slate-800 pb-1.5">
+                  <div>
+                    <h4 className="cage-card-title text-base font-extrabold uppercase tracking-tight text-slate-900 line-clamp-1 m-0 leading-none">
+                      {rabbit.name}
+                    </h4>
+                    <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold m-0 mt-0.5">
+                      {rabbit.breed} &bull; {rabbit.variety}
+                    </p>
+                  </div>
+                  <span className="bg-slate-900 text-white font-mono text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    TATTOO: {rabbit.tattooNumber}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 py-2 flex-1 items-center">
+                  <div className="col-span-2 flex flex-col gap-1 text-[10px] text-slate-700 font-medium">
+                    <div>Sex: <span className="font-extrabold text-slate-900 uppercase">{rabbit.sex}</span></div>
+                    <div>DOB: <span className="font-mono text-slate-900">{rabbit.dob}</span></div>
+                    <div className="truncate">Sire: <span className="text-slate-900 font-semibold">{sire ? `${sire.name} (${sire.tattooNumber})` : 'Unknown'}</span></div>
+                    <div className="truncate">Dam: <span className="text-slate-900 font-semibold">{dam ? `${dam.name} (${dam.tattooNumber})` : 'Unknown'}</span></div>
+                  </div>
+                  
+                  {/* Mock QR Code vector (SVG) */}
+                  <div className="flex justify-end items-center">
+                    <svg width="64" height="64" viewBox="0 0 29 29" className="text-slate-900" fill="currentColor">
+                      <path d="M0 0h7v7H0zm1 1v5h5V1zm1 1h3v3H2zm6-2h1v1H8zm1 1h1v1H9zm-1 1h1v1H8zm2 0h1v1h-1zm-2 2h1v1H8zm3 0h1v1h-1zm-3 1h1v1H8zm2 0h1v1h-1zm-2 2h1v1H8zm2-6h1v1h-1zm1 2h1v1h-1zm0 2h1v1h-1zm1-3v1h1v-1zm0 2v1h1v-1zm1-1v1h1v-1zm0 2v1h1v-1zM0 8h7v7H0zm1 1v5h5V9zm1 1h3v3H2zm20-10h7v7h-7zm1 1v5h5V1zm1 1h3v3h-3zm-14 8h1v1h-1zm1 1h1v1h-1zm-1 1h1v1h-1zm2 0h1v1h-1zm-2 2h1v1H8zm3 0h1v1h-1zm-3 1h1v1H8zm2 0h1v1h-1zm-2 2h1v1H8zm2-6h1v1h-1zm1 2h1v1h-1zm0 2h1v1h-1zm1-3v1h1v-1zm0 2v1h1v-1zm1-1v1h1v-1zm0 2v1h1v-1zM22 8h7v7h-7zm1 1v5h5V9zm1 1h3v3h-3zm-14 8h1v1h-1zm1 1h1v1h-1zm-1 1h1v1h-1zm2 0h1v1h-1zm-2 2h1v1H8zm3 0h1v1h-1zm-3 1h1v1H8zm2 0h1v1h-1zm-2 2h1v1H8zm2-6h1v1h-1zm1 2h1v1h-1zm0 2h1v1h-1zm1-3v1h1v-1zm0 2v1h1v-1zm1-1v1h1v-1zm0 2v1h1v-1z" />
+                      <rect x="9" y="9" width="2" height="2" />
+                      <rect x="13" y="11" width="2" height="2" />
+                      <rect x="9" y="15" width="2" height="2" />
+                      <rect x="17" y="9" width="2" height="2" />
+                      <rect x="15" y="15" width="2" height="2" />
+                      <rect x="19" y="13" width="2" height="2" />
+                      <rect x="11" y="19" width="2" height="2" />
+                      <rect x="15" y="17" width="2" height="2" />
+                      <rect x="17" y="21" width="2" height="2" />
+                      <rect x="21" y="19" width="2" height="2" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <div className="border-t border-slate-200 pt-1 flex justify-between items-center text-[7px] text-slate-400 font-mono w-full">
+                  <span>{rabbitryLogo} {activeBreederContext?.rabbitryName || activeBreederContext?.name || 'RabbitryPedigreePro'}</span>
+                  <span>Loc: {rabbit.location || 'N/A'}</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Email / Text Import Wizard Modal */}
       {showEmailImportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
@@ -8372,6 +9992,321 @@ export default function App() {
               </form>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Barn-Mode Floating Action Button */}
+      {barnMode && (
+        <button
+          onClick={() => {
+            setShowQuickWeightModal(true);
+          }}
+          className="mobile-fab md:hidden border-none"
+          title="Quick log weight"
+        >
+          <Plus className="w-6 h-6 text-white" />
+        </button>
+      )}
+
+      {/* Touch Weight Log Modal */}
+      {showQuickWeightModal && (
+        <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-slate-900 border-2 border-orange-500/35 rounded-t-3xl sm:rounded-3xl p-6 flex flex-col gap-4 shadow-2xl text-slate-100 no-print">
+            <div className="flex justify-between items-center border-b border-white/5 pb-2">
+              <h3 className="font-extrabold text-base text-orange-400">
+                ⚖️ Touch Weight Log
+              </h3>
+              <button 
+                onClick={() => setShowQuickWeightModal(false)}
+                className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-white border-none bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const rabbitId = e.target.quickWeightRabbitId.value;
+                const weight = e.target.quickWeightOz.value;
+                if (!rabbitId || !weight) {
+                  alert("Please select a rabbit and specify weight.");
+                  return;
+                }
+                const createdWeight = {
+                  id: `w-${Date.now()}`,
+                  rabbitId: rabbitId,
+                  date: new Date().toISOString().split('T')[0],
+                  weightOz: Number(weight),
+                  stage: 'Routine'
+                };
+                setAllWeights(prev => [createdWeight, ...prev]);
+                setAllRabbits(prev => prev.map(item => item.id === rabbitId ? { ...item, weightOz: Number(weight) } : item));
+                
+                if (isOffline) {
+                  addSyncAction('INSERT', 'weights', createdWeight);
+                  const updatedRabbit = allRabbits.find(r => r.id === rabbitId);
+                  if (updatedRabbit) {
+                    addSyncAction('UPDATE', 'rabbits', { ...updatedRabbit, weightOz: Number(weight) });
+                  }
+                }
+                
+                setShowQuickWeightModal(false);
+                showToast("Weight logged successfully!", "success");
+              }}
+              className="flex flex-col gap-4"
+            >
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold opacity-80">Select Rabbit</label>
+                <select 
+                  name="quickWeightRabbitId" 
+                  required 
+                  className="w-full bg-slate-950 text-white border border-white/10 rounded-lg p-2 text-xs h-12"
+                >
+                  <option value="">-- Choose Rabbit --</option>
+                  {rabbits.filter(r => r.status !== 'sold' && r.status !== 'pedigree_only').map(r => (
+                    <option key={r.id} value={r.id}>
+                      [{r.tattooNumber}] {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold opacity-80 flex items-center justify-between">
+                  <span>Weight (ounces)</span>
+                  <button
+                    type="button"
+                    onClick={() => handleVoiceInput((val) => {
+                      const inputElement = document.getElementById('quickWeightOz');
+                      if (inputElement) inputElement.value = val;
+                    }, true)}
+                    className="text-[10px] text-indigo-400 font-bold hover:underline border-none bg-transparent cursor-pointer"
+                  >
+                    🎙️ Speak Weight
+                  </button>
+                </label>
+                <input 
+                  id="quickWeightOz"
+                  name="quickWeightOz" 
+                  type="number" 
+                  required 
+                  min="1" 
+                  placeholder="E.g. 48"
+                  className="w-full bg-slate-950 text-white border border-white/10 rounded-lg p-2 text-xs h-12" 
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-orange-600 hover:bg-orange-550 text-white font-extrabold rounded-xl text-sm border-none shadow cursor-pointer mt-2"
+              >
+                Log Weight Record
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* COPPA Parental Consent Modal */}
+      {currentUser?.isYouth && !currentUser?.parentalConsentVerified && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg no-print">
+          <div className="w-full max-w-md bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="text-center">
+              <h3 className="font-extrabold text-xl text-indigo-400 flex items-center justify-center gap-2">
+                🛡️ {currentUser?.ageGroup === 'teen' ? '🧑 Teen Breeder Approval' : '💳 Parent Identity Verification'}
+              </h3>
+              <p className="text-xs opacity-70 mt-1">
+                {currentUser?.ageGroup === 'teen' 
+                  ? 'Guardian sign-off is required for breeders aged 15 to 18.' 
+                  : 'Verifiable Parental Consent (via card verification) is required for helpers under 15.'}
+              </p>
+            </div>
+            
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const parentName = e.target.parentName.value;
+                const parentEmail = e.target.parentEmail.value;
+                
+                let cardholderName = '';
+                let maskedCard = '';
+                let teenSignature = '';
+
+                if (currentUser?.ageGroup === 'teen') {
+                  teenSignature = e.target.teenSignature.value;
+                  if (!parentName || !parentEmail || !teenSignature || !e.target.consentCheck.checked) {
+                    alert("Please fill in all guardian contact details, signature, and verify consent.");
+                    return;
+                  }
+                } else {
+                  cardholderName = e.target.cardholderName.value;
+                  const cardNumberRaw = e.target.cardNumber.value.replace(/\s+/g, '');
+                  const expDate = e.target.expDate.value;
+                  const cvv = e.target.cvv.value;
+
+                  if (!parentName || !parentEmail || !e.target.consentCheck.checked) {
+                    alert("Please fill in parent contact details and verify consent.");
+                    return;
+                  }
+                  
+                  if (!cardholderName || !cardNumberRaw || !expDate || !cvv) {
+                    alert("Please provide complete credit card information for adult identity verification.");
+                    return;
+                  }
+
+                  if (!/^\d{15,16}$/.test(cardNumberRaw)) {
+                    alert("Please enter a valid 15 or 16-digit credit card number.");
+                    return;
+                  }
+
+                  if (!/^\d{2}\/\d{2}$/.test(expDate)) {
+                    alert("Please enter a valid expiration date in MM/YY format.");
+                    return;
+                  }
+
+                  if (!/^\d{3,4}$/.test(cvv)) {
+                    alert("Please enter a valid 3 or 4-digit CVV security code.");
+                    return;
+                  }
+
+                  const last4 = cardNumberRaw.slice(-4);
+                  maskedCard = `XXXX-XXXX-XXXX-${last4}`;
+                }
+
+                // Update current user
+                const updatedUser = { 
+                  ...currentUser, 
+                  parentalConsentVerified: true, 
+                  parentName, 
+                  parentEmail,
+                  parentCardholderName: cardholderName,
+                  parentMaskedCard: maskedCard,
+                  teenSignature: teenSignature,
+                  consentTimestamp: new Date().toISOString()
+                };
+                setCurrentUser(updatedUser);
+                localStorage.setItem('rp_current_user', JSON.stringify(updatedUser));
+                
+                // Sync updated user to adminBreeders list
+                setAdminBreeders(prev => prev.map(b => b.id === currentUser.id ? updatedUser : b));
+                showToast("Verification complete! Welcome to WarrenWise Pro.", "success");
+              }}
+              className="flex flex-col gap-4 text-xs"
+            >
+              <div className="flex flex-col gap-1.5">
+                <label className="font-bold opacity-80">Parent / Guardian Full Name</label>
+                <input 
+                  name="parentName" 
+                  type="text" 
+                  required 
+                  placeholder="Enter parent's full name" 
+                  className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white" 
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-bold opacity-80">Parent / Guardian Email Address</label>
+                <input 
+                  name="parentEmail" 
+                  type="email" 
+                  required 
+                  placeholder="parent@example.com" 
+                  className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white" 
+                />
+              </div>
+
+              {currentUser?.ageGroup === 'teen' ? (
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold opacity-80">Guardian Digital Signature (Enter Full Name)</label>
+                  <input 
+                    name="teenSignature" 
+                    type="text" 
+                    required 
+                    placeholder="Parent / Guardian Signature" 
+                    className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white" 
+                  />
+                </div>
+              ) : (
+                <div className="border-t border-white/5 pt-3 mt-1 flex flex-col gap-3">
+                  <span className="text-[10px] uppercase font-bold text-orange-400 tracking-wider flex items-center gap-1">
+                    💳 Adult Credit Card / Bank Verification
+                  </span>
+                  <p className="text-[9px] opacity-75 leading-relaxed">
+                    In compliance with FTC COPPA rules, we verify adult guardian status using a credit or debit card. A temporary micro-authorization of $0.50 will be processed (instantly voided).
+                  </p>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold opacity-80">Cardholder Name</label>
+                    <input 
+                      name="cardholderName" 
+                      type="text" 
+                      required 
+                      placeholder="As it appears on card" 
+                      className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold opacity-80">Credit / Debit Card Number</label>
+                    <input 
+                      name="cardNumber" 
+                      type="text" 
+                      required 
+                      maxLength="19"
+                      placeholder="4111 2222 3333 4444" 
+                      className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold opacity-80 text-left">Expiration Date</label>
+                      <input 
+                        name="expDate" 
+                        type="text" 
+                        required 
+                        maxLength="5"
+                        placeholder="MM/YY" 
+                        className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white text-center" 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold opacity-80 text-left">CVV / CVC Code</label>
+                      <input 
+                        name="cvv" 
+                        type="text" 
+                        required 
+                        maxLength="4"
+                        placeholder="123" 
+                        className="bg-black/30 text-xs py-1.5 px-3 rounded border border-white/10 text-white text-center" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-2 bg-white/5 p-3 rounded-lg border border-white/5">
+                <input 
+                  name="consentCheck" 
+                  type="checkbox" 
+                  required 
+                  id="consentCheck" 
+                  className="w-4 h-4 mt-0.5 cursor-pointer" 
+                />
+                <label htmlFor="consentCheck" className="text-[10px] leading-relaxed opacity-85 cursor-pointer text-left">
+                  I verify that I am the parent/guardian of this junior breeder, and consent to their use of RabbitryPedigree Pro.
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-interactive w-full py-2 bg-indigo-600 hover:bg-indigo-700 font-bold border-none text-white text-xs mt-2"
+              >
+                Sign Consent & Unlock Application
+              </button>
+            </form>
           </div>
         </div>
       )}

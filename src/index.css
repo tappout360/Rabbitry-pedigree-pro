@@ -203,6 +203,7 @@ select option {
   cursor: pointer;
   box-shadow: 0 4px 12px var(--accent-glow);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  will-change: transform, box-shadow;
 }
 
 .btn-interactive:hover {
@@ -255,6 +256,7 @@ select option {
   max-width: 250px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.15);
   animation: bounceSlow 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 .mascot-bubble::after {
@@ -329,6 +331,7 @@ select option {
   text-align: center;
   position: relative;
   animation: scalePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  will-change: transform, opacity;
 }
 
 .success-bubble-card img {
@@ -347,6 +350,7 @@ select option {
 .anime-reward-char {
   font-size: 5rem;
   animation: float 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* ==========================================
@@ -413,6 +417,20 @@ select option {
   --bubble-shadow: rgba(234, 128, 252, 0.35);
 }
 
+/* 7. Pastel Paradise Theme (Lavender, Soft Pink & Mint Green) */
+.theme-pastel {
+  --bg-gradient: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 50%, #f0fdf4 100%);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: #f472b6;
+  --text-primary: #5b21b6;
+  --text-secondary: #86198f;
+  --accent-primary: #ec4899;
+  --accent-glow: rgba(236, 72, 153, 0.25);
+  --card-shadow: 0 10px 30px rgba(244, 114, 182, 0.25);
+  --bubble-border: #c084fc;
+  --bubble-shadow: rgba(74, 222, 128, 0.2);
+}
+
 /* Custom Color Accent Utilities */
 .custom-border-accent {
   border-color: var(--custom-accent-color) !important;
@@ -427,6 +445,90 @@ select option {
   box-shadow: 0 0 15px var(--custom-accent-color) !important;
 }
 
+/* Bunny Silhouette Watermark Pattern */
+.bunny-watermark {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 100 100" fill="none" stroke="%23ffffff" stroke-width="1" opacity="0.05"><path d="M50 80c-12 0-20-8-20-16s6-12 12-14c-2-6-1-14 2-20s8-8 10-2c2-6 7-4 10 2c3 6 4 14 2 20 6 2 12 6 12 14s-8 16-20 16zM40 52a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM60 52a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM50 65c-3 0-5-2-5-4h10c0 2-2 4-5 4z"/></svg>');
+  background-repeat: repeat;
+}
+
+/* Fun Mode Active Styles: bubbly, highly animated, toy-like gradients */
+.fun-mode-active .glass-container {
+  border-radius: 28px !important;
+  border: 3px dashed var(--glass-border) !important;
+  box-shadow: 6px 6px 0px var(--accent-primary) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.fun-mode-active .glass-container:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0px var(--accent-primary) !important;
+}
+.fun-mode-active input, 
+.fun-mode-active select, 
+.fun-mode-active textarea {
+  border-radius: 20px !important;
+  border: 2px solid var(--glass-border) !important;
+  padding: 10px 16px !important;
+  transition: all 0.2s ease;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--text-primary) !important;
+}
+.fun-mode-active input:focus, 
+.fun-mode-active select:focus, 
+.fun-mode-active textarea:focus {
+  transform: scale(1.02);
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 12px var(--accent-glow) !important;
+  outline: none;
+}
+.fun-mode-active button:not(.no-bounce) {
+  border-radius: 24px !important;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.fun-mode-active button:not(.no-bounce):hover {
+  transform: scale(1.08) rotate(-1deg);
+  box-shadow: 0 8px 15px var(--accent-glow) !important;
+}
+
+/* Pro Mode Overrides: flat, clean SaaS style, minimal borders */
+.pro-mode-active .glass-container {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transform: none !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.pro-mode-active .glass-container:hover {
+  transform: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+.pro-mode-active input, 
+.pro-mode-active select, 
+.pro-mode-active textarea {
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 6px 12px !important;
+}
+.pro-mode-active button {
+  border-radius: 6px !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.pro-mode-active button:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Performance Lag Reducers: disable animations instantly in Pro/Barn modes */
+.pro-mode-active *,
+.barn-mode-active * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
 /* Bouncy & Bouncing Animations */
 @keyframes bounceSubtle {
   0%, 100% { transform: translateY(0); }
@@ -434,6 +536,7 @@ select option {
 }
 .animate-bounce-subtle {
   animation: bounceSubtle 2s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* Champion Pedigree Borders */
@@ -526,3 +629,116 @@ select option {
     print-color-adjust: exact !important;
   }
 }
+
+/* ==========================================
+   Cage Card Specific Styles
+   ========================================== */
+.cage-card-box {
+  width: 4in;
+  height: 3in;
+  border: 4px double #1e293b;
+  padding: 12px;
+  background-color: #ffffff;
+  color: #0f172a;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.cage-card-title {
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 800;
+  border-bottom: 2px solid #334155;
+  padding-bottom: 4px;
+}
+
+/* ==========================================
+   Barn Mode & Mobile Touch Optimizations
+   ========================================== */
+.barn-mode-active {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.barn-mode-active .glass-container {
+  background: rgba(0, 0, 0, 0.9) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.barn-mode-active h1, 
+.barn-mode-active h2, 
+.barn-mode-active h3, 
+.barn-mode-active h4, 
+.barn-mode-active h5 {
+  color: #ffffff !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.025em;
+}
+
+.barn-mode-active p, 
+.barn-mode-active span, 
+.barn-mode-active label,
+.barn-mode-active div {
+  font-size: 110%;
+  color: #e2e8f0 !important;
+}
+
+.barn-mode-active button,
+.barn-mode-active select,
+.barn-mode-active input,
+.barn-mode-active textarea {
+  min-height: 48px !important;
+  font-size: 1.1rem !important;
+  border: 2px solid #ffffff !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+}
+
+.barn-mode-active button:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+}
+
+.barn-mode-active select option {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Specific Highlight Borders in Barn Mode */
+.barn-mode-active .border-indigo-500\/25,
+.barn-mode-active .border-indigo-500\/20,
+.barn-mode-active .border-white\/5,
+.barn-mode-active .border-white\/10 {
+  border-color: #ffffff !important;
+  border-width: 2px !important;
+}
+
+/* Large Floating Action Button for Mobile screens */
+.mobile-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  z-index: 40;
+  cursor: pointer;
+  background-color: #ea580c !important; /* orange-600 */
+  border: 2px solid #ffffff !important;
+}
+.mobile-fab svg {
+  width: 24px;
+  height: 24px;
+  stroke: #ffffff !important;
+}
+
+
