@@ -16,6 +16,7 @@ import TimelineGallery from './components/gallery/TimelineGallery';
 import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
+import { uuidv7 } from './db/uuid';
 
 // Initial Breed Standards Data (Ounces: 16 oz = 1 lb)
 const BREED_STANDARDS = {
@@ -1397,7 +1398,7 @@ export default function App() {
   // Sync log helper
   const addSyncAction = (action, table, payload) => {
     const newAction = {
-      id: `sync-${Date.now()}`,
+      id: uuidv7(),
       action,
       table,
       payload,
@@ -1602,7 +1603,7 @@ export default function App() {
 
     // Create a new pending breeder profile
     const newBreeder = {
-      id: `ab-${Date.now()}`,
+      id: uuidv7(),
       name: profileForm.name,
       email: profileForm.email,
       username: profileForm.username,
@@ -1714,7 +1715,7 @@ export default function App() {
   // Helper to submit records for breeder approval
   const submitForApproval = (type, targetTable, payload) => {
     const apprItem = {
-      id: `appr-${Date.now()}`,
+      id: uuidv7(),
       assistantId: currentUser?.id,
       assistantName: currentUser?.name || 'Assistant',
       breederId: selectedBreederContext,
@@ -1773,7 +1774,7 @@ export default function App() {
           const kindleDate = new Date(breedDateObj.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
           const newBreeding = {
-            id: `b-${Date.now()}`,
+            id: uuidv7(),
             breederId: oldBreeding.breederId,
             buckId: oldBreeding.buckId,
             doeId: oldBreeding.doeId,
@@ -1911,7 +1912,7 @@ export default function App() {
 
     const createdRabbit = {
       ...newRabbit,
-      id: `r-${Date.now()}`,
+      id: uuidv7(),
       breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
       weightOz: Number(newRabbit.weightOz),
       notes: sanitizeTextInput(newRabbit.notes),
@@ -1980,7 +1981,7 @@ export default function App() {
 
     const createdBreeding = {
       ...newBreeding,
-      id: `b-${Date.now()}`,
+      id: uuidv7(),
       breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
       palpateDate,
       nestBoxDate,
@@ -2266,7 +2267,7 @@ export default function App() {
 
     const createdLeg = {
       ...newAncestorLeg,
-      id: `leg-${Date.now()}`,
+      id: uuidv7(),
       showName: sanitizeTextInput(newAncestorLeg.showName),
       judge: sanitizeTextInput(newAncestorLeg.judge),
       classSize: Number(newAncestorLeg.classSize) || 0
@@ -2303,7 +2304,7 @@ export default function App() {
       }
 
       const createdLeg = {
-        id: `leg-${Date.now()}`,
+        id: uuidv7(),
         showName: sanitizeTextInput(showName),
         judge: sanitizeTextInput(judge),
         date,
@@ -2370,7 +2371,7 @@ export default function App() {
       const offspringDamId = payload.dam ? importNode(payload.dam, 'doe') : '';
       
       const newOffspring = {
-        id: `r-imported-${Date.now()}`,
+        id: uuidv7(),
         breederId: activeBreederId,
         tattooNumber: payload.tattooNumber || payload.rabbitTattoo || 'IMP-OFF',
         name: payload.name || payload.rabbitName || 'Imported Rabbit',
@@ -2472,7 +2473,7 @@ export default function App() {
 
     const createdLeg = {
       ...newLeg,
-      id: `leg-${Date.now()}`,
+      id: uuidv7(),
       showName: sanitizeTextInput(newLeg.showName),
       judge: sanitizeTextInput(newLeg.judge),
       classSize: Number(newLeg.classSize) || 0
@@ -2529,7 +2530,7 @@ export default function App() {
           const kindleDate = new Date(breedDateObj.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
           const newBreeding = {
-            id: `b-${Date.now()}`,
+            id: uuidv7(),
             breederId: oldBreeding.breederId,
             buckId: oldBreeding.buckId,
             doeId: oldBreeding.doeId,
@@ -2559,7 +2560,7 @@ export default function App() {
   const logKindle = (id, kitsAlive, kitsDead) => {
     const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
     const newLitter = {
-      id: `l-${Date.now()}`,
+      id: uuidv7(),
       breederId: activeBreederId,
       breedingId: id,
       kitsBornAlive: Number(kitsAlive),
@@ -2600,7 +2601,7 @@ export default function App() {
     const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
     const createdTx = {
       ...newTx,
-      id: `tx-${Date.now()}`,
+      id: uuidv7(),
       breederId: activeBreederId,
       amount: Number(newTx.amount)
     };
@@ -2625,7 +2626,7 @@ export default function App() {
     }
 
     const createdWeight = {
-      id: `w-${Date.now()}`,
+      id: uuidv7(),
       rabbitId: healthSelectedRabbitId,
       date: newWeightEntry.date,
       weightOz: Number(newWeightEntry.weightOz),
@@ -2771,7 +2772,7 @@ export default function App() {
     }
 
     const createdMedical = {
-      id: `m-${Date.now()}`,
+      id: uuidv7(),
       rabbitId: healthSelectedRabbitId,
       date: newMedicalEntry.date,
       type: newMedicalEntry.type,
@@ -3691,7 +3692,7 @@ export default function App() {
             badge: 'Stage: Junior',
             execute: (weightOz) => {
               const createdWeight = {
-                id: `w-${Date.now()}`,
+                id: uuidv7(),
                 rabbitId: r.id,
                 date: new Date().toISOString().split('T')[0],
                 weightOz: Number(weightOz),
@@ -7458,7 +7459,7 @@ export default function App() {
                         }
 
                         const newBreederObj = {
-                          id: `ab-${Date.now()}`,
+                          id: uuidv7(),
                           name: breederName,
                           email: breederEmail,
                           rabbitryName: breederPrefix || "Independent",
@@ -9392,7 +9393,7 @@ export default function App() {
                   return;
                 }
                 const createdWeight = {
-                  id: `w-${Date.now()}`,
+                  id: uuidv7(),
                   rabbitId: rabbitId,
                   date: new Date().toISOString().split('T')[0],
                   weightOz: Number(weight),

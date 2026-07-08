@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Camera, Calendar, Scale, Trash2, Plus, Clock, FileText, Check } from 'lucide-react';
+import { uuidv7 } from '../../db/uuid';
 
 export default function TimelineGallery({ rabbits = [], onUpdateRabbit }) {
   const [selectedRabbitId, setSelectedRabbitId] = useState(rabbits[0]?.id || '');
@@ -75,7 +76,7 @@ export default function TimelineGallery({ rabbits = [], onUpdateRabbit }) {
     setIsUploading(true);
     
     const newEntry = {
-      id: 'timeline-' + Date.now(),
+      id: uuidv7(),
       date: date || new Date().toISOString().split('T')[0],
       photo: photoPreview || '/assets/holland_lop.png',
       weightOz: weightOz ? parseFloat(weightOz) : null,
