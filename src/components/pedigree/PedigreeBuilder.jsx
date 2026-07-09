@@ -1,12 +1,26 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, AlertTriangle } from 'lucide-react';
+import { uuidv7 } from '../../db/uuid';
 import { BREED_STANDARDS } from '../../db/breedStandards';
 
 export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit }) {
   const [selectedRabbitId, setSelectedRabbitId] = useState(rabbits[0]?.id || '');
   const [activeAssignNode, setActiveAssignNode] = useState(null); // { id: 'sire' | 'dam' | 'sireSire' etc, label: string }
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customForm, setCustomForm] = useState({
+    name: '',
+    tattooNumber: '',
+    breed: '',
+    variety: '',
+    dob: '',
+    weightOz: '',
+    registrationNumber: '',
+    gcNumber: '',
+    breederName: '',
+    breederPrefix: ''
+  });
+
   // Canvas Signature Pad references
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -17,6 +31,12 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit }) {
   const activeRabbit = useMemo(() => {
     return rabbits.find(r => r.id === selectedRabbitId) || null;
   }, [rabbits, selectedRabbitId]);
+
+  useEffect(() => {
+    if (activeRabbit) {
+      setCustomForm(prev => ({ ...prev, breed: activeRabbit.breed || '' }));
+    }
+  }, [activeRabbit]);
 
   // Load signature if already exists
   useEffect(() => {
@@ -209,6 +229,75 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit }) {
     onUpdateRabbit(updatedRabbit);
     setActiveAssignNode(null);
     setSearchQuery('');
+  };
+
+  const handleCreatePedigreeOnly = (e) => {
+    e.preventDefault();
+    if (!activeRabbit || !activeAssignNode) return;
+    
+    const newRabbitId = uuidv7();
+    const newRabbit = {
+      id: newRabbitId,
+      breederId: activeRabbit.breederId,
+      name: customForm.name || 'Unnamed Ancestor',
+      tattooNumber: customForm.tattooNumber || '',
+      breed: customForm.breed || activeRabbit.breed,
+      variety: customForm.variety || '',
+      sex: ['sire', 'sireSire', 'damSire'].includes(activeAssignNode.id) ? 'buck' : 'doe',
+      dob: customForm.dob || '',
+      weightOz: customForm.weightOz ? parseFloat(customForm.weightOz) : '',
+      registrationNumber: customForm.registrationNumber || '',
+      gcNumber: customForm.gcNumber || '',
+      breederName: customForm.breederName || '',
+      breederPrefix: customForm.breederPrefix || '',
+      status: 'pedigree_only',
+      photos: [],
+      legs: []
+    };
+
+    onUpdateRabbit(newRabbit);
+
+    const updatedRabbit = { ...activeRabbit };
+    if (activeAssignNode.id === 'sire') {
+      updatedRabbit.sireId = newRabbitId;
+    } else if (activeAssignNode.id === 'dam') {
+      updatedRabbit.damId = newRabbitId;
+    } else {
+      let parentRabbit = null;
+      if (activeAssignNode.id.startsWith('sire')) {
+        parentRabbit = pedigreeNodes.sire;
+      } else {
+        parentRabbit = pedigreeNodes.dam;
+      }
+
+      if (parentRabbit) {
+        const updatedParent = { ...parentRabbit };
+        if (activeAssignNode.id.endsWith('Sire')) {
+          updatedParent.sireId = newRabbitId;
+        } else {
+          updatedParent.damId = newRabbitId;
+        }
+        onUpdateRabbit(updatedParent);
+      }
+    }
+
+    onUpdateRabbit(updatedRabbit);
+
+    // Reset state
+    setActiveAssignNode(null);
+    setShowCustomForm(false);
+    setCustomForm({
+      name: '',
+      tattooNumber: '',
+      breed: activeRabbit.breed || '',
+      variety: '',
+      dob: '',
+      weightOz: '',
+      registrationNumber: '',
+      gcNumber: '',
+      breederName: '',
+      breederPrefix: ''
+    });
   };
 
   const handleRemoveNode = (nodeId) => {
@@ -526,33 +615,171 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit }) {
                   <p className="text-[10px] text-slate-400 mt-0.5">Select a compatible rabbit from your herd.</p>
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Search name, tattoo..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-xl py-2 px-3 focus:border-indigo-500"
-                />
+{!showCustomForm ? (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Search name, tattoo..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-xl py-2 px-3 focus:border-indigo-500"
+                    />
 
-                <div className="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1">
-                  {availableOptions.length === 0 ? (
-                    <span className="text-[10px] text-slate-500 text-center py-4">No matching rabbits found.</span>
-                  ) : (
-                    availableOptions.map(r => (
+                    <div className="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1">
+                      {availableOptions.length === 0 ? (
+                        <span className="text-[10px] text-slate-500 text-center py-4">No matching rabbits found.</span>
+                      ) : (
+                        availableOptions.map(r => (
+                          <button
+                            key={r.id}
+                            onClick={() => handleAssignRabbit(r)}
+                            className="w-full text-left p-2.5 rounded-xl bg-slate-900 border border-white/5 hover:border-indigo-500 hover:bg-slate-800 transition-all flex items-center justify-between text-[11px]"
+                          >
+                            <div>
+                              <p className="font-bold text-white">{r.name}</p>
+                              <p className="text-[9px] text-slate-400">Tattoo: {r.tattooNumber || 'N/A'} • {r.breed}</p>
+                            </div>
+                            <span className="text-[9px] font-bold text-indigo-400 uppercase">{r.sex}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => { setShowCustomForm(true); }}
+                      className="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 font-bold rounded-xl text-[10px] cursor-pointer"
+                    >
+                      ➕ Add Custom Pedigree Info (Not in Barn)
+                    </button>
+                  </>
+                ) : (
+                  <form onSubmit={handleCreatePedigreeOnly} className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={customForm.name}
+                          onChange={(e) => setCustomForm({ ...customForm, name: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Tattoo</label>
+                        <input
+                          type="text"
+                          value={customForm.tattooNumber}
+                          onChange={(e) => setCustomForm({ ...customForm, tattooNumber: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Breed</label>
+                        <input
+                          type="text"
+                          value={customForm.breed}
+                          onChange={(e) => setCustomForm({ ...customForm, breed: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Variety</label>
+                        <input
+                          type="text"
+                          value={customForm.variety}
+                          onChange={(e) => setCustomForm({ ...customForm, variety: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Birthdate</label>
+                        <input
+                          type="date"
+                          value={customForm.dob}
+                          onChange={(e) => setCustomForm({ ...customForm, dob: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Weight (oz)</label>
+                        <input
+                          type="number"
+                          value={customForm.weightOz}
+                          onChange={(e) => setCustomForm({ ...customForm, weightOz: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Registration #</label>
+                        <input
+                          type="text"
+                          value={customForm.registrationNumber}
+                          onChange={(e) => setCustomForm({ ...customForm, registrationNumber: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">GC Certificate #</label>
+                        <input
+                          type="text"
+                          value={customForm.gcNumber}
+                          onChange={(e) => setCustomForm({ ...customForm, gcNumber: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Breeder Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Jane Doe"
+                          value={customForm.breederName}
+                          onChange={(e) => setCustomForm({ ...customForm, breederName: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Breeder Prefix</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. CLB"
+                          value={customForm.breederPrefix}
+                          onChange={(e) => setCustomForm({ ...customForm, breederPrefix: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-2">
                       <button
-                        key={r.id}
-                        onClick={() => handleAssignRabbit(r)}
-                        className="w-full text-left p-2.5 rounded-xl bg-slate-900 border border-white/5 hover:border-indigo-500 hover:bg-slate-800 transition-all flex items-center justify-between text-[11px]"
+                        type="button"
+                        onClick={() => setShowCustomForm(false)}
+                        className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-[9px] cursor-pointer"
                       >
-                        <div>
-                          <p className="font-bold text-white">{r.name}</p>
-                          <p className="text-[9px] text-slate-400">Tattoo: {r.tattooNumber || 'N/A'} • {r.breed}</p>
-                        </div>
-                        <span className="text-[9px] font-bold text-indigo-400 uppercase">{r.sex}</span>
+                        Back to Search
                       </button>
-                    ))
-                  )}
-                </div>
+                      <button
+                        type="submit"
+                        className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[9px] cursor-pointer"
+                      >
+                        Save Ancestor
+                      </button>
+                    </div>
+                  </form>
+                )}
 
                 <button
                   onClick={() => { setActiveAssignNode(null); setSearchQuery(''); }}
