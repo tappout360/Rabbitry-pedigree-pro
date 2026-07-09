@@ -66,7 +66,22 @@ export const decryptRecord = (record, secretKey, fields = []) => {
     if (decrypted[field] !== undefined && decrypted[field] !== null) {
       // Only decrypt if it looks like a base64 ciphertext block (CryptoJS AES output format)
       if (typeof decrypted[field] === 'string' && decrypted[field].length > 16) {
-        decrypted[field] = decryptAES(decrypted[field], secretKey);
+        let val = decryptAES(decrypted[field], secretKey);
+        // Fall back to system default salt if user key decryption returns invalid values
+        if (!val || val === decrypted[field] || val.startsWith('U2FsdGVk')) {
+          val = decryptAES(decrypted[field], DEFAULT_SALT);
+        }
+        
+        // Double-decryption recovery check: self-heal double-encrypted values
+        if (typeof val === 'string' && val.startsWith('U2FsdGVk') && val.length > 16) {
+          let innerVal = decryptAES(val, secretKey);
+          if (!innerVal || innerVal === val || innerVal.startsWith('U2FsdGVk')) {
+            innerVal = decryptAES(val, DEFAULT_SALT);
+          }
+          val = innerVal;
+        }
+        
+        decrypted[field] = val;
       }
     }
   });

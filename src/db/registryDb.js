@@ -24,6 +24,24 @@ db.version(1).stores({
   approvals: 'id, breederId'
 });
 
+// Version 2: Advanced Indexing for query optimization & scaling (200-1000+ records)
+db.version(2).stores({
+  adminBreeders: 'id, email, username, role',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, [breederId+status], [breederId+sex], [breederId+status+sex]',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status',
+  litters: 'id, breederId, breedingId, kindleDate',
+  ledger: 'id, breederId, rabbitId, date',
+  shows: 'id, breederId, date',
+  showEntries: 'id, breederId, showId, rabbitId',
+  chores: 'id, breederId, dueDate',
+  transfers: 'id, breederId, rabbitId, date',
+  signatures: 'id, breederId',
+  medical: 'id, breederId, rabbitId, date',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date]',
+  syncQueue: 'id, breederId, timestamp',
+  approvals: 'id, breederId, timestamp'
+});
+
 export async function performMigrationAndLoad() {
   const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v3');
   

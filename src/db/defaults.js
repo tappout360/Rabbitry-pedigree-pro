@@ -11,7 +11,7 @@ export const DEFAULT_BREEDERS = [
 
 export const DEFAULT_RABBITS = [
   { 
-    id: 'r-1', breederId: 'ab-1', tattooNumber: 'S01', name: 'Blue Thunder', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2025-01-10', weightOz: 60, status: 'active', sireId: 'r-4', damId: 'r-5', inbreedingCoeff: 0.0, registrationNumber: 'REG-12345', gcNumber: 'GC-5544', location: 'A-01', notes: 'Proven sire, extremely calm.',
+    id: 'r-1', breederId: 'ab-1', tattooNumber: 'S01', name: 'Blue Thunder', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2025-01-10', weightOz: 60, status: 'active', sireId: 'r-4', damId: 'r-5', inbreedingCoeff: 0.0, registrationNumber: 'REG-12345', gcNumber: 'GC-5544', location: 'A-1-2', notes: 'Proven sire, extremely calm.',
     photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'leg-1', date: '2025-09-15', showName: 'ARBA National Show', judge: 'Dr. John Miller', award: 'Best of Variety', classSize: 24 }],
     timeline: [
@@ -23,7 +23,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   { 
-    id: 'r-2', breederId: 'ab-1', tattooNumber: 'D01', name: 'Clover Blossom', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'doe', dob: '2025-02-15', weightOz: 62, status: 'active', sireId: 'r-4', damId: 'r-7', inbreedingCoeff: 0.0, registrationNumber: 'REG-12346', gcNumber: '', location: 'A-02', notes: 'Excellent mothering instincts.',
+    id: 'r-2', breederId: 'ab-1', tattooNumber: 'D01', name: 'Clover Blossom', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'doe', dob: '2025-02-15', weightOz: 62, status: 'active', sireId: 'r-4', damId: 'r-7', inbreedingCoeff: 0.0, registrationNumber: 'REG-12346', gcNumber: '', location: 'A-2-2', notes: 'Excellent mothering instincts.',
     photos: ['/assets/holland_lop.png'],
     legs: [],
     timeline: [
@@ -35,7 +35,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   { 
-    id: 'r-3', breederId: 'ab-1', tattooNumber: 'L43-1', name: 'Blue Pearl', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2026-03-01', weightOz: 38, status: 'active', sireId: 'r-1', damId: 'r-2', inbreedingCoeff: 0.125, registrationNumber: '', gcNumber: '', location: 'B-04', notes: 'Nice hutch variety with rich blue undercoat.',
+    id: 'r-3', breederId: 'ab-1', tattooNumber: 'L43-1', name: 'Blue Pearl', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2026-03-01', weightOz: 38, status: 'active', sireId: 'r-1', damId: 'r-2', inbreedingCoeff: 0.125, registrationNumber: '', gcNumber: '', location: 'B-4-1', notes: 'Nice hutch variety with rich blue undercoat.',
     photos: ['/assets/holland_lop.png'],
     legs: [],
     timeline: [
@@ -46,7 +46,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   {
-    id: 'r-4', breederId: 'ab-1', tattooNumber: 'SR01', name: 'Storm Rider', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2024-03-10', weightOz: 61, status: 'active', sireId: 'r-8', damId: 'r-9', inbreedingCoeff: 0.0, registrationNumber: 'REG-11022', gcNumber: '', location: 'C-01', notes: 'Sired multiple champions.',
+    id: 'r-4', breederId: 'ab-1', tattooNumber: 'SR01', name: 'Storm Rider', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2024-03-10', weightOz: 61, status: 'active', sireId: 'r-8', damId: 'r-9', inbreedingCoeff: 0.0, registrationNumber: 'REG-11022', gcNumber: '', location: 'C-1-2', notes: 'Sired multiple champions.',
     photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'leg-2', date: '2025-10-05', showName: 'West Coast Rabbit Classic', judge: 'Carla Sanchez', award: 'Best of Breed', classSize: 18 }],
     timeline: [
@@ -55,7 +55,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   {
-    id: 'r-5', breederId: 'ab-1', tattooNumber: 'SD01', name: 'Sky Dancer', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-04-12', weightOz: 59, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-02', notes: 'Very gentle temperament.',
+    id: 'r-5', breederId: 'ab-1', tattooNumber: 'SD01', name: 'Sky Dancer', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-04-12', weightOz: 59, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-2-2', notes: 'Very gentle temperament.',
     photos: ['/assets/holland_lop.png'],
     legs: [],
     timeline: [
@@ -64,7 +64,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   {
-    id: 'r-6', breederId: 'ab-1', tattooNumber: 'FR01', name: 'Forest Ranger', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'buck', dob: '2024-02-18', weightOz: 63, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-11023', gcNumber: '', location: 'C-03', notes: 'Broad shoulders, compact body.',
+    id: 'r-6', breederId: 'ab-1', tattooNumber: 'FR01', name: 'Forest Ranger', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'buck', dob: '2024-02-18', weightOz: 63, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-11023', gcNumber: '', location: 'C-3-2', notes: 'Broad shoulders, compact body.',
     photos: ['/assets/holland_lop.png'],
     legs: [],
     timeline: [
@@ -73,7 +73,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   {
-    id: 'r-7', breederId: 'ab-1', tattooNumber: 'MB01', name: 'Meadow Breeze', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-03-22', weightOz: 60, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-04', notes: 'Deep blue coat, great fur density.',
+    id: 'r-7', breederId: 'ab-1', tattooNumber: 'MB01', name: 'Meadow Breeze', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-03-22', weightOz: 60, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-4-2', notes: 'Deep blue coat, great fur density.',
     photos: ['/assets/holland_lop.png'],
     legs: [],
     timeline: [
@@ -82,7 +82,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   {
-    id: 'r-8', breederId: 'ab-1', tattooNumber: 'ZB01', name: 'Zephyr Buck', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2023-01-05', weightOz: 62, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9988', gcNumber: 'GC-2211', location: 'D-01', notes: 'Grand Champion line progenitor.',
+    id: 'r-8', breederId: 'ab-1', tattooNumber: 'ZB01', name: 'Zephyr Buck', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2023-01-05', weightOz: 62, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9988', gcNumber: 'GC-2211', location: 'D-1-2', notes: 'Grand Champion line progenitor.',
     photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'leg-3', date: '2024-11-20', showName: 'Cascade Winter Show', judge: 'Robert Devlin', award: 'Best In Show', classSize: 42 }],
     timeline: [
@@ -91,7 +91,7 @@ export const DEFAULT_RABBITS = [
     ]
   },
   {
-    id: 'r-9', breederId: 'ab-1', tattooNumber: 'OD01', name: 'Orchard Doe', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2023-02-14', weightOz: 61, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9989', gcNumber: '', location: 'D-02', notes: 'High fertility history.',
+    id: 'r-9', breederId: 'ab-1', tattooNumber: 'OD01', name: 'Orchard Doe', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2023-02-14', weightOz: 61, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9989', gcNumber: '', location: 'D-2-2', notes: 'High fertility history.',
     photos: ['/assets/holland_lop.png'],
     legs: [],
     timeline: [

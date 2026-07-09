@@ -949,21 +949,8 @@ export default function App() {
       try {
         const data = await performMigrationAndLoad();
         
-        // Derive key based on currentUser
-        const savedUser = localStorage.getItem('rp_current_user');
-        let activeUser = savedUser ? JSON.parse(savedUser) : null;
-        if (!activeUser) {
-          const email = localStorage.getItem('rp_logged_in_email');
-          if (email) {
-            const savedBreeders = localStorage.getItem('rp_admin_breeders');
-            const list = savedBreeders ? JSON.parse(savedBreeders) : [];
-            activeUser = list.find(b => b.email === email || b.username === email) || null;
-            if (!activeUser && (email === 'jasonmounts77@yahoo.com' || email === 'jmounts')) {
-              activeUser = { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', password: 'JakylieRabbitry4388$$' };
-            }
-          }
-        }
-        const key = deriveSessionKey(activeUser?.password, activeUser?.email);
+        // Derive key based on currentUser state (initialized synchronously on mount)
+        const key = deriveSessionKey(currentUser?.password, currentUser?.email);
         
         // Transparent decryption of sensitive at-rest database fields
         const decryptedRabbits = (data.rabbits || []).map(r => decryptRecord(r, key, ['dob', 'notes']));
@@ -1022,6 +1009,9 @@ export default function App() {
   const [healthSelectedRabbitId, setHealthSelectedRabbitId] = useState('');
   const [printCardRabbit, setPrintCardRabbit] = useState(null);
   const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
+  const [editProfileMode, setEditProfileMode] = useState(false);
+  const [editProfileData, setEditProfileData] = useState({});
+  const [cageMoveRabbitId, setCageMoveRabbitId] = useState(null); // rabbit id being moved on cage map
   
   // Health & Growth Form States
   const [newWeightEntry, setNewWeightEntry] = useState({ date: new Date().toISOString().split('T')[0], weightOz: '', stage: 'Routine' });
@@ -2027,6 +2017,49 @@ export default function App() {
         setSelectedRabbit(null);
       }
     }
+  };
+
+  // Save Edited Rabbit Profile Handler
+  const handleSaveProfile = () => {
+    if (!selectedRabbit || !editProfileData) return;
+    // Front-end validation
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (editProfileData.dob && editProfileData.dob > todayStr) {
+      alert("Invalid Date of Birth: Cannot select a future date.");
+      return;
+    }
+    const wt = parseFloat(editProfileData.weightOz);
+    if (isNaN(wt) || wt < 0 || wt > 500) {
+      alert("Invalid Weight: Weight must be between 0 and 500 ounces.");
+      return;
+    }
+    if (!editProfileData.name || !editProfileData.tattooNumber) {
+      alert("Name and Tattoo are required fields.");
+      return;
+    }
+    const updated = { ...selectedRabbit, ...editProfileData, weightOz: wt };
+    setAllRabbits(prev => prev.map(r => r.id === updated.id ? updated : r));
+    setSelectedRabbit(updated);
+    setEditProfileMode(false);
+    addSyncAction('UPDATE', 'rabbits', updated);
+    showToast(`Profile for "${updated.name}" updated successfully!`, 'success');
+  };
+
+  // Move Rabbit to Different Cage Location
+  const handleMoveRabbitCage = (rabbitId, newLocation) => {
+    setAllRabbits(prev => prev.map(r => {
+      if (r.id === rabbitId) {
+        const updated = { ...r, location: newLocation };
+        if (selectedRabbit && selectedRabbit.id === rabbitId) {
+          setSelectedRabbit(updated);
+        }
+        return updated;
+      }
+      return r;
+    }));
+    addSyncAction('UPDATE', 'rabbits', { id: rabbitId, location: newLocation });
+    setCageMoveRabbitId(null);
+    showToast(`Rabbit moved to cage ${newLocation}`, 'success');
   };
 
   // Add Breeding Handler
@@ -3055,63 +3088,101 @@ export default function App() {
 
   if (!hasProfile) {
     return (
-      <div className="theme-dark min-h-screen relative overflow-y-auto bg-slate-950">
+      <div className="theme-dark min-h-screen relative overflow-y-auto bg-slate-950 text-slate-100">
         {/* Neon Cyber Glow Effects behind the card */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div className="w-full min-h-screen p-8 md:p-12 relative z-10 bg-slate-950/40 backdrop-blur-md flex flex-col justify-between">
+        <div className="w-full min-h-screen p-6 md:p-10 relative z-10 bg-slate-950/40 backdrop-blur-md flex flex-col justify-between gap-12">
           
-          {/* Header Title with Welcome Banner */}
-          <div className="flex flex-col items-center justify-center mb-6">
-            <div className="flex items-center gap-3 justify-center mb-2">
-              <span className="text-4xl animate-bounce">🐇👑</span>
-              <h2 className="text-3xl font-black tracking-tight text-center bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent">
-                RabbitryPedigree Pro
-              </h2>
+          {/* Custom Header Navigation Bar */}
+          <header className="w-full max-w-6xl mx-auto flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-3xl animate-hop-bounce">🐇👑</span>
+              <div>
+                <h1 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
+                  WarrenWise Pro
+                </h1>
+                <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-mono font-bold">ARBA Compliance Suite</span>
+              </div>
             </div>
-            <p className="text-xs font-bold uppercase tracking-wider opacity-75 text-center text-indigo-300">
-              ARBA Compliance & Pedigree Analytics
-            </p>
-          </div>
+            
+            <div className="hidden sm:flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-slate-300">
+                🌐 Web3 Offline-First
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full text-indigo-300">
+                🛡️ FDA & HIPAA Secure
+              </span>
+            </div>
+          </header>
 
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-5xl glass-container p-6 md:p-8 flex flex-col lg:flex-row gap-8 bg-slate-900/60 border border-slate-700/50 shadow-2xl rounded-3xl">
-              
-              {/* Left Column: Mascot Welcome & Judge Photo */}
-              <div className="lg:w-5/12 flex flex-col gap-6 justify-center">
-                
-                {/* Mascot Welcome Message Banner */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-indigo-500/20 flex gap-4 items-center">
-                  <div className="flex-1">
-                    <span className="text-xs font-bold text-pink-400 font-mono">Genetics Sage Mascot 🧙‍♂️</span>
-                    <p className="text-xs opacity-90 leading-relaxed text-indigo-100 mt-1">
-                      {authView === 'login' && '"Welcome back! Sign in to verify your show-legs, manage gestational timelines, and run genetics analytics."'}
-                      {authView === 'signup' && '"Creating a new account? Your credentials will be queued for the App Owner to approve. Fill in the details to start!"'}
-                      {authView === 'forgot-password' && '"Forgot your password? Enter your email and I will simulate sending a tokenized reset link."'}
-                      {authView === 'reset-password' && '"Security first! Enter a new password to restore your breeder profile credentials."'}
-                      {authView === 'pending-approval' && '"Application sent! Your profile is currently queued. You will be able to login once approved."'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Show Judge Hero Banner */}
-                <div className="p-2 bg-slate-950/80 border border-white/10 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                  <img 
-                    src="/assets/main_show_judge.png" 
-                    alt="Rabbit Judge inspecting show rabbits" 
-                    className="w-full h-auto object-cover rounded-2xl aspect-[4/3] bg-gradient-to-br from-indigo-500 to-pink-500 opacity-90" 
-                  />
-                  <div className="p-3 text-center bg-slate-900 rounded-b-2xl border-t border-white/5">
-                    <span className="text-xs font-black text-indigo-200 block">ARBA Show Table Inspection</span>
-                    <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-wider">Standard of Perfection Validation</span>
-                  </div>
-                </div>
-
+          {/* Hero Grid Block */}
+          <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center flex-1">
+            
+            {/* Left Column: Product Sales Copy & Value Pitch */}
+            <div className="lg:col-span-5 flex flex-col gap-6 text-left">
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-pink-400 font-mono">Premium Rabbitry Management</span>
+                <h2 className="text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
+                  The ultimate ARBA pedigree engine.
+                </h2>
+                <p className="text-xs md:text-sm text-slate-350 leading-relaxed font-semibold">
+                  A high-performance offline hutch ledger and interactive lineage designer. Empowering professional breeders and 4-H youth with cryptographic safety and Standard of Perfection analytics.
+                </p>
               </div>
 
-              {/* Right Column: Dynamic Form Container */}
-              <div className="lg:w-7/12 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-white/5 pt-6 lg:pt-0 lg:pl-8">
+              {/* Showcase highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span className="text-lg">📜</span>
+                  <div>
+                    <h4 className="font-bold text-white text-[11px]">Interactive Pedigrees</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Design three-generation family trees with automated digital signatures.</p>
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span className="text-lg">⚔️</span>
+                  <div>
+                    <h4 className="font-bold text-white text-[11px]">4-H Youth Academy</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Gamified learning and adaptive quizzes tailored to youth age divisions.</p>
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span className="text-lg">🚜</span>
+                  <div>
+                    <h4 className="font-bold text-white text-[11px]">Visual Barn Map</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Allocate cages, track gestating pairs, and organize hutch lists.</p>
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
+                  <span className="text-lg">☁️</span>
+                  <div>
+                    <h4 className="font-bold text-white text-[11px]">Secure Offline Sync</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Record weights off-grid; edits queue locally and sync chronologically.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mascot Welcome Message Banner */}
+              <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/25 flex gap-3.5 items-center">
+                <span className="text-2xl shrink-0">🧙‍♂️</span>
+                <div className="flex-1">
+                  <span className="text-[10px] font-black text-pink-400 font-mono uppercase tracking-wider">Genetics Sage Mascot</span>
+                  <p className="text-[10px] opacity-90 leading-relaxed text-indigo-150 mt-0.5 font-semibold">
+                    {authView === 'login' && '"Welcome back! Sign in to verify your show-legs, manage gestational timelines, and run genetics analytics."'}
+                    {authView === 'signup' && '"Creating a new account? Your credentials will be queued for the App Owner to approve. Fill in the details to start!"'}
+                    {authView === 'forgot-password' && '"Forgot your password? Enter your email and I will simulate sending a tokenized reset link."'}
+                    {authView === 'reset-password' && '"Security first! Enter a new password to restore your breeder profile credentials."'}
+                    {authView === 'pending-approval' && '"Application sent! Your profile is currently queued. You will be able to login once approved."'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Dynamic Form Card Container */}
+            <div className="lg:col-span-7 w-full flex justify-center">
+              <div className="w-full max-w-xl glass-container p-6 md:p-8 bg-slate-900/60 border border-slate-700/50 shadow-2xl rounded-3xl">
                 
                 {/* 1. LOGIN VIEW */}
                 {authView === 'login' && (
@@ -5368,6 +5439,154 @@ export default function App() {
                     </div>
                   </div>
                   
+                  {/* Profile Details & Quick Edit Card */}
+                  <div className="glass-container p-6 flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-base font-bold flex items-center gap-2">
+                        📋 Profile Details
+                      </h3>
+                      {!editProfileMode ? (
+                        <button
+                          onClick={() => {
+                            setEditProfileMode(true);
+                            setEditProfileData({
+                              name: selectedRabbit.name || '',
+                              tattooNumber: selectedRabbit.tattooNumber || '',
+                              breed: selectedRabbit.breed || '',
+                              variety: selectedRabbit.variety || '',
+                              sex: selectedRabbit.sex || 'doe',
+                              dob: selectedRabbit.dob || '',
+                              weightOz: selectedRabbit.weightOz || 0,
+                              location: selectedRabbit.location || '',
+                              notes: selectedRabbit.notes || '',
+                              registrationNumber: selectedRabbit.registrationNumber || '',
+                              gcNumber: selectedRabbit.gcNumber || ''
+                            });
+                          }}
+                          className="btn-interactive text-xs py-1.5 px-4 bg-indigo-600 hover:bg-indigo-700 font-bold text-white border-none flex items-center gap-1.5"
+                        >
+                          ✏️ Edit Profile
+                        </button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditProfileMode(false)}
+                            className="btn-interactive text-xs py-1.5 px-3 bg-slate-700 hover:bg-slate-600 font-bold text-white border-none"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveProfile}
+                            className="btn-interactive text-xs py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 font-bold text-white border-none flex items-center gap-1.5"
+                          >
+                            💾 Save Changes
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {!editProfileMode ? (
+                      /* Read-only detail grid */
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Name</span>
+                          <span className="font-bold text-white">{selectedRabbit.name}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Tattoo</span>
+                          <span className="font-mono font-bold text-indigo-400">{selectedRabbit.tattooNumber}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Breed</span>
+                          <span className="font-semibold">{selectedRabbit.breed}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Variety</span>
+                          <span className="font-semibold">{selectedRabbit.variety || '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Sex</span>
+                          <span className="font-semibold capitalize">{selectedRabbit.sex}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Date of Birth</span>
+                          <span className="font-semibold">{selectedRabbit.dob || '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Weight</span>
+                          <span className="font-bold text-emerald-400">{selectedRabbit.weightOz ? `${(selectedRabbit.weightOz / 16).toFixed(2)} lbs (${selectedRabbit.weightOz} oz)` : '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Cage Location</span>
+                          <span className="font-mono font-semibold">{selectedRabbit.location || 'Unassigned'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">ARBA Reg #</span>
+                          <span className="font-mono font-semibold text-indigo-300">{selectedRabbit.registrationNumber || '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Grand Champion #</span>
+                          <span className="font-mono font-semibold text-yellow-400">{selectedRabbit.gcNumber || '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5 col-span-2">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Notes</span>
+                          <span className="font-semibold text-slate-300">{selectedRabbit.notes || 'No notes recorded.'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Editable form grid */
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Name *</label>
+                          <input type="text" value={editProfileData.name} onChange={(e) => setEditProfileData({...editProfileData, name: e.target.value})} className="text-xs" required />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Tattoo *</label>
+                          <input type="text" value={editProfileData.tattooNumber} onChange={(e) => setEditProfileData({...editProfileData, tattooNumber: e.target.value})} className="text-xs" required />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Breed</label>
+                          <input type="text" value={editProfileData.breed} onChange={(e) => setEditProfileData({...editProfileData, breed: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Variety</label>
+                          <input type="text" value={editProfileData.variety} onChange={(e) => setEditProfileData({...editProfileData, variety: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Sex</label>
+                          <select value={editProfileData.sex} onChange={(e) => setEditProfileData({...editProfileData, sex: e.target.value})} className="text-xs">
+                            <option value="buck">Buck</option>
+                            <option value="doe">Doe</option>
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Date of Birth</label>
+                          <input type="date" value={editProfileData.dob} onChange={(e) => setEditProfileData({...editProfileData, dob: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Weight (oz)</label>
+                          <input type="number" min="0" max="500" step="0.1" value={editProfileData.weightOz} onChange={(e) => setEditProfileData({...editProfileData, weightOz: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Cage Location</label>
+                          <input type="text" placeholder="e.g. A-1-2" value={editProfileData.location} onChange={(e) => setEditProfileData({...editProfileData, location: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">ARBA Reg #</label>
+                          <input type="text" value={editProfileData.registrationNumber} onChange={(e) => setEditProfileData({...editProfileData, registrationNumber: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Grand Champion #</label>
+                          <input type="text" value={editProfileData.gcNumber} onChange={(e) => setEditProfileData({...editProfileData, gcNumber: e.target.value})} className="text-xs" />
+                        </div>
+                        <div className="flex flex-col gap-1 col-span-2">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Notes</label>
+                          <textarea rows={2} value={editProfileData.notes} onChange={(e) => setEditProfileData({...editProfileData, notes: e.target.value})} className="text-xs" placeholder="Add breeder notes, health observations, etc." />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Gallery & Show Legs Dual Panels */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     
@@ -5534,6 +5753,7 @@ export default function App() {
                         setSelectedRabbit(updatedRabbit);
                       }
                     }}
+                    onPrintPedigree={(rabbit) => setShowPrintPedigreeModal(rabbit)}
                   />
 
                 </div>
@@ -7090,12 +7310,52 @@ export default function App() {
                                         🖨️ Card
                                       </button>
                                       <button
+                                        onClick={() => setCageMoveRabbitId(cageMoveRabbitId === occupyingRabbit.id ? null : occupyingRabbit.id)}
+                                        className={`flex-1 py-1 rounded text-[9px] font-bold text-center border-none cursor-pointer ${cageMoveRabbitId === occupyingRabbit.id ? 'bg-amber-600 text-white' : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-350'}`}
+                                      >
+                                        🔄 Move
+                                      </button>
+                                      <button
                                         onClick={() => handleUnassignRabbitFromCage(occupyingRabbit.id)}
                                         className="flex-1 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-[9px] font-bold text-center border-none text-red-350 cursor-pointer"
                                       >
                                         Unassign
                                       </button>
                                     </div>
+                                    {/* Move mode — show vacant slot picker */}
+                                    {cageMoveRabbitId === occupyingRabbit.id && (() => {
+                                      const MOVE_ROWS = ['A', 'B', 'C', 'D'];
+                                      const MOVE_HUTCHES = [1, 2, 3, 4];
+                                      const MOVE_TIERS = [1, 2];
+                                      const vacantSlots = [];
+                                      MOVE_ROWS.forEach(mr => {
+                                        MOVE_HUTCHES.forEach(mh => {
+                                          MOVE_TIERS.forEach(mt => {
+                                            const loc = `${mr}-${mh}-${mt}`;
+                                            if (loc !== locationKey && !rabbits.find(rx => rx.location === loc)) {
+                                              vacantSlots.push(loc);
+                                            }
+                                          });
+                                        });
+                                      });
+                                      return (
+                                        <div className="mt-1.5 p-2 bg-amber-950/20 border border-amber-500/20 rounded-lg flex flex-col gap-1.5">
+                                          <span className="text-[8px] font-bold text-amber-400 uppercase">Move to vacant cage:</span>
+                                          <select
+                                            defaultValue=""
+                                            onChange={(e) => {
+                                              if (e.target.value) handleMoveRabbitCage(occupyingRabbit.id, e.target.value);
+                                            }}
+                                            className="w-full text-[10px] py-1 px-1 bg-slate-900 border border-white/10 text-white rounded-md cursor-pointer focus:border-amber-500 outline-none"
+                                          >
+                                            <option value="">-- Pick Slot --</option>
+                                            {vacantSlots.map(slot => (
+                                              <option key={slot} value={slot}>Cage {slot}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 );
                               } else {
@@ -9222,7 +9482,11 @@ export default function App() {
                     <p>I hereby certify that this pedigree is true and correct to the best of my knowledge and belief.</p>
                     <div className="flex gap-2 items-end mt-4">
                       <span>Signed:</span>
-                      <div className="border-b border-black w-48 h-5 font-serif italic text-center text-sm">{activeBreeder.name}</div>
+                      {rabbit.breederSignature ? (
+                        <img src={rabbit.breederSignature} alt="Breeder Signature" className="h-10 border-b border-black w-48 object-contain" />
+                      ) : (
+                        <div className="border-b border-black w-48 h-5 font-serif italic text-center text-sm">{activeBreeder.name}</div>
+                      )}
                       <span>Date:</span>
                       <div className="border-b border-black w-24 h-5 text-center">{new Date().toISOString().split('T')[0]}</div>
                     </div>

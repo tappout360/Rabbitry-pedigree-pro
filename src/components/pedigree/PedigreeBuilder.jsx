@@ -3,7 +3,7 @@ import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, Al
 import { uuidv7 } from '../../db/uuid';
 import { BREED_STANDARDS } from '../../db/breedStandards';
 
-export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit }) {
+export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree }) {
   const [selectedRabbitId, setSelectedRabbitId] = useState(rabbits[0]?.id || '');
   const [activeAssignNode, setActiveAssignNode] = useState(null); // { id: 'sire' | 'dam' | 'sireSire' etc, label: string }
   const [searchQuery, setSearchQuery] = useState('');
@@ -838,6 +838,14 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit }) {
                 To print or export the PDF pedigree card, make sure both parents (Generation 2) are filled. The authorized signature is embedded automatically.
               </span>
             </div>
+
+            {/* Print Official Pedigree button */}
+            <button
+              onClick={() => onPrintPedigree && onPrintPedigree(activeRabbit)}
+              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20 hover-glow cursor-pointer border-none"
+            >
+              📜 Print Official ARBA Pedigree
+            </button>
           </div>
         </div>
       ) : (
