@@ -2209,6 +2209,175 @@ export default function App() {
     triggerConfetti();
   };
 
+  const [growOutCages, setGrowOutCages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rp_grow_out_cages');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [quickGrowOutInputs, setQuickGrowOutInputs] = useState({});
+
+  const handleToggleGrowOutCage = (locKey) => {
+    setGrowOutCages(prev => {
+      const updated = prev.includes(locKey) ? prev.filter(k => k !== locKey) : [...prev, locKey];
+      localStorage.setItem('rp_grow_out_cages', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleQuickAddGrowOut = (locKey, e) => {
+    e.preventDefault();
+    const input = quickGrowOutInputs[locKey];
+    if (!input || !input.tattooNumber) return;
+
+    const activeBreederId = selectedBreederContext === 'all' ? currentUser.id : selectedBreederContext;
+    const newRabbit = {
+      id: uuidv7(),
+      breederId: activeBreederId,
+      name: `Grow-Out ${input.tattooNumber}`,
+      tattooNumber: input.tattooNumber,
+      breed: 'Holland Lop',
+      variety: 'Utility',
+      sex: input.sex || 'buck',
+      dob: new Date().toISOString().split('T')[0],
+      weightOz: 160,
+      status: 'active',
+      location: locKey,
+      legs: [],
+      photos: []
+    };
+
+    setAllRabbits(prev => [...prev, newRabbit]);
+    if (isOffline) {
+      addSyncAction('INSERT', 'rabbits', newRabbit);
+    }
+
+    setQuickGrowOutInputs(prev => ({
+      ...prev,
+      [locKey]: { tattooNumber: '', sex: 'buck' }
+    }));
+    showToast(`Quick-registered grow-out rabbit [${input.tattooNumber}] in ${locKey}!`);
+  };
+
+  const handleExportBackup = () => {
+    try {
+      const dataToExport = {
+        rabbits: allRabbits,
+        breedings: allBreedings,
+        litters: allLitters,
+        ledger: allLedger,
+        shows: allShows,
+        showEntries: allShowEntries,
+        chores: allChores,
+        transfers: allTransfers,
+        signatures: allSignatures,
+        medical: allMedical,
+        weights: allWeights,
+        growOutCages: growOutCages,
+        timestamp: new Date().toISOString()
+      };
+      
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(dataToExport, null, 2))}`;
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', jsonString);
+      downloadAnchor.setAttribute('download', `rp_backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Local backup file exported successfully!", "success");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export backup data.");
+    }
+  };
+
+  const handleImportBackup = (e) => {
+    const fileReader = new FileReader();
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    fileReader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (!parsed.rabbits) {
+          alert("Invalid backup file: missing rabbits array.");
+          return;
+        }
+        
+        if (!window.confirm("WARNING: Importing a backup will overwrite your current active database records. Do you wish to proceed?")) {
+          return;
+        }
+
+        // Apply imported data to state
+        if (parsed.rabbits) setAllRabbits(parsed.rabbits);
+        if (parsed.breedings) setAllBreedings(parsed.breedings);
+        if (parsed.litters) setAllLitters(parsed.litters);
+        if (parsed.ledger) setAllLedger(parsed.ledger);
+        if (parsed.shows) setAllShows(parsed.shows);
+        if (parsed.showEntries) setAllShowEntries(parsed.showEntries);
+        if (parsed.chores) setAllChores(parsed.chores);
+        if (parsed.transfers) setAllTransfers(parsed.transfers);
+        if (parsed.signatures) setAllSignatures(parsed.signatures);
+        if (parsed.medical) setAllMedical(parsed.medical);
+        if (parsed.weights) setAllWeights(parsed.weights);
+        if (parsed.growOutCages) {
+          setGrowOutCages(parsed.growOutCages);
+          localStorage.setItem('rp_grow_out_cages', JSON.stringify(parsed.growOutCages));
+        }
+
+        // Hydrate IndexedDB using Dexie transaction
+        const key = deriveSessionKey(currentUser?.password, currentUser?.email);
+        const encryptedRabbits = (parsed.rabbits || []).map(r => encryptRecord(r, key, ['dob', 'notes']));
+        const encryptedMedical = (parsed.medical || []).map(m => encryptRecord(m, key, ['treatment', 'notes']));
+        const encryptedLedger = (parsed.ledger || []).map(lt => encryptRecord(lt, key, ['amount', 'notes']));
+
+        await db.transaction('rw', [db.rabbits, db.breedings, db.litters, db.ledger, db.shows, db.showEntries, db.chores, db.transfers, db.signatures, db.medical, db.weights], async () => {
+          await db.rabbits.clear();
+          if (encryptedRabbits.length > 0) await db.rabbits.bulkAdd(encryptedRabbits);
+
+          await db.breedings.clear();
+          if (parsed.breedings?.length > 0) await db.breedings.bulkAdd(parsed.breedings);
+
+          await db.litters.clear();
+          if (parsed.litters?.length > 0) await db.litters.bulkAdd(parsed.litters);
+
+          await db.ledger.clear();
+          if (encryptedLedger.length > 0) await db.ledger.bulkAdd(encryptedLedger);
+
+          await db.shows.clear();
+          if (parsed.shows?.length > 0) await db.shows.bulkAdd(parsed.shows);
+
+          await db.showEntries.clear();
+          if (parsed.showEntries?.length > 0) await db.showEntries.bulkAdd(parsed.showEntries);
+
+          await db.chores.clear();
+          if (parsed.chores?.length > 0) await db.chores.bulkAdd(parsed.chores);
+
+          await db.transfers.clear();
+          if (parsed.transfers?.length > 0) await db.transfers.bulkAdd(parsed.transfers);
+
+          await db.signatures.clear();
+          if (parsed.signatures?.length > 0) await db.signatures.bulkAdd(parsed.signatures);
+
+          await db.medical.clear();
+          if (encryptedMedical.length > 0) await db.medical.bulkAdd(encryptedMedical);
+
+          await db.weights.clear();
+          if (parsed.weights?.length > 0) await db.weights.bulkAdd(parsed.weights);
+        });
+
+        showToast("Database successfully restored from backup!", "success");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to parse and import backup file. Make sure it is a valid backup JSON.");
+      }
+    };
+    fileReader.readAsText(file);
+  };
+
   const handleRemovePedigreeNode = () => {
     if (!pedigreeEditNode || !pedigreeEditNode.parentOfId) return;
 
@@ -3975,7 +4144,15 @@ export default function App() {
           
           {/* Navigation Card */}
           <div className="glass-container p-4 flex flex-col gap-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider px-3 mb-2 opacity-65">App Modules</h3>
+            <div className="flex justify-between items-center px-3 mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider opacity-65">App Modules</span>
+              <div className="flex items-center gap-1.5 bg-black/30 border border-white/5 py-0.5 px-2 rounded-full">
+                <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`}></span>
+                <span className="text-[9px] font-black uppercase tracking-wider font-mono text-slate-350">
+                  {isOffline ? 'OFFLINE' : 'ONLINE'}
+                </span>
+              </div>
+            </div>
             <button 
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
@@ -7413,6 +7590,35 @@ export default function App() {
                 >
                   <RefreshCw className="w-4 h-4 animate-pulse" /> Force Background Sync
                 </button>
+              </div>
+
+              {/* Local Backup & Restore */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/30 p-4 rounded-2xl border border-white/5 items-center">
+                <div>
+                  <h4 className="text-sm font-bold text-white mb-1 flex items-center gap-1.5">
+                    📥 Local Database Backup & Restore
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Export your active rabbitry records as a JSON file or restore from a previously saved backup file.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 justify-start md:justify-end">
+                  <button
+                    onClick={handleExportBackup}
+                    className="btn-interactive text-xs py-2 px-4 bg-indigo-600/80 hover:bg-indigo-600 border-none text-white font-bold"
+                  >
+                    💾 Export Backup
+                  </button>
+                  <label className="btn-interactive text-xs py-2 px-4 bg-emerald-600 hover:bg-emerald-555 border-none text-white font-bold cursor-pointer flex items-center justify-center">
+                    📂 Restore Backup
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportBackup}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs flex gap-3 items-start">

@@ -526,8 +526,7 @@ select option {
 }
 
 /* Performance Lag Reducers: disable animations instantly in Pro/Barn modes */
-.pro-mode-active *,
-.barn-mode-active * {
+.pro-mode-active * {
   animation-duration: 0s !important;
   animation-delay: 0s !important;
   transition-duration: 0s !important;
@@ -656,141 +655,7 @@ select option {
   padding-bottom: 4px;
 }
 
-/* ==========================================
-   Barn Mode & Mobile Touch Optimizations
-   ========================================== */
-.barn-mode-active {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-}
 
-.barn-mode-active .glass-container {
-  background: rgba(0, 0, 0, 0.9) !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-.barn-mode-active h1, 
-.barn-mode-active h2, 
-.barn-mode-active h3, 
-.barn-mode-active h4, 
-.barn-mode-active h5 {
-  color: #ffffff !important;
-  font-weight: 950 !important;
-  letter-spacing: 0.025em;
-}
-
-/* Barn mode text scaling — exclude table internals to keep rows compact */
-.barn-mode-active > div > p,
-.barn-mode-active > div > span,
-.barn-mode-active > div > label,
-.barn-mode-active > div > div > p,
-.barn-mode-active > div > div > span,
-.barn-mode-active > div > div > label,
-.barn-mode-active .glass-container > p,
-.barn-mode-active .glass-container > span,
-.barn-mode-active .glass-container > div:not(.overflow-x-auto) > p,
-.barn-mode-active .glass-container > div:not(.overflow-x-auto) > span {
-  font-size: 110%;
-  color: #e2e8f0 !important;
-}
-
-/* Barn mode form controls — large touch targets for non-table contexts */
-.barn-mode-active form button,
-.barn-mode-active form select,
-.barn-mode-active form input,
-.barn-mode-active form textarea,
-.barn-mode-active .glass-container > button,
-.barn-mode-active .glass-container > div > button:not(td button),
-.barn-mode-active header button,
-.barn-mode-active header select {
-  min-height: 48px !important;
-  font-size: 1.1rem !important;
-  border: 2px solid #ffffff !important;
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-}
-
-.barn-mode-active form button:hover,
-.barn-mode-active .glass-container > button:hover,
-.barn-mode-active header button:hover {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-  border-color: #ffffff !important;
-}
-
-.barn-mode-active select option {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-}
-
-/* Barn mode TABLE — keep rows compact and readable */
-.barn-mode-active table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.barn-mode-active thead tr {
-  border-bottom: 3px solid #ffffff !important;
-}
-
-.barn-mode-active thead th {
-  color: #ffffff !important;
-  font-size: 0.75rem !important;
-  font-weight: 900 !important;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 10px 12px !important;
-  white-space: nowrap;
-}
-
-.barn-mode-active tbody tr {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-.barn-mode-active tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.barn-mode-active tbody td {
-  color: #ffffff !important;
-  font-size: 0.875rem !important;
-  font-weight: 600 !important;
-  padding: 10px 12px !important;
-  vertical-align: middle;
-}
-
-.barn-mode-active td span {
-  font-size: 0.8rem !important;
-}
-
-.barn-mode-active td button {
-  min-height: 32px !important;
-  font-size: 0.75rem !important;
-  padding: 4px 10px !important;
-  border: 1.5px solid #ffffff !important;
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border-radius: 6px !important;
-}
-
-.barn-mode-active td button:hover {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-}
-
-/* Specific Highlight Borders in Barn Mode */
-.barn-mode-active .border-indigo-500\/25,
-.barn-mode-active .border-indigo-500\/20,
-.barn-mode-active .border-white\/5,
-.barn-mode-active .border-white\/10 {
-  border-color: #ffffff !important;
-  border-width: 2px !important;
-}
 
 /* Large Floating Action Button for Mobile screens */
 .mobile-fab {

@@ -1,7 +1,112 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, AlertTriangle } from 'lucide-react';
+import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, AlertTriangle, X, Wand2 } from 'lucide-react';
 import { uuidv7 } from '../../db/uuid';
 import { BREED_STANDARDS } from '../../db/breedStandards';
+import { BREED_COLORS } from '../../db/breedColors';
+
+const parsePedigreeText = (text) => {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const result = {}; // key: role key -> values
+
+  const roles = [
+    { key: 'proband', patterns: [/^(?:name|proband|current rabbit):\s*(.+)$/i] },
+    { key: 'patPatSire', patterns: [/^(?:sire['’]s sire['’]s sire|sire\s+sire\s+sire)\b/i] },
+    { key: 'patPatDam', patterns: [/^(?:sire['’]s sire['’]s dam|sire\s+sire\s+dam)\b/i] },
+    { key: 'patMatSire', patterns: [/^(?:sire['’]s dam['’]s sire|sire\s+dam\s+sire)\b/i] },
+    { key: 'patMatDam', patterns: [/^(?:sire['’]s dam['’]s dam|sire\s+dam\s+dam)\b/i] },
+    { key: 'matPatSire', patterns: [/^(?:dam['’]s sire['’]s sire|dam\s+sire\s+sire)\b/i] },
+    { key: 'matPatDam', patterns: [/^(?:dam['’]s sire['’]s dam|dam\s+sire\s+dam)\b/i] },
+    { key: 'matMatSire', patterns: [/^(?:dam['’]s dam['’]s sire|dam\s+dam\s+sire)\b/i] },
+    { key: 'matMatDam', patterns: [/^(?:dam['’]s dam['’]s dam|dam\s+dam\s+dam)\b/i] },
+    { key: 'patSire', patterns: [/^(?:sire['’]s sire|father['’]s father|paternal grand-sire)\b/i, /^sire\s+sire\b/i] },
+    { key: 'patDam', patterns: [/^(?:sire['’]s dam|father['’]s mother|paternal grand-dam)\b/i, /^sire\s+dam\b/i] },
+    { key: 'matSire', patterns: [/^(?:dam['’]s sire|mother['’]s father|maternal grand-sire)\b/i, /^dam\s+sire\b/i] },
+    { key: 'matDam', patterns: [/^(?:dam['’]s dam|mother['’]s mother|maternal grand-dam)\b/i, /^dam\s+dam\b/i] },
+    { key: 'sire', patterns: [/^(?:sire|father)\b/i] },
+    { key: 'dam', patterns: [/^(?:dam|mother)\b/i] }
+  ];
+
+  let currentRole = null;
+  
+  lines.forEach(line => {
+    let foundRole = null;
+    for (const r of roles) {
+      if (r.key === 'proband') continue;
+      for (const p of r.patterns) {
+        if (p.test(line)) {
+          foundRole = r.key;
+          break;
+        }
+      }
+      if (foundRole) break;
+    }
+
+    if (foundRole) {
+      currentRole = foundRole;
+      result[currentRole] = { name: '', tattooNumber: '', weightOz: 160, variety: '', dob: '', registrationNumber: '', gcNumber: '', legsCount: 0 };
+      
+      let cleanedLine = line;
+      const matchingRole = roles.find(r => r.key === foundRole);
+      if (matchingRole) {
+        matchingRole.patterns.forEach(p => {
+          cleanedLine = cleanedLine.replace(p, '');
+        });
+      }
+      cleanedLine = cleanedLine.replace(/^[:\s-]+/, '').trim();
+      if (cleanedLine) {
+        result[currentRole].name = cleanedLine;
+      }
+      return;
+    }
+
+    if (!currentRole) {
+      currentRole = 'proband';
+      result[currentRole] = { name: '', tattooNumber: '', weightOz: 160, variety: '', dob: '', registrationNumber: '', gcNumber: '', legsCount: 0 };
+    }
+
+    const parseAttr = (pattern) => {
+      const match = line.match(pattern);
+      return match ? match[1].trim() : null;
+    };
+
+    const name = parseAttr(/^(?:name|proband|current rabbit)[\s.:-]+(.+)$/i);
+    if (name) result[currentRole].name = name;
+
+    const tat = parseAttr(/^(?:ear\s*no|ear|tattoo|tat)[\s.:-]+(.+)$/i);
+    if (tat) result[currentRole].tattooNumber = tat;
+
+    const wt = parseAttr(/^(?:wt|weight)[\s.:-]+([0-9.]+)\s*(?:lbs|lb|oz)?/i);
+    if (wt) {
+      const numericWt = parseFloat(wt);
+      result[currentRole].weightOz = Math.round(numericWt * 16);
+    }
+
+    const col = parseAttr(/^(?:color|var|variety|colour)[\s.:-]+(.+)$/i);
+    if (col) result[currentRole].variety = col;
+
+    const dob = parseAttr(/^(?:dob|birth|birthdate|date of birth)[\s.:-]+(.+)$/i);
+    if (dob) result[currentRole].dob = dob;
+
+    const reg = parseAttr(/^(?:reg\s*#|reg\s*no|reg|registration)[\s.:-]+(.+)$/i);
+    if (reg) result[currentRole].registrationNumber = reg;
+
+    const gc = parseAttr(/^(?:gc\s*#|gc\s*no|gc|grand champion)[\s.:-]+(.+)$/i);
+    if (gc) result[currentRole].gcNumber = gc;
+
+    const legs = parseAttr(/^(?:legs|winnings)[\s.:-]+(.+)$/i);
+    if (legs) {
+      const numMatch = legs.match(/^(\d+)/);
+      if (numMatch) {
+        result[currentRole].legsCount = parseInt(numMatch[1], 10);
+      } else {
+        const awards = legs.split(',').map(a => a.trim()).filter(a => a.length > 0);
+        result[currentRole].legsCount = awards.length;
+      }
+    }
+  });
+
+  return result;
+};
 
 export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree }) {
   const [selectedRabbitId, setSelectedRabbitId] = useState(rabbits[0]?.id || '');
@@ -18,8 +123,13 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     registrationNumber: '',
     gcNumber: '',
     breederName: '',
-    breederPrefix: ''
+    breederPrefix: '',
+    legsCount: ''
   });
+
+  const [showImportWizard, setShowImportWizard] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [parsedPreview, setParsedPreview] = useState(null);
 
   // Canvas Signature Pad references
   const canvasRef = useRef(null);
@@ -116,21 +226,31 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     }
   };
 
-  // 3-Generation Pedigree Node Resolver
+  // 3-Generation Ancestor Pedigree Node Resolver (1 Proband + 14 Ancestors)
   const pedigreeNodes = useMemo(() => {
     if (!activeRabbit) return {};
 
     const findRabbit = (id) => rabbits.find(r => r.id === id) || null;
 
-    // Parents
+    // Parents (Gen 1 Ancestors)
     const sire = activeRabbit.sireId ? findRabbit(activeRabbit.sireId) : null;
     const dam = activeRabbit.damId ? findRabbit(activeRabbit.damId) : null;
 
-    // Grandparents
+    // Grandparents (Gen 2 Ancestors)
     const sireSire = sire?.sireId ? findRabbit(sire.sireId) : null;
     const sireDam = sire?.damId ? findRabbit(sire.damId) : null;
     const damSire = dam?.sireId ? findRabbit(dam.sireId) : null;
     const damDam = dam?.damId ? findRabbit(dam.damId) : null;
+
+    // Great-Grandparents (Gen 3 Ancestors)
+    const sireSireSire = sireSire?.sireId ? findRabbit(sireSire.sireId) : null;
+    const sireSireDam = sireSire?.damId ? findRabbit(sireSire.damId) : null;
+    const sireDamSire = sireDam?.sireId ? findRabbit(sireDam.sireId) : null;
+    const sireDamDam = sireDam?.damId ? findRabbit(sireDam.damId) : null;
+    const damSireSire = damSire?.sireId ? findRabbit(damSire.sireId) : null;
+    const damSireDam = damSire?.damId ? findRabbit(damSire.damId) : null;
+    const damDamSire = damDam?.sireId ? findRabbit(damDam.sireId) : null;
+    const damDamDam = damDam?.damId ? findRabbit(damDam.damId) : null;
 
     return {
       self: activeRabbit,
@@ -139,7 +259,15 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       sireSire,
       sireDam,
       damSire,
-      damDam
+      damDam,
+      sireSireSire,
+      sireSireDam,
+      sireDamSire,
+      sireDamDam,
+      damSireSire,
+      damSireDam,
+      damDamSire,
+      damDamDam
     };
   }, [activeRabbit, rabbits]);
 
@@ -147,9 +275,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   const validateAssignment = (nodeKey, rabbitToAssign) => {
     if (!activeRabbit || !rabbitToAssign) return { isValid: true };
 
-    // 1. Sex Validation
-    const isMaleNode = ['sire', 'sireSire', 'damSire'].includes(nodeKey);
-    const isFemaleNode = ['dam', 'sireDam', 'damDam'].includes(nodeKey);
+    // 1. Sex Validation (ends with 'sire' is male, else ends with 'dam' is female)
+    const isMaleNode = nodeKey.toLowerCase().endsWith('sire');
+    const isFemaleNode = nodeKey.toLowerCase().endsWith('dam');
 
     if (isMaleNode && rabbitToAssign.sex !== 'buck') {
       return { isValid: false, message: `Cannot assign ${rabbitToAssign.name}: This pedigree node requires a male (buck).` };
@@ -160,8 +288,10 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
 
     // 2. Age/DOB Logic Validation
     let childNode = activeRabbit;
-    if (['sireSire', 'sireDam'].includes(nodeKey)) childNode = pedigreeNodes.sire;
-    if (['damSire', 'damDam'].includes(nodeKey)) childNode = pedigreeNodes.dam;
+    if (nodeKey !== 'sire' && nodeKey !== 'dam') {
+      const parentNodeKey = nodeKey.slice(0, -4);
+      childNode = pedigreeNodes[parentNodeKey];
+    }
 
     if (childNode && rabbitToAssign.dob && childNode.dob) {
       if (new Date(rabbitToAssign.dob) >= new Date(childNode.dob)) {
@@ -204,13 +334,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     } else if (activeAssignNode.id === 'dam') {
       updatedRabbit.damId = rabbit.id;
     } else {
-      // Indirect grandparents (need to update the parent rabbit)
-      let parentRabbit = null;
-      if (activeAssignNode.id.startsWith('sire')) {
-        parentRabbit = pedigreeNodes.sire;
-      } else {
-        parentRabbit = pedigreeNodes.dam;
-      }
+      // Indirect ancestors (slice nodeKey to find immediate child node)
+      const parentNodeKey = activeAssignNode.id.slice(0, -4);
+      const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
         const updatedParent = { ...parentRabbit };
@@ -221,7 +347,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
         }
         onUpdateRabbit(updatedParent);
       } else {
-        alert("Please assign the direct parent (Sire/Dam) first before assigning grandparents.");
+        const friendlyParent = activeAssignNode.label.replace(/'s\s+(Sire|Dam)$/, '').replace(/s\s+P\.\s+Grand-Sire/g, "s Sire");
+        alert(`Please assign the direct parent (${friendlyParent}) first before assigning this ancestor.`);
         return;
       }
     }
@@ -243,7 +370,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       tattooNumber: customForm.tattooNumber || '',
       breed: customForm.breed || activeRabbit.breed,
       variety: customForm.variety || '',
-      sex: ['sire', 'sireSire', 'damSire'].includes(activeAssignNode.id) ? 'buck' : 'doe',
+      sex: activeAssignNode.id.toLowerCase().endsWith('sire') ? 'buck' : 'doe',
       dob: customForm.dob || '',
       weightOz: customForm.weightOz ? parseFloat(customForm.weightOz) : '',
       registrationNumber: customForm.registrationNumber || '',
@@ -252,7 +379,13 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       breederPrefix: customForm.breederPrefix || '',
       status: 'pedigree_only',
       photos: [],
-      legs: []
+      legs: Array.from({ length: parseInt(customForm.legsCount || '0', 10) }).map((_, i) => ({
+        id: `leg-${i}-${Date.now()}`,
+        award: 'Grand Champion Leg',
+        date: new Date().toISOString().split('T')[0],
+        showName: 'Show Record',
+        judge: 'Audited'
+      }))
     };
 
     onUpdateRabbit(newRabbit);
@@ -263,12 +396,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     } else if (activeAssignNode.id === 'dam') {
       updatedRabbit.damId = newRabbitId;
     } else {
-      let parentRabbit = null;
-      if (activeAssignNode.id.startsWith('sire')) {
-        parentRabbit = pedigreeNodes.sire;
-      } else {
-        parentRabbit = pedigreeNodes.dam;
-      }
+      const parentNodeKey = activeAssignNode.id.slice(0, -4);
+      const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
         const updatedParent = { ...parentRabbit };
@@ -296,7 +425,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       registrationNumber: '',
       gcNumber: '',
       breederName: '',
-      breederPrefix: ''
+      breederPrefix: '',
+      legsCount: ''
     });
   };
 
@@ -309,12 +439,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     } else if (nodeId === 'dam') {
       updatedRabbit.damId = '';
     } else {
-      let parentRabbit = null;
-      if (nodeId.startsWith('sire')) {
-        parentRabbit = pedigreeNodes.sire;
-      } else {
-        parentRabbit = pedigreeNodes.dam;
-      }
+      const parentNodeKey = nodeId.slice(0, -4);
+      const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
         const updatedParent = { ...parentRabbit };
@@ -327,6 +453,139 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       }
     }
     onUpdateRabbit(updatedRabbit);
+  };
+
+  const getRoleLabel = (roleId) => {
+    switch(roleId) {
+      case 'proband': return 'Current Rabbit';
+      case 'sire': return 'Sire (Father)';
+      case 'dam': return 'Dam (Mother)';
+      case 'patSire': return "Sire's Sire";
+      case 'patDam': return "Sire's Dam";
+      case 'matSire': return "Dam's Sire";
+      case 'matDam': return "Dam's Dam";
+      case 'patPatSire': return "Sire's Sire's Sire";
+      case 'patPatDam': return "Sire's Sire's Dam";
+      case 'patMatSire': return "Sire's Dam's Sire";
+      case 'patMatDam': return "Sire's Dam's Dam";
+      case 'matPatSire': return "Dam's Sire's Sire";
+      case 'matPatDam': return "Dam's Sire's Dam";
+      case 'matMatSire': return "Dam's Dam's Sire";
+      case 'matMatDam': return "Dam's Dam's Dam";
+      default: return roleId;
+    }
+  };
+
+  const handleParsePedigree = () => {
+    if (!importText.trim()) {
+      alert("Please paste pedigree details text first.");
+      return;
+    }
+    const parsed = parsePedigreeText(importText);
+    setParsedPreview(parsed);
+  };
+
+  const handleApplyParsedPedigree = () => {
+    if (!parsedPreview || !activeRabbit) return;
+
+    const roleKeys = [
+      'sire', 'dam',
+      'patSire', 'patDam', 'matSire', 'matDam',
+      'patPatSire', 'patPatDam', 'patMatSire', 'patMatDam',
+      'matPatSire', 'matPatDam', 'matMatSire', 'matMatDam'
+    ];
+
+    const ids = {};
+    roleKeys.forEach(k => {
+      if (parsedPreview[k]) {
+        ids[k] = uuidv7();
+      }
+    });
+
+    const createdAncestors = [];
+
+    const buildAncestor = (key, gender, sireId = '', damId = '') => {
+      const data = parsedPreview[key];
+      if (!data) return null;
+
+      return {
+        id: ids[key],
+        breederId: activeRabbit.breederId,
+        name: data.name || `${getRoleLabel(key)}`,
+        tattooNumber: data.tattooNumber || '',
+        breed: activeRabbit.breed,
+        variety: data.variety || 'Utility',
+        sex: gender,
+        dob: data.dob || '',
+        weightOz: data.weightOz || 160,
+        registrationNumber: data.registrationNumber || '',
+        gcNumber: data.gcNumber || '',
+        status: 'pedigree_only',
+        sireId: sireId,
+        damId: damId,
+        photos: [],
+        legs: data.legsCount ? Array.from({ length: data.legsCount }, (_, idx) => ({
+          id: `leg-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+          award: 'Best of Variety',
+          showName: 'Imported Show',
+          date: '',
+          judge: 'Parsed Import',
+          classSize: 0
+        })) : []
+      };
+    };
+
+    const patPatSire = buildAncestor('patPatSire', 'buck');
+    const patPatDam = buildAncestor('patPatDam', 'doe');
+    const patMatSire = buildAncestor('patMatSire', 'buck');
+    const patMatDam = buildAncestor('patMatDam', 'doe');
+    const matPatSire = buildAncestor('matPatSire', 'buck');
+    const matPatDam = buildAncestor('matPatDam', 'doe');
+    const matMatSire = buildAncestor('matMatSire', 'buck');
+    const matMatDam = buildAncestor('matMatDam', 'doe');
+
+    [patPatSire, patPatDam, patMatSire, patMatDam, matPatSire, matPatDam, matMatSire, matMatDam].forEach(obj => {
+      if (obj) createdAncestors.push(obj);
+    });
+
+    const patSire = buildAncestor('patSire', 'buck', ids.patPatSire || '', ids.patPatDam || '');
+    const patDam = buildAncestor('patDam', 'doe', ids.patMatSire || '', ids.patMatDam || '');
+    const matSire = buildAncestor('matSire', 'buck', ids.matPatSire || '', ids.matPatDam || '');
+    const matDam = buildAncestor('matDam', 'doe', ids.matMatSire || '', ids.matMatDam || '');
+
+    [patSire, patDam, matSire, matDam].forEach(obj => {
+      if (obj) createdAncestors.push(obj);
+    });
+
+    const sire = buildAncestor('sire', 'buck', ids.patSire || '', ids.patDam || '');
+    const dam = buildAncestor('dam', 'doe', ids.matSire || '', ids.matDam || '');
+
+    [sire, dam].forEach(obj => {
+      if (obj) createdAncestors.push(obj);
+    });
+
+    createdAncestors.forEach(anc => {
+      onUpdateRabbit(anc);
+    });
+
+    const updatedProband = { ...activeRabbit };
+    if (ids.sire) updatedProband.sireId = ids.sire;
+    if (ids.dam) updatedProband.damId = ids.dam;
+
+    const probandData = parsedPreview['proband'];
+    if (probandData) {
+      if (probandData.name) updatedProband.name = probandData.name;
+      if (probandData.tattooNumber) updatedProband.tattooNumber = probandData.tattooNumber;
+      if (probandData.weightOz) updatedProband.weightOz = probandData.weightOz;
+      if (probandData.variety) updatedProband.variety = probandData.variety;
+      if (probandData.dob) updatedProband.dob = probandData.dob;
+    }
+
+    onUpdateRabbit(updatedProband);
+
+    setShowImportWizard(false);
+    setImportText('');
+    setParsedPreview(null);
   };
 
   // Search results for assigning nodes
@@ -384,6 +643,37 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     };
   }, [activeRabbit]);
 
+  const renderGreatGrandparentCard = (nodeId, label, gender, genderColorClass) => {
+    const node = pedigreeNodes[nodeId];
+    return (
+      <div className="w-full max-w-[140px] p-1.5 bg-slate-900/60 border border-white/5 rounded-lg shadow-sm">
+        <p className={`text-[7px] font-extrabold uppercase ${genderColorClass}`}>{label}</p>
+        {node ? (
+          <div>
+            <h5 className="font-bold text-white text-[10px] truncate">{node.name}</h5>
+            {node.legs?.length > 0 && (
+              <span className="text-[7px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1.5 py-0.2 rounded mt-0.5 inline-block">🏆 {node.legs.length} Legs</span>
+            )}
+            <p className="text-[8px] text-slate-400 mt-0.5">Tat: {node.tattooNumber || 'N/A'}</p>
+            <button 
+              onClick={() => handleRemoveNode(nodeId)} 
+              className="text-[7px] text-red-400 hover:underline mt-0.5 font-bold border-none bg-transparent cursor-pointer"
+            >
+              Unassign
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setActiveAssignNode({ id: nodeId, label })}
+            className="w-full py-1 border border-dashed border-white/10 text-slate-400 text-[9px] font-bold rounded mt-0.5 hover:bg-white/5 border-none bg-transparent cursor-pointer"
+          >
+            + Assign
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header and selector */}
@@ -393,7 +683,14 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
           <p className="text-xs text-slate-300">Design lineages, verify ARBA weight limits, and append authorization signatures.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setShowImportWizard(true)}
+            className="py-2 px-3 bg-indigo-650/40 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <Wand2 className="w-4 h-4 text-indigo-400" /> Auto-Digest Written Pedigree
+          </button>
+          
           <label className="text-xs font-bold text-slate-400">Select Rabbit:</label>
           <select
             value={selectedRabbitId}
@@ -410,20 +707,23 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       </div>
 
       {activeRabbit ? (
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-          {/* Visual 3-Gen Tree Layout (3 Cols) */}
-          <div className="xl:col-span-3 flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
+          {/* Visual 3-Gen Tree Layout (Full Width) */}
+          <div className="w-full flex flex-col gap-6">
             <div className="glass-container p-6 overflow-x-auto">
               {/* Tree Grid */}
-              <div className="min-w-[800px] grid grid-cols-3 gap-6 relative">
+              <div className="min-w-[650px] lg:min-w-0 grid grid-cols-4 gap-2 relative">
                 {/* Generation 1: Self */}
                 <div className="flex flex-col justify-center items-center">
-                  <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Generation 1 (Selected)</h4>
-                  <div className="w-full max-w-[240px] p-4 bg-slate-950/60 border-2 border-indigo-500/30 rounded-2xl relative shadow-md shadow-slate-950">
+                  <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-2">Gen 1 (Selected)</h4>
+                  <div className="w-full max-w-[165px] p-3 bg-slate-950/70 border-2 border-indigo-500/30 rounded-2xl relative shadow-md shadow-slate-950">
                     <div className="absolute top-2 right-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] px-2 py-0.5 rounded-full font-bold">
                       PROBAND
                     </div>
                     <h5 className="font-bold text-white text-sm truncate">{pedigreeNodes.self.name}</h5>
+                    {pedigreeNodes.self.legs?.length > 0 && (
+                      <span className="text-[9px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1.5 py-0.5 rounded-full mt-1 inline-block">🏆 {pedigreeNodes.self.legs.length} Legs</span>
+                    )}
                     <p className="text-[10px] text-slate-400 mt-0.5">Tattoo: {pedigreeNodes.self.tattooNumber || 'None'}</p>
                     <p className="text-[10px] text-indigo-300 font-semibold mt-1">{pedigreeNodes.self.breed}</p>
                     <p className="text-[10px] text-slate-300 mt-0.5">Weight: {pedigreeNodes.self.weightOz ? `${(pedigreeNodes.self.weightOz / 16).toFixed(2)} lbs` : 'N/A'}</p>
@@ -431,20 +731,23 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                 </div>
 
                 {/* Generation 2: Parents */}
-                <div className="flex flex-col justify-around gap-12">
+                <div className="flex flex-col justify-around gap-8">
                   <div className="flex flex-col items-center">
-                    <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Generation 2 (Parents)</h4>
+                    <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-2">Gen 2 (Parents)</h4>
                     {/* Sire */}
-                    <div className="w-full max-w-[240px] p-4 bg-slate-900 border border-blue-500/20 rounded-2xl relative shadow-md">
-                      <div className="absolute top-2 right-2 bg-blue-500/15 text-blue-400 text-[9px] px-2 py-0.5 rounded-full font-bold">SIRE (M)</div>
+                    <div className="w-full max-w-[165px] p-2.5 bg-slate-900 border border-blue-500/20 rounded-2xl relative shadow-md">
+                      <div className="absolute top-2 right-2 bg-blue-500/15 text-blue-400 text-[9px] px-2 py-0.5 rounded-full font-bold">SIRE</div>
                       {pedigreeNodes.sire ? (
                         <div>
-                          <h5 className="font-bold text-white text-sm truncate">{pedigreeNodes.sire.name}</h5>
-                          <p className="text-[10px] text-slate-400">Tattoo: {pedigreeNodes.sire.tattooNumber || 'None'}</p>
+                          <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.sire.name}</h5>
+                          {pedigreeNodes.sire.legs?.length > 0 && (
+                            <span className="text-[8px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1.5 py-0.5 rounded mt-0.5 inline-block">🏆 {pedigreeNodes.sire.legs.length} Legs</span>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.sire.tattooNumber || 'None'}</p>
                           <p className="text-[10px] text-slate-300 mt-1">Weight: {pedigreeNodes.sire.weightOz ? `${(pedigreeNodes.sire.weightOz / 16).toFixed(2)} lbs` : 'N/A'}</p>
                           <button
                             onClick={() => handleRemoveNode('sire')}
-                            className="mt-3 text-[9px] font-bold text-red-400 hover:underline"
+                            className="mt-2 text-[9px] font-bold text-red-400 hover:underline border-none bg-transparent cursor-pointer"
                           >
                             Unassign Parent
                           </button>
@@ -452,9 +755,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                       ) : (
                         <button
                           onClick={() => setActiveAssignNode({ id: 'sire', label: 'Sire (Father)' })}
-                          className="w-full py-4 border border-dashed border-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500/5 transition-all text-xs font-bold flex items-center justify-center gap-1"
+                          className="w-full py-3 border border-dashed border-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500/5 transition-all text-[10px] font-bold flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
                         >
-                          <Plus className="w-4 h-4" /> Assign Sire
+                          <Plus className="w-3.5 h-3.5" /> Assign Sire
                         </button>
                       )}
                     </div>
@@ -462,16 +765,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
 
                   {/* Dam */}
                   <div className="flex flex-col items-center">
-                    <div className="w-full max-w-[240px] p-4 bg-slate-900 border border-pink-500/20 rounded-2xl relative shadow-md">
-                      <div className="absolute top-2 right-2 bg-pink-500/15 text-pink-400 text-[9px] px-2 py-0.5 rounded-full font-bold">DAM (F)</div>
+                    <div className="w-full max-w-[165px] p-2.5 bg-slate-900 border border-pink-500/20 rounded-2xl relative shadow-md">
+                      <div className="absolute top-2 right-2 bg-pink-500/15 text-pink-400 text-[9px] px-2 py-0.5 rounded-full font-bold">DAM</div>
                       {pedigreeNodes.dam ? (
                         <div>
-                          <h5 className="font-bold text-white text-sm truncate">{pedigreeNodes.dam.name}</h5>
-                          <p className="text-[10px] text-slate-400">Tattoo: {pedigreeNodes.dam.tattooNumber || 'None'}</p>
+                          <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.dam.name}</h5>
+                          {pedigreeNodes.dam.legs?.length > 0 && (
+                            <span className="text-[8px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1.5 py-0.5 rounded mt-0.5 inline-block">🏆 {pedigreeNodes.dam.legs.length} Legs</span>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.dam.tattooNumber || 'None'}</p>
                           <p className="text-[10px] text-slate-300 mt-1">Weight: {pedigreeNodes.dam.weightOz ? `${(pedigreeNodes.dam.weightOz / 16).toFixed(2)} lbs` : 'N/A'}</p>
                           <button
                             onClick={() => handleRemoveNode('dam')}
-                            className="mt-3 text-[9px] font-bold text-red-400 hover:underline"
+                            className="mt-2 text-[9px] font-bold text-red-400 hover:underline border-none bg-transparent cursor-pointer"
                           >
                             Unassign Parent
                           </button>
@@ -479,9 +785,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                       ) : (
                         <button
                           onClick={() => setActiveAssignNode({ id: 'dam', label: 'Dam (Mother)' })}
-                          className="w-full py-4 border border-dashed border-pink-500/20 text-pink-400 rounded-xl hover:bg-pink-500/5 transition-all text-xs font-bold flex items-center justify-center gap-1"
+                          className="w-full py-3 border border-dashed border-pink-500/20 text-pink-400 rounded-xl hover:bg-pink-500/5 transition-all text-[10px] font-bold flex items-center justify-center gap-1 border-none bg-transparent cursor-pointer"
                         >
-                          <Plus className="w-4 h-4" /> Assign Dam
+                          <Plus className="w-3.5 h-3.5" /> Assign Dam
                         </button>
                       )}
                     </div>
@@ -489,22 +795,25 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                 </div>
 
                 {/* Generation 3: Grandparents */}
-                <div className="flex flex-col justify-between gap-6 py-2">
-                  <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-400 text-center col-span-3">Generation 3 (Grandparents)</h4>
+                <div className="flex flex-col justify-between gap-3 py-1">
+                  <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 text-center mb-1">Gen 3 (Grandparents)</h4>
                   
                   {/* Sire's Sire */}
-                  <div className="w-full max-w-[240px] p-3 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
                     <p className="text-[8px] font-extrabold uppercase text-blue-400">Sire's Sire</p>
                     {pedigreeNodes.sireSire ? (
                       <div>
                         <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.sireSire.name}</h5>
-                        <p className="text-[9px] text-slate-400">Tattoo: {pedigreeNodes.sireSire.tattooNumber || 'N/A'}</p>
-                        <button onClick={() => handleRemoveNode('sireSire')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold">Unassign</button>
+                        {pedigreeNodes.sireSire.legs?.length > 0 && (
+                          <span className="text-[8px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1 py-0.2 rounded mt-0.5 inline-block">🏆 {pedigreeNodes.sireSire.legs.length} Legs</span>
+                        )}
+                        <p className="text-[9px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.sireSire.tattooNumber || 'N/A'}</p>
+                        <button onClick={() => handleRemoveNode('sireSire')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold border-none bg-transparent cursor-pointer">Unassign</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setActiveAssignNode({ id: 'sireSire', label: "Sire's Sire" })}
-                        className="w-full py-2 border border-dashed border-white/10 text-slate-400 text-[10px] font-bold rounded-lg mt-1 hover:bg-white/5"
+                        className="w-full py-1.5 border border-dashed border-white/10 text-slate-400 text-[9px] font-bold rounded mt-1 hover:bg-white/5 border-none bg-transparent cursor-pointer"
                       >
                         + Assign
                       </button>
@@ -512,18 +821,21 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   </div>
 
                   {/* Sire's Dam */}
-                  <div className="w-full max-w-[240px] p-3 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
                     <p className="text-[8px] font-extrabold uppercase text-pink-400">Sire's Dam</p>
                     {pedigreeNodes.sireDam ? (
                       <div>
                         <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.sireDam.name}</h5>
-                        <p className="text-[9px] text-slate-400">Tattoo: {pedigreeNodes.sireDam.tattooNumber || 'N/A'}</p>
-                        <button onClick={() => handleRemoveNode('sireDam')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold">Unassign</button>
+                        {pedigreeNodes.sireDam.legs?.length > 0 && (
+                          <span className="text-[8px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1 py-0.2 rounded mt-0.5 inline-block">🏆 {pedigreeNodes.sireDam.legs.length} Legs</span>
+                        )}
+                        <p className="text-[9px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.sireDam.tattooNumber || 'N/A'}</p>
+                        <button onClick={() => handleRemoveNode('sireDam')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold border-none bg-transparent cursor-pointer">Unassign</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setActiveAssignNode({ id: 'sireDam', label: "Sire's Dam" })}
-                        className="w-full py-2 border border-dashed border-white/10 text-slate-400 text-[10px] font-bold rounded-lg mt-1 hover:bg-white/5"
+                        className="w-full py-1.5 border border-dashed border-white/10 text-slate-400 text-[9px] font-bold rounded mt-1 hover:bg-white/5 border-none bg-transparent cursor-pointer"
                       >
                         + Assign
                       </button>
@@ -531,18 +843,21 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   </div>
 
                   {/* Dam's Sire */}
-                  <div className="w-full max-w-[240px] p-3 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
                     <p className="text-[8px] font-extrabold uppercase text-blue-400">Dam's Sire</p>
                     {pedigreeNodes.damSire ? (
                       <div>
                         <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.damSire.name}</h5>
-                        <p className="text-[9px] text-slate-400">Tattoo: {pedigreeNodes.damSire.tattooNumber || 'N/A'}</p>
-                        <button onClick={() => handleRemoveNode('damSire')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold">Unassign</button>
+                        {pedigreeNodes.damSire.legs?.length > 0 && (
+                          <span className="text-[8px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1 py-0.2 rounded mt-0.5 inline-block">🏆 {pedigreeNodes.damSire.legs.length} Legs</span>
+                        )}
+                        <p className="text-[9px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.damSire.tattooNumber || 'N/A'}</p>
+                        <button onClick={() => handleRemoveNode('damSire')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold border-none bg-transparent cursor-pointer">Unassign</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setActiveAssignNode({ id: 'damSire', label: "Dam's Sire" })}
-                        className="w-full py-2 border border-dashed border-white/10 text-slate-400 text-[10px] font-bold rounded-lg mt-1 hover:bg-white/5"
+                        className="w-full py-1.5 border border-dashed border-white/10 text-slate-400 text-[9px] font-bold rounded mt-1 hover:bg-white/5 border-none bg-transparent cursor-pointer"
                       >
                         + Assign
                       </button>
@@ -550,24 +865,40 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   </div>
 
                   {/* Dam's Dam */}
-                  <div className="w-full max-w-[240px] p-3 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
                     <p className="text-[8px] font-extrabold uppercase text-pink-400">Dam's Dam</p>
                     {pedigreeNodes.damDam ? (
                       <div>
                         <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.damDam.name}</h5>
-                        <p className="text-[9px] text-slate-400">Tattoo: {pedigreeNodes.damDam.tattooNumber || 'N/A'}</p>
-                        <button onClick={() => handleRemoveNode('damDam')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold">Unassign</button>
+                        {pedigreeNodes.damDam.legs?.length > 0 && (
+                          <span className="text-[8px] bg-amber-500/20 text-amber-350 border border-amber-500/30 font-black px-1 py-0.2 rounded mt-0.5 inline-block">🏆 {pedigreeNodes.damDam.legs.length} Legs</span>
+                        )}
+                        <p className="text-[9px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.damDam.tattooNumber || 'N/A'}</p>
+                        <button onClick={() => handleRemoveNode('damDam')} className="text-[8px] text-red-400 hover:underline mt-1 font-bold border-none bg-transparent cursor-pointer">Unassign</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setActiveAssignNode({ id: 'damDam', label: "Dam's Dam" })}
-                        className="w-full py-2 border border-dashed border-white/10 text-slate-400 text-[10px] font-bold rounded-lg mt-1 hover:bg-white/5"
+                        className="w-full py-1.5 border border-dashed border-white/10 text-slate-400 text-[9px] font-bold rounded mt-1 hover:bg-white/5 border-none bg-transparent cursor-pointer"
                       >
                         + Assign
                       </button>
                     )}
                   </div>
 
+                </div>
+
+                {/* Generation 4: Great-Grandparents */}
+                <div className="flex flex-col justify-between gap-2 py-1">
+                  <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 text-center mb-1">Gen 4 (Great-Grandparents)</h4>
+                  {renderGreatGrandparentCard('sireSireSire', "Sire's Sire's Sire", 'buck', 'text-blue-400')}
+                  {renderGreatGrandparentCard('sireSireDam', "Sire's Sire's Dam", 'doe', 'text-pink-400')}
+                  {renderGreatGrandparentCard('sireDamSire', "Sire's Dam's Sire", 'buck', 'text-blue-400')}
+                  {renderGreatGrandparentCard('sireDamDam', "Sire's Dam's Dam", 'doe', 'text-pink-400')}
+                  {renderGreatGrandparentCard('damSireSire', "Dam's Sire's Sire", 'buck', 'text-blue-400')}
+                  {renderGreatGrandparentCard('damSireDam', "Dam's Sire's Dam", 'doe', 'text-pink-400')}
+                  {renderGreatGrandparentCard('damDamSire', "Dam's Dam's Sire", 'buck', 'text-blue-400')}
+                  {renderGreatGrandparentCard('damDamDam', "Dam's Dam's Dam", 'doe', 'text-pink-400')}
                 </div>
               </div>
             </div>
@@ -603,8 +934,10 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
             )}
           </div>
 
-          {/* Interactive Control Panel & Signature Pad (1 Col) */}
-          <div className="flex flex-col gap-6">
+        {/* Action Controls & Signature Pad Grid (Rendered below tree) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-4">
+          {/* Left Columns: Assignment Search & Custom Forms */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Context Assignment Drawer */}
             {activeAssignNode ? (
               <div className="glass-container p-5 border border-indigo-500/30 flex flex-col gap-4">
@@ -680,12 +1013,16 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
                       <div className="flex flex-col gap-1">
                         <label className="text-slate-400 font-bold">Breed</label>
-                        <input
-                          type="text"
+                        <select
                           value={customForm.breed}
                           onChange={(e) => setCustomForm({ ...customForm, breed: e.target.value })}
-                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
-                        />
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500 cursor-pointer"
+                        >
+                          <option value="">-- Select Breed --</option>
+                          {Object.keys(BREED_STANDARDS).sort().map(b => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="text-slate-400 font-bold">Variety</label>
@@ -695,6 +1032,22 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                           onChange={(e) => setCustomForm({ ...customForm, variety: e.target.value })}
                           className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
                         />
+                        {/* Variety color swatches quick picker */}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(BREED_COLORS[customForm.breed] || BREED_COLORS['Default']).slice(0, 8).map(c => (
+                            <button
+                              key={c.name}
+                              type="button"
+                              onClick={() => setCustomForm({ ...customForm, variety: c.name })}
+                              title={c.name}
+                              className={`w-4 h-4 rounded-full border transition-all hover:scale-110 flex items-center justify-center ${customForm.variety === c.name ? 'border-indigo-400 ring-1 ring-indigo-300' : 'border-slate-600'}`}
+                              style={{
+                                background: c.hex,
+                                boxShadow: c.border ? `inset 0 0 0 1px ${c.border}` : 'none'
+                              }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -763,6 +1116,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 gap-2 text-[10px]">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-slate-400 font-bold">Show Legs (Wins Count)</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 3"
+                          value={customForm.legsCount || ''}
+                          onChange={(e) => setCustomForm({ ...customForm, legsCount: e.target.value })}
+                          className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex gap-2 mt-2">
                       <button
                         type="button"
@@ -788,8 +1154,15 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   Cancel Selection
                 </button>
               </div>
-            ) : null}
+            ) : (
+              <div className="glass-container p-6 text-center text-slate-400 text-xs border border-white/5 bg-slate-950/20">
+                💡 Click <strong className="text-indigo-400 font-bold">+ Assign</strong> on any pedigree node above to search your herd or create a custom ancestor record.
+              </div>
+            )}
+          </div>
 
+          {/* Right Column: Signature Pad & Print Button */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
             {/* Breeder Signature Certificate Pad */}
             <div className="glass-container p-5 flex flex-col gap-4 border border-indigo-500/20">
               <div>
@@ -848,9 +1221,92 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
             </button>
           </div>
         </div>
+      </div>
       ) : (
         <div className="glass-container p-12 text-center text-slate-400">
           No rabbits available. Please add a rabbit inside the Lineage tab first!
+        </div>
+      )}
+
+      {showImportWizard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-2xl bg-slate-900 border border-indigo-500/30 text-white rounded-3xl p-6 shadow-2xl flex flex-col gap-5 relative max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div>
+                <h3 className="font-bold text-white text-base flex items-center gap-2">
+                  🪄 Written Pedigree Digest Wizard
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Paste freeform pedigree text details. We'll automatically identify ancestors and parse attributes.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowImportWizard(false);
+                  setImportText('');
+                  setParsedPreview(null);
+                }}
+                className="p-1 text-slate-400 hover:text-white rounded-full hover:bg-white/5 cursor-pointer border-none bg-transparent"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-300">Pasted Written Pedigree Details:</label>
+                <textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder="Name: Beckey's Bunnies Daisy&#10;Ear No: BB49&#10;Wt: 10.4&#10;Breed: New Zealand&#10;&#10;Sire: Forrest Edge's RW5&#10;Ear No: RW5&#10;Wt: 10.28&#10;Color: Broken Black&#10;&#10;Dam: Vela&#10;Ear No: BB11..."
+                  rows={10}
+                  className="w-full bg-slate-950 border border-white/10 text-xs text-white rounded-xl p-3 focus:border-indigo-500 font-mono outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleParsePedigree}
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-550 text-white font-bold rounded-xl text-xs cursor-pointer border-none"
+                >
+                  🔍 Digest & Match Lineage
+                </button>
+                {parsedPreview && (
+                  <button
+                    type="button"
+                    onClick={handleApplyParsedPedigree}
+                    className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-550 text-white font-bold rounded-xl text-xs cursor-pointer border-none"
+                  >
+                    ✅ Apply Lineage to {activeRabbit?.name}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Preview Section */}
+            {parsedPreview && (
+              <div className="border-t border-white/10 pt-4 mt-2 flex flex-col gap-3">
+                <h4 className="text-xs font-bold text-slate-200">Digested Ancestor Matches:</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[250px] overflow-y-auto pr-1">
+                  {Object.entries(parsedPreview).map(([nodeId, data]) => {
+                    const roleLabel = getRoleLabel(nodeId);
+                    return (
+                      <div key={nodeId} className="p-2 bg-black/30 border border-white/5 rounded-lg flex flex-col gap-1 text-[9px] leading-tight">
+                        <span className="font-mono text-[7px] text-indigo-400 font-bold uppercase">{roleLabel}</span>
+                        <strong className="text-slate-200 truncate">{data.name || 'Unknown'}</strong>
+                        {data.tattooNumber && <div className="text-slate-400">Ear: <span className="text-slate-350">{data.tattooNumber}</span></div>}
+                        {data.weightOz ? <div className="text-slate-400">Wt: <span className="text-slate-350">{(data.weightOz/16).toFixed(2)} lbs</span></div> : null}
+                        {data.variety && <div className="text-slate-400">Var: <span className="text-slate-350 truncate block">{data.variety}</span></div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       )}
     </div>
