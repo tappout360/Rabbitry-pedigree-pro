@@ -2987,7 +2987,7 @@ export default function App() {
               <span className="text-3xl animate-hop-bounce">🐇👑</span>
               <div>
                 <h1 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
-                  WarrenWise Pro
+                  Rabbitry Pedigree Pro
                 </h1>
                 <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-mono font-bold">ARBA Compliance Suite</span>
               </div>
@@ -4239,6 +4239,39 @@ export default function App() {
               </div>
             </div>
 
+            {/* Explicit Save Barn Settings button */}
+            <button
+              onClick={() => {
+                localStorage.setItem('rp_rabbitry_name', rabbitryName);
+                localStorage.setItem('rp_logo', rabbitryLogo);
+                localStorage.setItem('rp_theme', theme);
+                localStorage.setItem('rp_dash_widgets', JSON.stringify(dashboardWidgets));
+                localStorage.setItem('rp_custom_accent', customAccent);
+                
+                if (currentUser) {
+                  const updatedUser = { 
+                    ...currentUser, 
+                    name: breederName, 
+                    rabbitryName, 
+                    phone: breederPhone, 
+                    arbaMemberNumber, 
+                    logo: rabbitryLogo, 
+                    theme,
+                    customAccent 
+                  };
+                  setCurrentUser(updatedUser);
+                  db.adminBreeders.put(updatedUser).then(() => {
+                    localStorage.setItem('rp_current_user', JSON.stringify(updatedUser));
+                    showToast("Barn settings saved successfully!", "success");
+                    triggerConfetti();
+                  });
+                }
+              }}
+              className="btn-interactive w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-bold text-white border-none rounded-xl mt-2 flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
+            >
+              💾 Save Barn Settings
+            </button>
+
             {/* WarrenWise AI Mascot Dialogue (Fun Mode Only) */}
             {designMode === 'fun' && (
               <div className="glass-container p-4 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 border border-indigo-500/20 rounded-3xl relative overflow-hidden flex items-center gap-3 shadow-lg hover:shadow-indigo-500/15 transition-all duration-300">
@@ -4305,7 +4338,7 @@ export default function App() {
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">📱</span>
                     <div>
-                      <h4 className="font-bold text-white text-xs">Install WarrenWise Pro App</h4>
+                      <h4 className="font-bold text-white text-xs">Install Rabbitry Pedigree Pro App</h4>
                       <p className="text-[10px] text-slate-300 mt-0.5">Add to your home screen for rapid offline hutch logging and zero lag.</p>
                     </div>
                   </div>
@@ -9909,7 +9942,7 @@ export default function App() {
                 
                 // Sync updated user to adminBreeders list
                 setAdminBreeders(prev => prev.map(b => b.id === currentUser.id ? updatedUser : b));
-                showToast("Verification complete! Welcome to WarrenWise Pro.", "success");
+                showToast("Verification complete! Welcome to Rabbitry Pedigree Pro.", "success");
               }}
               className="flex flex-col gap-4 text-xs"
             >
