@@ -1255,7 +1255,80 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
             {/* Form */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-300">Pasted Written Pedigree Details:</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-slate-300">Pasted Written Pedigree Details:</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const template = `Name: ${activeRabbit?.name || ''}
+Ear No: ${activeRabbit?.tattooNumber || ''}
+Wt: ${activeRabbit?.weightOz ? (activeRabbit.weightOz / 16).toFixed(2) : ''}
+Breed: ${activeRabbit?.breed || ''}
+Variety: ${activeRabbit?.variety || ''}
+
+Sire: 
+Ear No: 
+Wt: 
+Variety: 
+
+Dam: 
+Ear No: 
+Wt: 
+Variety: 
+
+Sire's Sire: 
+Ear No: 
+Wt: 
+Variety: 
+
+Sire's Dam: 
+Ear No: 
+Wt: 
+Variety: 
+
+Dam's Sire: 
+Ear No: 
+Wt: 
+Variety: 
+
+Dam's Dam: 
+Ear No: 
+Wt: 
+Variety: 
+
+Sire's Sire's Sire: 
+Sire's Sire's Dam: 
+Sire's Dam's Sire: 
+Sire's Dam's Dam: 
+Dam's Sire's Sire: 
+Dam's Sire's Dam: 
+Dam's Dam's Sire: 
+Dam's Dam's Dam: `;
+                        setImportText(template);
+                      }}
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold border-none bg-transparent cursor-pointer"
+                    >
+                      📄 Load Blank Template
+                    </button>
+                    <span className="text-[10px] opacity-40">|</span>
+                    <label className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold cursor-pointer">
+                      📁 Upload Text File
+                      <input
+                        type="file"
+                        accept=".txt,.rtf"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (evt) => setImportText(evt.target.result);
+                          reader.readAsText(file);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
                 <textarea
                   value={importText}
                   onChange={(e) => setImportText(e.target.value)}

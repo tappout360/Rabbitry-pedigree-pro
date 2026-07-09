@@ -555,6 +555,13 @@ export default function App() {
 
   // Current logged in user
   const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('rp_current_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u && u.id) return u;
+      } catch {}
+    }
     const email = localStorage.getItem('rp_logged_in_email');
     if (email) {
       const saved = localStorage.getItem('rp_admin_breeders');
@@ -1415,6 +1422,7 @@ export default function App() {
 
     // Success login!
     setCurrentUser(user);
+    localStorage.setItem('rp_current_user', JSON.stringify(user));
     if (user.id === 'ab-admin') {
       setSelectedBreederContext('ab-admin');
       localStorage.setItem('rp_selected_context', 'ab-admin');
@@ -4437,6 +4445,18 @@ export default function App() {
                     customAccent 
                   };
                   setCurrentUser(updatedUser);
+                  
+                  const savedBreeders = localStorage.getItem('rp_admin_breeders');
+                  if (savedBreeders) {
+                    try {
+                      const list = JSON.parse(savedBreeders);
+                      const updatedList = list.map(b => b.id === updatedUser.id ? updatedUser : b);
+                      localStorage.setItem('rp_admin_breeders', JSON.stringify(updatedList));
+                    } catch (e) {
+                      console.error("Failed to update rp_admin_breeders list:", e);
+                    }
+                  }
+
                   db.adminBreeders.put(updatedUser).then(() => {
                     localStorage.setItem('rp_current_user', JSON.stringify(updatedUser));
                     showToast("Barn settings saved successfully!", "success");
