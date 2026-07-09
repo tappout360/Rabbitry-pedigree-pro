@@ -3775,7 +3775,7 @@ export default function App() {
   // MAIN WORKSPACE DASHBOARD VIEW (ONLINE / PROFILE CREATED)
   // ----------------------------------------------------
   return (
-    <div className={`theme-${theme} min-h-screen relative ${designMode === 'fun' ? 'fun-mode-active bunny-watermark' : 'pro-mode-active'} ${barnMode ? 'barn-mode-active' : ''}`} style={{ '--custom-accent-color': customAccent }}>
+    <div className={`theme-${theme} min-h-screen relative ${designMode === 'fun' ? 'fun-mode-active bunny-watermark' : 'pro-mode-active'} ${barnMode && activeTab === 'cages' ? 'barn-mode-active' : ''}`} style={{ '--custom-accent-color': customAccent }}>
       
       {/* Network Status Banner (sticky top, auto-dismiss) */}
       <NetworkStatusBanner />
@@ -3903,14 +3903,16 @@ export default function App() {
             {designMode === 'fun' ? '🐰 Fun Mode' : '📜 Pro Mode'}
           </button>
 
-          {/* Barn Mode Switcher */}
-          <button
-            onClick={() => setBarnMode(!barnMode)}
-            className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold transition-all ${barnMode ? 'bg-orange-600 text-white shadow-md ring-2 ring-orange-400' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
-            title="Toggle high-contrast, large touch-target Barn Mode for farm-ready use"
-          >
-            {barnMode ? '🚜 Barn Mode ON' : '🚜 Barn Mode OFF'}
-          </button>
+          {/* Barn Mode Switcher (Scoped to Cages tab) */}
+          {activeTab === 'cages' && (
+            <button
+              onClick={() => setBarnMode(!barnMode)}
+              className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold transition-all ${barnMode ? 'bg-orange-600 text-white shadow-md ring-2 ring-orange-400' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
+              title="Toggle high-contrast, large touch-target Barn Mode for farm-ready use"
+            >
+              {barnMode ? '🚜 Barn Mode ON' : '🚜 Barn Mode OFF'}
+            </button>
+          )}
 
           {/* Theme Selector */}
           <select 
@@ -9713,7 +9715,7 @@ export default function App() {
       )}
 
       {/* Mobile Barn-Mode Floating Action Button */}
-      {barnMode && (
+      {barnMode && activeTab === 'cages' && (
         <button
           onClick={() => {
             setShowQuickWeightModal(true);
