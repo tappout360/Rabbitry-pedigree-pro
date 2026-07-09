@@ -740,10 +740,91 @@ select option {
   background-color: #ea580c !important; /* orange-600 */
   border: 2px solid #ffffff !important;
 }
-.mobile-fab svg {
-  width: 24px;
-  height: 24px;
-  stroke: #ffffff !important;
+/* Custom Scrollbar Tracking matching Theme Accents */
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border) !important;
+  border-radius: 9999px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
 }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary) !important;
+  background-clip: padding-box !important;
+}
+
+/* Micro-animations and Transitions */
+@keyframes checkbox-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.checkbox-bounce-active {
+  animation: checkbox-bounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-glow:hover {
+  box-shadow: 0 0 20px 2px var(--accent-glow) !important;
+  transform: translateY(-2px);
+}
+
+.transition-fade-slide {
+  animation: fade-slide 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes fade-slide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Glassmorphism card helpers */
+.glass-panel-sleek {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Mobile responsive bottom navigation layout styles */
+.mobile-nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(15, 15, 20, 0.95);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 50;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+.mobile-nav-item.active {
+  color: var(--accent-primary);
+}
+.mobile-container-padding {
+  padding-bottom: 84px !important;
+}
+
 
 

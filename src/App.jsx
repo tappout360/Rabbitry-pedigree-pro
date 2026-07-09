@@ -1054,6 +1054,22 @@ export default function App() {
   const [mediaTagFilter, setMediaTagFilter] = useState('all');
   const [compareMode, setCompareMode] = useState(false);
 
+  // PWA Install Event Capturing
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log("PWA 'beforeinstallprompt' event captured successfully.");
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   // Design Mode & Accent States
   const [designMode, setDesignMode] = useState(() => localStorage.getItem('rp_design_mode') || 'fun');
   const [customAccent, setCustomAccent] = useState(() => localStorage.getItem('rp_custom_accent') || '#6366f1');
@@ -1254,22 +1270,52 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // New Rabbit Form State
-  const [newRabbit, setNewRabbit] = useState({
-    tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
-    sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
-    sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: ''
+  // New Rabbit Form State with Draft Recovery
+  const [newRabbit, setNewRabbit] = useState(() => {
+    const draft = localStorage.getItem('rp_draft_new_rabbit');
+    if (draft) {
+      try { return JSON.parse(draft); } catch(e) {}
+    }
+    return {
+      tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
+      sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
+      sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: ''
+    };
   });
 
-  // New Breeding Form State
-  const [newBreeding, setNewBreeding] = useState({
-    buckId: '', doeId: '', breedDate: new Date().toISOString().split('T')[0]
+  useEffect(() => {
+    localStorage.setItem('rp_draft_new_rabbit', JSON.stringify(newRabbit));
+  }, [newRabbit]);
+
+  // New Breeding Form State with Draft Recovery
+  const [newBreeding, setNewBreeding] = useState(() => {
+    const draft = localStorage.getItem('rp_draft_new_breeding');
+    if (draft) {
+      try { return JSON.parse(draft); } catch(e) {}
+    }
+    return {
+      buckId: '', doeId: '', breedDate: new Date().toISOString().split('T')[0]
+    };
   });
 
-  // New Ledger Form State
-  const [newTx, setNewTx] = useState({
-    date: new Date().toISOString().split('T')[0], type: 'expense', amount: '', category: 'feed', notes: '', rabbitId: ''
+  useEffect(() => {
+    localStorage.setItem('rp_draft_new_breeding', JSON.stringify(newBreeding));
+  }, [newBreeding]);
+
+  // New Ledger Form State with Draft Recovery
+  const [newTx, setNewTx] = useState(() => {
+    const draft = localStorage.getItem('rp_draft_new_tx');
+    if (draft) {
+      try { return JSON.parse(draft); } catch(e) {}
+    }
+    return {
+      date: new Date().toISOString().split('T')[0], type: 'expense', amount: '', category: 'feed', notes: '', rabbitId: ''
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('rp_draft_new_tx', JSON.stringify(newTx));
+  }, [newTx]);
 
   // Handle URL parsing for simulated password reset links and assistant invites
   useEffect(() => {
@@ -1905,6 +1951,18 @@ export default function App() {
     }
     if (!newRabbit.tattooNumber || !newRabbit.name) {
       alert("Tattoo and Name are required!");
+      return;
+    }
+
+    // Front-end strict validation limits
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (newRabbit.dob && newRabbit.dob > todayStr) {
+      alert("Invalid Date of Birth: Cannot select a future date.");
+      return;
+    }
+    const wt = parseFloat(newRabbit.weightOz);
+    if (isNaN(wt) || wt < 0 || wt > 500) {
+      alert("Invalid Weight: Weight must be between 0 and 500 ounces.");
       return;
     }
 
@@ -3951,10 +4009,10 @@ export default function App() {
       )}
 
       {/* Main Grid Content */}
-      <main className="w-full px-6 pb-6 grid grid-cols-1 lg:grid-cols-4 gap-6 z-10 relative">
+      <main className="w-full px-6 pb-6 grid grid-cols-1 lg:grid-cols-4 gap-6 z-10 relative mobile-container-padding lg:pb-6">
         
         {/* Left Side Navigation & Customization Panel */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
+        <div className="hidden lg:flex lg:col-span-1 flex-col gap-6">
           
           {/* Navigation Card */}
           <div className="glass-container p-4 flex flex-col gap-2">
@@ -4281,6 +4339,40 @@ export default function App() {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="flex flex-col gap-6">
+
+              {/* PWA Install Banner */}
+              {deferredPrompt && showInstallBanner && (
+                <div className="glass-container p-4 border border-indigo-500/30 bg-indigo-950/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-fade-slide">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">📱</span>
+                    <div>
+                      <h4 className="font-bold text-white text-xs">Install WarrenWise Pro App</h4>
+                      <p className="text-[10px] text-slate-300 mt-0.5">Add to your home screen for rapid offline hutch logging and zero lag.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                    <button
+                      onClick={() => setShowInstallBanner(false)}
+                      className="flex-1 sm:flex-none text-[10px] py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (deferredPrompt) {
+                          deferredPrompt.prompt();
+                          const { outcome } = await deferredPrompt.userChoice;
+                          console.log(`User response to install prompt: ${outcome}`);
+                          setDeferredPrompt(null);
+                        }
+                      }}
+                      className="flex-1 sm:flex-none text-[10px] py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg cursor-pointer"
+                    >
+                      Install App
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Assistant Review Center Widget */}
               {currentUser?.role === 'owner' && allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length > 0 && (
@@ -9699,6 +9791,45 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="mobile-nav-bar lg:hidden">
+        <button 
+          onClick={() => setActiveTab('dashboard')} 
+          className={`mobile-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+        >
+          <BarChart3 className="w-5 h-5" />
+          <span>Dashboard</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('rabbits')} 
+          className={`mobile-nav-item ${activeTab === 'rabbits' ? 'active' : ''}`}
+        >
+          <Rabbit className="w-5 h-5" />
+          <span>Inventory</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('breeding')} 
+          className={`mobile-nav-item ${activeTab === 'breeding' ? 'active' : ''}`}
+        >
+          <Calendar className="w-5 h-5" />
+          <span>Mating</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('health')} 
+          className={`mobile-nav-item ${activeTab === 'health' ? 'active' : ''}`}
+        >
+          <HeartPulse className="w-5 h-5" />
+          <span>Health</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('ledger')} 
+          className={`mobile-nav-item ${activeTab === 'ledger' ? 'active' : ''}`}
+        >
+          <DollarSign className="w-5 h-5" />
+          <span>Ledger</span>
+        </button>
+      </div>
 
       {/* Toast Notifications Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
