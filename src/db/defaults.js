@@ -13,47 +13,91 @@ export const DEFAULT_RABBITS = [
   { 
     id: 'r-1', breederId: 'ab-1', tattooNumber: 'S01', name: 'Blue Thunder', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2025-01-10', weightOz: 60, status: 'active', sireId: 'r-4', damId: 'r-5', inbreedingCoeff: 0.0, registrationNumber: 'REG-12345', gcNumber: 'GC-5544', location: 'A-01', notes: 'Proven sire, extremely calm.',
     photos: ['/assets/holland_lop.png'],
-    legs: [{ id: 'leg-1', date: '2025-09-15', showName: 'ARBA National Show', judge: 'Dr. John Miller', award: 'Best of Variety', classSize: 24 }]
+    legs: [{ id: 'leg-1', date: '2025-09-15', showName: 'ARBA National Show', judge: 'Dr. John Miller', award: 'Best of Variety', classSize: 24 }],
+    timeline: [
+      { id: 't-r1-1', date: '2025-01-10', photo: '/assets/holland_lop.png', weightOz: 2.5, notes: 'Birth entry - Blue Thunder' },
+      { id: 't-r1-2', date: '2025-02-10', photo: '/assets/holland_lop.png', weightOz: 16.0, notes: 'Weaning weight log' },
+      { id: 't-r1-3', date: '2025-03-10', photo: '/assets/holland_lop.png', weightOz: 32.0, notes: '8 weeks growth check' },
+      { id: 't-r1-4', date: '2025-04-10', photo: '/assets/holland_lop.png', weightOz: 48.0, notes: '12 weeks growth check' },
+      { id: 't-r1-5', date: '2025-07-10', photo: '/assets/holland_lop.png', weightOz: 60.0, notes: 'Maturity weight check' }
+    ]
   },
   { 
     id: 'r-2', breederId: 'ab-1', tattooNumber: 'D01', name: 'Clover Blossom', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'doe', dob: '2025-02-15', weightOz: 62, status: 'active', sireId: 'r-4', damId: 'r-7', inbreedingCoeff: 0.0, registrationNumber: 'REG-12346', gcNumber: '', location: 'A-02', notes: 'Excellent mothering instincts.',
     photos: ['/assets/holland_lop.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-r2-1', date: '2025-02-15', photo: '/assets/holland_lop.png', weightOz: 2.4, notes: 'Birth entry - Clover Blossom' },
+      { id: 't-r2-2', date: '2025-03-15', photo: '/assets/holland_lop.png', weightOz: 18.0, notes: 'Weaning check' },
+      { id: 't-r2-3', date: '2025-04-15', photo: '/assets/holland_lop.png', weightOz: 34.0, notes: '8 weeks check' },
+      { id: 't-r2-4', date: '2025-05-15', photo: '/assets/holland_lop.png', weightOz: 50.0, notes: '12 weeks check' },
+      { id: 't-r2-5', date: '2025-08-15', photo: '/assets/holland_lop.png', weightOz: 62.0, notes: 'Senior weight verification' }
+    ]
   },
   { 
     id: 'r-3', breederId: 'ab-1', tattooNumber: 'L43-1', name: 'Blue Pearl', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2026-03-01', weightOz: 38, status: 'active', sireId: 'r-1', damId: 'r-2', inbreedingCoeff: 0.125, registrationNumber: '', gcNumber: '', location: 'B-04', notes: 'Nice hutch variety with rich blue undercoat.',
     photos: ['/assets/holland_lop.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-r3-1', date: '2026-03-01', photo: '/assets/holland_lop.png', weightOz: 2.2, notes: 'Birth entry - Blue Pearl' },
+      { id: 't-r3-2', date: '2026-04-01', photo: '/assets/holland_lop.png', weightOz: 14.5, notes: 'Weaning weight' },
+      { id: 't-r3-3', date: '2026-05-01', photo: '/assets/holland_lop.png', weightOz: 28.0, notes: '8 weeks growth check' },
+      { id: 't-r3-4', date: '2026-06-01', photo: '/assets/holland_lop.png', weightOz: 38.0, notes: 'Junior hutch check' }
+    ]
   },
   {
     id: 'r-4', breederId: 'ab-1', tattooNumber: 'SR01', name: 'Storm Rider', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2024-03-10', weightOz: 61, status: 'active', sireId: 'r-8', damId: 'r-9', inbreedingCoeff: 0.0, registrationNumber: 'REG-11022', gcNumber: '', location: 'C-01', notes: 'Sired multiple champions.',
     photos: ['/assets/holland_lop.png'],
-    legs: [{ id: 'leg-2', date: '2025-10-05', showName: 'West Coast Rabbit Classic', judge: 'Carla Sanchez', award: 'Best of Breed', classSize: 18 }]
+    legs: [{ id: 'leg-2', date: '2025-10-05', showName: 'West Coast Rabbit Classic', judge: 'Carla Sanchez', award: 'Best of Breed', classSize: 18 }],
+    timeline: [
+      { id: 't-r4-1', date: '2024-03-10', photo: '/assets/holland_lop.png', weightOz: 2.6, notes: 'Birth entry - Storm Rider' },
+      { id: 't-r4-2', date: '2024-10-05', photo: '/assets/holland_lop.png', weightOz: 61.0, notes: 'Senior weight verification' }
+    ]
   },
   {
     id: 'r-5', breederId: 'ab-1', tattooNumber: 'SD01', name: 'Sky Dancer', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-04-12', weightOz: 59, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-02', notes: 'Very gentle temperament.',
     photos: ['/assets/holland_lop.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-r5-1', date: '2024-04-12', photo: '/assets/holland_lop.png', weightOz: 2.3, notes: 'Birth entry - Sky Dancer' },
+      { id: 't-r5-2', date: '2024-08-12', photo: '/assets/holland_lop.png', weightOz: 59.0, notes: 'Official maturity check' }
+    ]
   },
   {
     id: 'r-6', breederId: 'ab-1', tattooNumber: 'FR01', name: 'Forest Ranger', breed: 'Holland Lop', variety: 'Broken Blue', sex: 'buck', dob: '2024-02-18', weightOz: 63, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-11023', gcNumber: '', location: 'C-03', notes: 'Broad shoulders, compact body.',
     photos: ['/assets/holland_lop.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-r6-1', date: '2024-02-18', photo: '/assets/holland_lop.png', weightOz: 2.4, notes: 'Birth entry - Forest Ranger' },
+      { id: 't-r6-2', date: '2024-06-18', photo: '/assets/holland_lop.png', weightOz: 63.0, notes: 'Hutch maturity check' }
+    ]
   },
   {
     id: 'r-7', breederId: 'ab-1', tattooNumber: 'MB01', name: 'Meadow Breeze', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2024-03-22', weightOz: 60, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'C-04', notes: 'Deep blue coat, great fur density.',
     photos: ['/assets/holland_lop.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-r7-1', date: '2024-03-22', photo: '/assets/holland_lop.png', weightOz: 2.2, notes: 'Birth entry - Meadow Breeze' },
+      { id: 't-r7-2', date: '2024-07-22', photo: '/assets/holland_lop.png', weightOz: 60.0, notes: 'Hutch maturity check' }
+    ]
   },
   {
     id: 'r-8', breederId: 'ab-1', tattooNumber: 'ZB01', name: 'Zephyr Buck', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2023-01-05', weightOz: 62, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9988', gcNumber: 'GC-2211', location: 'D-01', notes: 'Grand Champion line progenitor.',
     photos: ['/assets/holland_lop.png'],
-    legs: [{ id: 'leg-3', date: '2024-11-20', showName: 'Cascade Winter Show', judge: 'Robert Devlin', award: 'Best In Show', classSize: 42 }]
+    legs: [{ id: 'leg-3', date: '2024-11-20', showName: 'Cascade Winter Show', judge: 'Robert Devlin', award: 'Best In Show', classSize: 42 }],
+    timeline: [
+      { id: 't-r8-1', date: '2023-01-05', photo: '/assets/holland_lop.png', weightOz: 2.5, notes: 'Birth entry - Zephyr Buck' },
+      { id: 't-r8-2', date: '2024-11-20', photo: '/assets/holland_lop.png', weightOz: 62.0, notes: 'Cascade Show weight audit' }
+    ]
   },
   {
     id: 'r-9', breederId: 'ab-1', tattooNumber: 'OD01', name: 'Orchard Doe', breed: 'Holland Lop', variety: 'Blue', sex: 'doe', dob: '2023-02-14', weightOz: 61, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-9989', gcNumber: '', location: 'D-02', notes: 'High fertility history.',
     photos: ['/assets/holland_lop.png'],
-    legs: []
+    legs: [],
+    timeline: [
+      { id: 't-r9-1', date: '2023-02-14', photo: '/assets/holland_lop.png', weightOz: 2.3, notes: 'Birth entry - Orchard Doe' },
+      { id: 't-r9-2', date: '2024-02-14', photo: '/assets/holland_lop.png', weightOz: 61.0, notes: 'Hutch maturity check' }
+    ]
   },
   { 
     id: 'r-10', breederId: 'ab-7', tattooNumber: 'FG01', name: 'Titan Rex', breed: 'Flemish Giant', variety: 'Sandy', sex: 'buck', dob: '2025-03-01', weightOz: 240, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG991', gcNumber: 'GC-FG101', location: 'Cage-G1', notes: 'Massive sandy buck, ARBA show winner.',
@@ -304,7 +348,12 @@ export const DEFAULT_MEDICAL = [
   { id: 'm-1', rabbitId: 'r-1', date: '2025-01-20', type: 'Vaccination', treatment: 'RHDV2 Vaccine', notes: 'First dose administered. No side effects.', cost: 15.00 },
   { id: 'm-2', rabbitId: 'r-1', date: '2025-03-15', type: 'Prevention', treatment: 'Ivermectin Dewormer', notes: 'Routine spring deworming.', cost: 5.00 },
   { id: 'm-3', rabbitId: 'r-2', date: '2025-02-18', type: 'Prevention', treatment: 'Broad-Spectrum Dewormer', notes: 'Routine pregnancy preventative check.', cost: 4.50 },
-  { id: 'm-4', rabbitId: 'r-6', date: '2025-04-10', type: 'Treatment', treatment: 'Penicillin Injection', notes: 'Checked by vet, respiratory treatment.', cost: 25.00 }
+  { id: 'm-4', rabbitId: 'r-6', date: '2025-04-10', type: 'Treatment', treatment: 'Penicillin Injection', notes: 'Checked by vet, respiratory treatment.', cost: 25.00 },
+  
+  // Sarah Connors' Rabbits
+  { id: 'm-5', rabbitId: 'r-30', date: '2025-06-15', type: 'Vaccination', treatment: 'RHDV2 Vaccine', notes: 'Immunization complete.', cost: 16.00 },
+  { id: 'm-6', rabbitId: 'r-31', date: '2025-07-20', type: 'Prevention', treatment: 'Fenbendazole Dewormer', notes: 'Bi-annual parasite check.', cost: 6.00 },
+  { id: 'm-7', rabbitId: 'r-33', date: '2026-04-10', type: 'Treatment', treatment: 'Terramycin Ophthalmic', notes: 'Cleared mild eye irritation.', cost: 12.50 }
 ];
 
 export const DEFAULT_WEIGHTS = [
@@ -316,5 +365,20 @@ export const DEFAULT_WEIGHTS = [
   { id: 'w-5', rabbitId: 'r-2', date: '2025-03-15', weightOz: 18, stage: 'Weaning' },
   { id: 'w-6', rabbitId: 'r-2', date: '2025-04-15', weightOz: 34, stage: '8 Weeks' },
   { id: 'w-7', rabbitId: 'r-2', date: '2025-05-15', weightOz: 50, stage: '12 Weeks' },
-  { id: 'w-8', rabbitId: 'r-2', date: '2025-08-15', weightOz: 62, stage: 'Maturity' }
+  { id: 'w-8', rabbitId: 'r-2', date: '2025-08-15', weightOz: 62, stage: 'Maturity' },
+
+  // Jason Miller's other rabbits
+  { id: 'w-9', rabbitId: 'r-3', date: '2026-04-01', weightOz: 14, stage: 'Weaning' },
+  { id: 'w-10', rabbitId: 'r-3', date: '2026-05-01', weightOz: 28, stage: '8 Weeks' },
+  { id: 'w-11', rabbitId: 'r-3', date: '2026-06-01', weightOz: 38, stage: '12 Weeks' },
+
+  // Sarah Connors' Rabbits
+  { id: 'w-30', rabbitId: 'r-30', date: '2025-06-10', weightOz: 15, stage: 'Weaning' },
+  { id: 'w-31', rabbitId: 'r-30', date: '2025-09-10', weightOz: 40, stage: 'Maturity Check' },
+  { id: 'w-32', rabbitId: 'r-30', date: '2026-01-10', weightOz: 58, stage: 'Breeding Pre-Audit' },
+
+  { id: 'w-33', rabbitId: 'r-33', date: '2026-03-15', weightOz: 2.3, stage: 'Birth' },
+  { id: 'w-34', rabbitId: 'r-33', date: '2026-04-15', weightOz: 12, stage: 'Weaning' },
+  { id: 'w-35', rabbitId: 'r-33', date: '2026-05-15', weightOz: 24, stage: '8 Weeks' },
+  { id: 'w-36', rabbitId: 'r-33', date: '2026-06-15', weightOz: 35, stage: '12 Weeks' }
 ];
