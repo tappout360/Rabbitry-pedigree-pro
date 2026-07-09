@@ -4723,7 +4723,9 @@ export default function App() {
                   <div className="glass-container p-5 flex items-center justify-between bg-gradient-to-br from-indigo-500/15 via-indigo-950/5 to-indigo-500/5 border border-indigo-500/30 hover:shadow-indigo-500/20 hover:scale-[1.02] transition-all">
                     <div>
                       <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Total Animals</span>
-                      <h3 className="text-3xl font-black mt-1 text-white">{rabbits.length}</h3>
+                      <h3 className="text-3xl font-black mt-1 text-white">
+                        {rabbits.filter(r => r.status !== 'pedigree_only').length}
+                      </h3>
                     </div>
                     <div className="p-3 bg-indigo-500/25 rounded-2xl text-indigo-300 shadow-lg shadow-indigo-500/30">
                       <Rabbit className="w-8 h-8 animate-wiggle" style={{ animationDuration: '3s' }} />
@@ -7392,11 +7394,33 @@ export default function App() {
             const HUTCHES = [1, 2, 3, 4];
             const TIERS = [2, 1]; // Tier 2 (Top), Tier 1 (Bottom)
             
-            const occupiedCount = rabbits.filter(r => r.location).length;
+            const matchLocationKey = (locValue, locKey) => {
+              if (!locValue || !locKey) return false;
+              const normVal = locValue.toLowerCase().replace(/[\s-]/g, '');
+              const normKey = locKey.toLowerCase().replace(/[\s-]/g, '');
+              if (normVal === normKey) return true;
+              if (normVal.length === 2 && normKey.length === 3) {
+                if (normVal + '2' === normKey) return true;
+              }
+              return false;
+            };
+
+            const occupiedCages = [];
+            ROWS.forEach(r => {
+              HUTCHES.forEach(h => {
+                TIERS.forEach(t => {
+                  const locKey = `${r}-${h}-${t}`;
+                  const hasRabbits = rabbits.some(rx => matchLocationKey(rx.location, locKey));
+                  if (hasRabbits) occupiedCages.push(locKey);
+                });
+              });
+            });
+
+            const occupiedCount = occupiedCages.length;
             const vacantCount = 32 - occupiedCount;
             
             const assignableRabbits = rabbits.filter(
-              r => r.status !== 'pedigree_only' && r.status !== 'sold' && !r.location
+              r => r.status !== 'pedigree_only' && r.status !== 'sold'
             );
 
             return (
@@ -7454,7 +7478,138 @@ export default function App() {
                             
                             {TIERS.map(tier => {
                               const locationKey = `${row}-${hutch}-${tier}`;
-                              const occupyingRabbit = rabbits.find(r => r.location === locationKey);
+                              const isGrowOut = growOutCages.includes(locationKey);
+                              const occupyingRabbits = rabbits.filter(r => matchLocationKey(r.location, locationKey));
+                              
+                              if (isGrowOut) {
+                                return (
+                                  <div 
+                                    key={tier}
+                                    className="p-3 rounded-lg bg-slate-900/80 border-2 border-emerald-500/30 flex flex-col gap-2 relative hover:border-emerald-555 transition-all duration-200"
+                                  >
+                                    <div className="flex justify-between items-center text-[9px] font-black uppercase text-emerald-400 tracking-wider">
+                                      <span>🌾 Grow Out (T{tier})</span>
+                                      <button
+                                        onClick={() => handleToggleGrowOutCage(locationKey)}
+                                        disabled={occupyingRabbits.length > 1}
+                                        className="text-[8px] text-slate-400 hover:text-white underline border-none bg-transparent cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                        title={occupyingRabbits.length > 1 ? "Cannot convert cage: must have 1 or fewer rabbits." : "Convert back to a standard single hutch"}
+                                      >
+                                        Convert Standard
+                                      </button>
+                                    </div>
+
+                                    {/* List of rabbits inside Grow-Out Cage */}
+                                    <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                                      {occupyingRabbits.map(r => (
+                                        <div key={r.id} className="flex justify-between items-center bg-black/40 p-1.5 rounded-lg border border-white/5 text-[10px]">
+                                          <div className="truncate max-w-[70%]">
+                                            <span className="font-bold text-white">🐰 {r.name}</span>
+                                            <span className="text-slate-400 ml-1 font-mono font-bold">({r.tattooNumber})</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className={`text-[8px] font-extrabold uppercase px-1 rounded ${r.sex === 'buck' ? 'bg-sky-500/10 text-sky-400' : 'bg-pink-500/10 text-pink-400'}`}>
+                                              {r.sex === 'buck' ? 'M' : 'F'}
+                                            </span>
+                                            <button
+                                              onClick={() => handleUnassignRabbitFromCage(r.id)}
+                                              className="p-0.5 text-red-400 hover:text-red-300 font-bold border-none bg-transparent cursor-pointer"
+                                              title="Remove from cage"
+                                            >
+                                              ❌
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {occupyingRabbits.length === 0 && (
+                                        <p className="text-center py-4 text-[10px] opacity-40 italic">Empty Grow-Out Cage</p>
+                                      )}
+                                    </div>
+
+                                    {/* Assign existing rabbit to this Grow-Out Cage */}
+                                    <div className="flex flex-col gap-1 mt-1 border-t border-white/5 pt-2">
+                                      <span className="text-[9px] font-bold opacity-60">Add Existing Rabbit:</span>
+                                      <div className="flex gap-1">
+                                        <select
+                                          value={selectedCageRabbits[locationKey] || ''}
+                                          onChange={(e) => setSelectedCageRabbits(prev => ({ ...prev, [locationKey]: e.target.value }))}
+                                          className="flex-1 text-[9px] py-1 px-1 bg-slate-950 border border-white/10 text-white rounded cursor-pointer outline-none"
+                                        >
+                                          <option value="">-- Select Rabbit --</option>
+                                          {assignableRabbits.map(r => (
+                                            <option key={r.id} value={r.id}>
+                                              [{r.tattooNumber}] {r.name} {r.location ? `(Currently: ${r.location})` : ''}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <button
+                                          onClick={() => {
+                                            const rId = selectedCageRabbits[locationKey];
+                                            if (rId) {
+                                              handleAssignRabbitToCage(rId, locationKey);
+                                              setSelectedCageRabbits(prev => {
+                                                const copy = { ...prev };
+                                                delete copy[locationKey];
+                                                return copy;
+                                              });
+                                            }
+                                          }}
+                                          disabled={!selectedCageRabbits[locationKey]}
+                                          className="py-1 px-2 rounded bg-indigo-650 hover:bg-indigo-600 disabled:opacity-40 text-[9px] font-bold text-center border-none text-white cursor-pointer"
+                                        >
+                                          Add
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Quick-Add New Grow-Out Rabbit Inline Form */}
+                                    <form 
+                                      onSubmit={(e) => handleQuickAddGrowOut(locationKey, e)}
+                                      className="flex flex-col gap-1 border-t border-white/5 pt-2"
+                                    >
+                                      <span className="text-[9px] font-bold opacity-60">Quick-Register New Grow-Out:</span>
+                                      <div className="flex gap-1 items-center">
+                                        <input
+                                          type="text"
+                                          required
+                                          placeholder="Tattoo"
+                                          value={quickGrowOutInputs[locationKey]?.tattooNumber || ''}
+                                          onChange={(e) => setQuickGrowOutInputs(prev => ({
+                                            ...prev,
+                                            [locationKey]: {
+                                              ...(prev[locationKey] || { sex: 'buck' }),
+                                              tattooNumber: e.target.value
+                                            }
+                                          }))}
+                                          className="w-16 text-[9px] py-1 px-1.5 bg-slate-950 border border-white/10 text-white rounded outline-none"
+                                        />
+                                        <select
+                                          value={quickGrowOutInputs[locationKey]?.sex || 'buck'}
+                                          onChange={(e) => setQuickGrowOutInputs(prev => ({
+                                            ...prev,
+                                            [locationKey]: {
+                                              ...(prev[locationKey] || { tattooNumber: '' }),
+                                              sex: e.target.value
+                                            }
+                                          }))}
+                                          className="w-14 text-[9px] py-1 px-1 bg-slate-950 border border-white/10 text-white rounded outline-none"
+                                        >
+                                          <option value="buck">Buck (M)</option>
+                                          <option value="doe">Doe (F)</option>
+                                        </select>
+                                        <button
+                                          type="submit"
+                                          className="flex-1 py-1 bg-emerald-600 hover:bg-emerald-555 text-[9px] font-bold text-white border-none rounded cursor-pointer"
+                                        >
+                                          + Reg
+                                        </button>
+                                      </div>
+                                    </form>
+                                  </div>
+                                );
+                              }
+
+                              const occupyingRabbit = rabbits.find(r => matchLocationKey(r.location, locationKey));
                               
                               if (occupyingRabbit) {
                                 return (
@@ -7510,7 +7665,7 @@ export default function App() {
                                         MOVE_HUTCHES.forEach(mh => {
                                           MOVE_TIERS.forEach(mt => {
                                             const loc = `${mr}-${mh}-${mt}`;
-                                            if (loc !== locationKey && !rabbits.find(rx => rx.location === loc)) {
+                                            if (loc !== locationKey && !rabbits.find(rx => matchLocationKey(rx.location, loc))) {
                                               vacantSlots.push(loc);
                                             }
                                           });
@@ -7534,6 +7689,16 @@ export default function App() {
                                         </div>
                                       );
                                     })()}
+
+                                    {/* Toggle Grow Out conversion option */}
+                                    <div className="mt-1.5 border-t border-white/5 pt-1.5 flex justify-end">
+                                      <button
+                                        onClick={() => handleToggleGrowOutCage(locationKey)}
+                                        className="text-[9px] text-emerald-450 hover:underline border-none bg-transparent cursor-pointer font-bold flex items-center gap-1"
+                                      >
+                                        🌾 Make Grow Out
+                                      </button>
+                                    </div>
                                   </div>
                                 );
                               } else {
@@ -7556,7 +7721,7 @@ export default function App() {
                                         <option value="">-- Select --</option>
                                         {assignableRabbits.map(r => (
                                           <option key={r.id} value={r.id}>
-                                            [{r.tattooNumber}] {r.name}
+                                            [{r.tattooNumber}] {r.name} {r.location ? `(Currently: ${r.location})` : ''}
                                           </option>
                                         ))}
                                       </select>
@@ -7577,6 +7742,16 @@ export default function App() {
                                         className="w-full py-1 rounded bg-indigo-600 hover:bg-indigo-550 disabled:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-[9px] font-bold text-center border-none text-white cursor-pointer transition-all duration-150"
                                       >
                                         Assign
+                                      </button>
+                                    </div>
+
+                                    {/* Toggle Grow Out conversion option */}
+                                    <div className="mt-1 border-t border-white/5 pt-1.5 flex justify-end">
+                                      <button
+                                        onClick={() => handleToggleGrowOutCage(locationKey)}
+                                        className="text-[9px] text-emerald-450 hover:underline border-none bg-transparent cursor-pointer font-bold flex items-center gap-1"
+                                      >
+                                        🌾 Make Grow Out
                                       </button>
                                     </div>
                                   </div>
