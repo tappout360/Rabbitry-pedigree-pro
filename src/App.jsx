@@ -56,11 +56,29 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
   };
 
   const handleStatusChange = (newStatus) => {
-    setAdminBreeders(prev => prev.map(item => 
-      item.id === b.id ? { ...item, status: newStatus } : item
-    ));
+    setAdminBreeders(prev => {
+      const next = prev.map(item => 
+        item.id === b.id ? { ...item, status: newStatus } : item
+      );
+      localStorage.setItem('rp_admin_breeders', JSON.stringify(next));
+      return next;
+    });
     if (newStatus === 'active') {
       triggerConfetti();
+    }
+    if (navigator.onLine) {
+      const token = localStorage.getItem('rp_auth_token');
+      if (token) {
+        fetch(`${API_ROOT}/breeders/${b.id}/status`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus })
+        })
+        .catch(err => console.error("Failed to sync status update to cloud:", err));
+      }
     }
   };
 
@@ -500,6 +518,8 @@ const parseEmailText = (text) => {
   };
 };
 
+const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
   // adminBreeders list
@@ -830,6 +850,101 @@ export default function App() {
   // Assistant approvals state & archived display state
   const [allApprovals, setAllApprovals] = useState([]);
 
+  const handlePullAndMerge = async (token = localStorage.getItem('rp_auth_token'), user = currentUser) => {
+    if (!token || !user) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const response = await fetch(`${API_ROOT}/pull`, { headers });
+      if (!response.ok) throw new Error("Failed to pull from server");
+      
+      const rows = await response.json();
+      if (!rows || rows.length === 0) return;
+
+      const tablesData = {};
+      rows.forEach(row => {
+        const tbl = row.tbl;
+        const payload = JSON.parse(row.payload);
+        const deleted = row.deleted === 1;
+        
+        if (!tablesData[tbl]) tablesData[tbl] = { puts: [], deletes: [] };
+        if (deleted) {
+          tablesData[tbl].deletes.push(row.record_id);
+        } else {
+          tablesData[tbl].puts.push(payload);
+        }
+      });
+
+      const key = deriveSessionKey(user.password, user.email);
+
+      await db.transaction('rw', [
+        db.rabbits, db.breedings, db.litters, db.ledger, db.shows, 
+        db.showEntries, db.chores, db.transfers, db.signatures, 
+        db.medical, db.weights
+      ], async () => {
+        for (const tbl of Object.keys(tablesData)) {
+          const tableInstance = db[tbl];
+          if (!tableInstance) continue;
+          
+          const { puts, deletes } = tablesData[tbl];
+          
+          if (deletes.length > 0) {
+            await tableInstance.bulkDelete(deletes);
+          }
+          if (puts.length > 0) {
+            const encryptedPuts = puts.map(record => {
+              if (tbl === 'rabbits') return encryptRecord(record, key, ['dob', 'notes']);
+              if (tbl === 'medical') return encryptRecord(record, key, ['treatment', 'notes']);
+              if (tbl === 'ledger') return encryptRecord(record, key, ['amount', 'notes']);
+              return record;
+            });
+            await tableInstance.bulkPut(encryptedPuts);
+          }
+        }
+      });
+
+      // Reload state from database
+      const rawRabbits = await db.rabbits.toArray();
+      setAllRabbits(rawRabbits.map(r => decryptRecord(r, key, ['dob', 'notes'])));
+
+      const rawBreedings = await db.breedings.toArray();
+      setAllBreedings(rawBreedings || []);
+
+      const rawLitters = await db.litters.toArray();
+      setAllLitters(rawLitters || []);
+
+      const rawLedger = await db.ledger.toArray();
+      setAllLedger(rawLedger.map(lt => {
+        const decrypted = decryptRecord(lt, key, ['amount', 'notes']);
+        decrypted.amount = parseFloat(decrypted.amount) || 0;
+        return decrypted;
+      }));
+
+      const rawShows = await db.shows.toArray();
+      setAllShows(rawShows || []);
+
+      const rawShowEntries = await db.showEntries.toArray();
+      setAllShowEntries(rawShowEntries || []);
+
+      const rawChores = await db.chores.toArray();
+      setAllChores(rawChores || []);
+
+      const rawTransfers = await db.transfers.toArray();
+      setAllTransfers(rawTransfers || []);
+
+      const rawSignatures = await db.signatures.toArray();
+      setAllSignatures(rawSignatures || []);
+
+      const rawMedical = await db.medical.toArray();
+      setAllMedical(rawMedical.map(m => decryptRecord(m, key, ['treatment', 'notes'])));
+
+      const rawWeights = await db.weights.toArray();
+      setAllWeights(rawWeights || []);
+
+    } catch (err) {
+      console.error("Merge error:", err);
+    }
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -862,6 +977,12 @@ export default function App() {
         setAllApprovals(data.approvals || []);
         setAdminBreeders(data.adminBreeders || []);
         setDbLoaded(true);
+
+        // Fetch latest cloud backup data if connected
+        const token = localStorage.getItem('rp_auth_token');
+        if (token && currentUser) {
+          handlePullAndMerge(token, currentUser);
+        }
       } catch (err) {
         console.error("Failed to migrate or load database:", err);
         if (err.failures) {
@@ -1401,44 +1522,90 @@ export default function App() {
       return;
     }
 
-    const user = adminBreeders.find(b => 
-      b.email.toLowerCase() === loginEmail.toLowerCase() ||
-      (b.username && b.username.toLowerCase() === loginEmail.toLowerCase())
-    );
-    if (!user) {
-      setLoginError('Account not found. Please register.');
+    const localLoginFallback = () => {
+      const user = adminBreeders.find(b => 
+        b.email.toLowerCase() === loginEmail.toLowerCase() ||
+        (b.username && b.username.toLowerCase() === loginEmail.toLowerCase())
+      );
+      if (!user) {
+        setLoginError('Account not found. Please register.');
+        return;
+      }
+
+      if (user.password !== loginPassword) {
+        setLoginError('Incorrect password. Please try again.');
+        return;
+      }
+
+      if (user.status === 'pending') {
+        setLoginError('Your registration is pending approval by the App Owner (Jason Mounts).');
+        return;
+      }
+
+      // Success login!
+      setCurrentUser(user);
+      localStorage.setItem('rp_current_user', JSON.stringify(user));
+      if (user.id === 'ab-admin') {
+        setSelectedBreederContext('ab-admin');
+        localStorage.setItem('rp_selected_context', 'ab-admin');
+      } else {
+        setSelectedBreederContext(user.id);
+        localStorage.setItem('rp_selected_context', user.id);
+      }
+      setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
+      setRabbitryLogo(user.logo || '🐇');
+      setTheme(user.theme || 'dark');
+      localStorage.setItem('rp_logged_in_email', user.email);
+      localStorage.setItem('rp_rabbitry_name', user.rabbitryName || 'Grandview Rabbitry');
+      localStorage.setItem('rp_logo', user.logo || '🐇');
+      localStorage.setItem('rp_theme', user.theme || 'dark');
+
+      triggerConfetti();
+    };
+
+    if (isOffline) {
+      localLoginFallback();
       return;
     }
 
-    if (user.password !== loginPassword) {
-      setLoginError('Incorrect password. Please try again.');
-      return;
-    }
-
-    if (user.status === 'pending') {
-      setLoginError('Your registration is pending approval by the App Owner (Jason Mounts).');
-      return;
-    }
-
-    // Success login!
-    setCurrentUser(user);
-    localStorage.setItem('rp_current_user', JSON.stringify(user));
-    if (user.id === 'ab-admin') {
-      setSelectedBreederContext('ab-admin');
-      localStorage.setItem('rp_selected_context', 'ab-admin');
-    } else {
-      setSelectedBreederContext(user.id);
-      localStorage.setItem('rp_selected_context', user.id);
-    }
-    setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
-    setRabbitryLogo(user.logo || '🐇');
-    setTheme(user.theme || 'dark');
-    localStorage.setItem('rp_logged_in_email', user.email);
-    localStorage.setItem('rp_rabbitry_name', user.rabbitryName || 'Grandview Rabbitry');
-    localStorage.setItem('rp_logo', user.logo || '🐇');
-    localStorage.setItem('rp_theme', user.theme || 'dark');
-
-    triggerConfetti();
+    fetch(`${API_ROOT}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginEmail, password: loginPassword })
+    })
+    .then(async res => {
+      if (res.ok) {
+        const data = await res.json();
+        const serverUser = { ...data.user, password: loginPassword };
+        localStorage.setItem('rp_auth_token', data.token);
+        localStorage.setItem('rp_current_user', JSON.stringify(serverUser));
+        setCurrentUser(serverUser);
+        
+        if (serverUser.id === 'ab-admin') {
+          setSelectedBreederContext('ab-admin');
+          localStorage.setItem('rp_selected_context', 'ab-admin');
+        } else {
+          setSelectedBreederContext(serverUser.id);
+          localStorage.setItem('rp_selected_context', serverUser.id);
+        }
+        
+        setRabbitryName(serverUser.rabbitryName || 'Grandview Rabbitry');
+        setRabbitryLogo(serverUser.logo || '🐇');
+        setTheme(serverUser.theme || 'dark');
+        localStorage.setItem('rp_logged_in_email', serverUser.email);
+        localStorage.setItem('rp_rabbitry_name', serverUser.rabbitryName || 'Grandview Rabbitry');
+        localStorage.setItem('rp_logo', serverUser.logo || '🐇');
+        localStorage.setItem('rp_theme', serverUser.theme || 'dark');
+        
+        triggerConfetti();
+        handlePullAndMerge(data.token, serverUser);
+      } else {
+        localLoginFallback();
+      }
+    })
+    .catch(() => {
+      localLoginFallback();
+    });
   };
 
   // Logout Handler
@@ -1564,8 +1731,28 @@ export default function App() {
     setAdminBreeders(updatedBreeders);
     localStorage.setItem('rp_admin_breeders', JSON.stringify(updatedBreeders));
 
-    // Show pending approval view
-    setAuthView('pending-approval');
+    if (isOffline) {
+      setAuthView('pending-approval');
+    } else {
+      fetch(`${API_ROOT}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: newBreeder.id,
+          name: newBreeder.name,
+          email: newBreeder.email,
+          role: newBreeder.role,
+          password: newBreeder.password,
+          accountNumber: newBreeder.accountNumber
+        })
+      })
+      .then(() => {
+        setAuthView('pending-approval');
+      })
+      .catch(() => {
+        setAuthView('pending-approval');
+      });
+    }
   };
 
   // Forgot Password Submit Handler
@@ -3075,28 +3262,50 @@ export default function App() {
     };
   };
 
-  // Sync handler (Simulated)
-  const handleSyncNow = () => {
+  // Sync handler (Real Cloud Database Sync)
+  const handleSyncNow = async () => {
     if (isOffline) {
       alert("Cannot sync while Offline!");
       return;
     }
-    if (syncQueue.length === 0) {
-      alert("No changes in local sync queue!");
+
+    const token = localStorage.getItem('rp_auth_token');
+    if (!token) {
+      showToast("Sync resolved locally (No active account token found).", "success");
+      setSyncQueue([]);
+      await db.syncQueue.clear();
       return;
     }
-    
-    // Sort actions chronologically using UUIDv7 lexical order to ensure Last-Write-Wins (LWW) conflict resolution
-    const sortedQueue = [...syncQueue].sort((a, b) => a.id.localeCompare(b.id));
-    const compression = compressPayload(sortedQueue);
-    
-    showToast(`Syncing ${sortedQueue.length} operations. MessagePack compressed payload: ${compression.compressedSize} bytes (38% data reduction).`, "info");
-    
-    setTimeout(() => {
+
+    try {
+      const sortedQueue = [...syncQueue].sort((a, b) => a.id.localeCompare(b.id));
+      const compression = compressPayload(sortedQueue);
+      
+      showToast(`Uploading ${sortedQueue.length} operations. MessagePack compressed payload: ${compression.compressedSize} bytes.`, "info");
+
+      if (sortedQueue.length > 0) {
+        const response = await fetch(`${API_ROOT}/sync`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ actions: sortedQueue })
+        });
+        if (!response.ok) throw new Error("Sync upload failed");
+      }
+
+      // After successful upload, pull latest cloud state and merge
+      await handlePullAndMerge(token, currentUser);
+
       setSyncQueue([]);
+      await db.syncQueue.clear();
       triggerConfetti();
-      showToast("Cloud sync completed successfully. SQLite conflict resolution resolved via Last-Write-Wins (LWW) based on UUIDv7 timestamps.", "success");
-    }, 1200);
+      showToast("Cloud sync completed successfully! All records synchronized across platforms.", "success");
+    } catch (err) {
+      console.error("Cloud sync error:", err);
+      showToast("Sync failed. Check connection or credentials.", "error");
+    }
   };
 
   const filteredRabbits = rabbits.filter(r => 

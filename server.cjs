@@ -42,6 +42,7 @@ db.serialize(() => {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       role TEXT DEFAULT 'owner',
+      status TEXT DEFAULT 'pending',
       password TEXT NOT NULL,
       account_number TEXT UNIQUE,
       parental_consent_verified INTEGER DEFAULT 0
@@ -49,34 +50,17 @@ db.serialize(() => {
   `);
 
   db.run(`
-    CREATE TABLE IF NOT EXISTS rabbits (
+    CREATE TABLE IF NOT EXISTS breeder_cloud_records (
       id TEXT PRIMARY KEY,
-      breeder_id TEXT,
-      name TEXT NOT NULL,
-      tattoo_number TEXT,
-      breed TEXT,
-      variety TEXT,
-      sex TEXT,
-      dob TEXT, -- AES encrypted string at-rest
-      location TEXT,
-      notes TEXT, -- AES encrypted string at-rest
-      FOREIGN KEY(breeder_id) REFERENCES breeders(id)
+      breeder_id TEXT NOT NULL,
+      tbl TEXT NOT NULL,
+      record_id TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      deleted INTEGER DEFAULT 0
     )
   `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS ledger (
-      id TEXT PRIMARY KEY,
-      breeder_id TEXT,
-      date TEXT,
-      type TEXT, -- 'income' or 'expense'
-      amount TEXT, -- AES encrypted string at-rest
-      category TEXT,
-      rabbit_id TEXT,
-      notes TEXT, -- AES encrypted string at-rest
-      FOREIGN KEY(breeder_id) REFERENCES breeders(id)
-    )
-  `);
+  db.run('CREATE INDEX IF NOT EXISTS idx_breeder_cloud_records_breeder ON breeder_cloud_records(breeder_id)');
 
   db.run(`
     CREATE TABLE IF NOT EXISTS audit_logs (
@@ -110,8 +94,8 @@ app.post('/api/auth/signup', (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
   db.run(
-    'INSERT INTO breeders (id, name, email, role, password, account_number) VALUES (?, ?, ?, ?, ?, ?)',
-    [id || `ab-${Date.now()}`, name, email, role || 'owner', password, accountNumber],
+    'INSERT INTO breeders (id, name, email, role, status, password, account_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [id || `ab-${Date.now()}`, name, email, role || 'owner', 'pending', password, accountNumber],
     function(err) {
       if (err) return res.status(400).json({ error: 'Breeder account already exists' });
       res.json({ success: true, message: 'Breeder account registered successfully' });
@@ -126,7 +110,19 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password credentials' });
     }
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '8h' });
-    res.json({ token, user: { id: user.id, name: user.name, role: user.role, email: user.email } });
+    res.json({ token, user: { id: user.id, name: user.name, role: user.role, email: user.email, status: user.status || 'pending' } });
+  });
+});
+
+// Update breeder status (approvals)
+app.post('/api/breeders/:id/status', authenticateToken, (req, res) => {
+  if (req.user.id !== 'ab-admin') {
+    return res.status(403).json({ error: 'Permission denied' });
+  }
+  const { status } = req.body;
+  db.run('UPDATE breeders SET status = ? WHERE id = ?', [status, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: 'Failed to update breeder status' });
+    res.json({ success: true });
   });
 });
 
@@ -137,36 +133,34 @@ app.post('/api/sync', authenticateToken, (req, res) => {
 
   db.serialize(() => {
     const stmtLog = db.prepare('INSERT INTO audit_logs (id, action, target_table, record_id, user_id, checksum) VALUES (?, ?, ?, ?, ?, ?)');
+    const stmtSync = db.prepare('INSERT OR REPLACE INTO breeder_cloud_records (id, breeder_id, tbl, record_id, payload, timestamp, deleted) VALUES (?, ?, ?, ?, ?, ?, ?)');
     
     actions.forEach(item => {
       const { action, table, payload } = item;
       const logId = `audit-${Date.now()}-${Math.floor(Math.random()*1000)}`;
       stmtLog.run([logId, action, table, payload.id || '', req.user.id, '']);
 
-      if (table === 'rabbits') {
-        if (action === 'INSERT' || action === 'UPDATE') {
-          db.run(
-            'INSERT OR REPLACE INTO rabbits (id, breeder_id, name, tattoo_number, breed, variety, sex, dob, location, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [payload.id, req.user.id, payload.name, payload.tattooNumber, payload.breed, payload.variety, payload.sex, payload.dob, payload.location, payload.notes]
-          );
-        } else if (action === 'DELETE') {
-          db.run('DELETE FROM rabbits WHERE id = ? AND breeder_id = ?', [payload.id, req.user.id]);
-        }
-      } else if (table === 'ledger') {
-        if (action === 'INSERT') {
-          db.run(
-            'INSERT OR REPLACE INTO ledger (id, breeder_id, date, type, amount, category, rabbit_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [payload.id, req.user.id, payload.date, payload.type, payload.amount, payload.category, payload.rabbitId, payload.notes]
-          );
-        } else if (action === 'DELETE') {
-          db.run('DELETE FROM ledger WHERE id = ? AND breeder_id = ?', [payload.id, req.user.id]);
-        }
-      }
+      const recordId = payload.id;
+      const key = `${table}:${recordId}`;
+      const timestamp = payload.timestamp || new Date().toISOString();
+      const isDeleted = action === 'DELETE' ? 1 : 0;
+      
+      stmtSync.run([key, req.user.id, table, recordId, JSON.stringify(payload), timestamp, isDeleted]);
     });
+    
     stmtLog.finalize();
+    stmtSync.finalize();
   });
 
   res.json({ success: true, message: 'Sync actions processed and logged' });
+});
+
+// Pull all latest cloud records for the authenticated breeder
+app.get('/api/pull', authenticateToken, (req, res) => {
+  db.all('SELECT * FROM breeder_cloud_records WHERE breeder_id = ?', [req.user.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to query cloud data' });
+    res.json(rows);
+  });
 });
 
 // Audit log view endpoint
