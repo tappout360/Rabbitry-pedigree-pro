@@ -42,75 +42,102 @@ db.version(2).stores({
   approvals: 'id, breederId, timestamp'
 });
 
+let migrationPromise = null;
+
 export async function performMigrationAndLoad() {
-  const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v3');
-  
-  const migrateOrLoadTable = async (localStorageKey, dexieTable, defaultList = []) => {
-    // If not migrated yet, we check localStorage first. If migrated, we check IndexedDB count.
-    if (isMigrated) {
-      const count = await dexieTable.count();
-      if (count > 0) {
-        return await dexieTable.toArray();
-      }
-    }
-    
-    // Check localStorage
-    const saved = localStorage.getItem(localStorageKey);
-    let list = defaultList;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          list = parsed;
-        }
-      } catch (e) {
-        console.error(`Error parsing localStorage key ${localStorageKey}:`, e);
-      }
-    }
-    
-    // Clear and populate Dexie
-    await dexieTable.clear();
-    if (list.length > 0) {
-      await dexieTable.bulkAdd(list);
-    }
-    return list;
-  };
-
-  // Run all migrations/loaders
-  const adminBreeders = await migrateOrLoadTable('rp_admin_breeders', db.adminBreeders, DEFAULT_BREEDERS);
-  const rabbits = await migrateOrLoadTable('rp_rabbits', db.rabbits, DEFAULT_RABBITS);
-  const breedings = await migrateOrLoadTable('rp_breedings', db.breedings, DEFAULT_BREEDINGS);
-  const litters = await migrateOrLoadTable('rp_litters', db.litters, DEFAULT_LITTERS);
-  const ledger = await migrateOrLoadTable('rp_ledger', db.ledger, DEFAULT_LEDGER);
-  const shows = await migrateOrLoadTable('rp_shows', db.shows, DEFAULT_SHOWS);
-  const showEntries = await migrateOrLoadTable('rp_show_entries', db.showEntries, []);
-  const chores = await migrateOrLoadTable('rp_chores', db.chores, DEFAULT_CHORES);
-  const transfers = await migrateOrLoadTable('rp_transfers', db.transfers, DEFAULT_TRANSFERS);
-  const signatures = await migrateOrLoadTable('rp_signatures', db.signatures, DEFAULT_SIGNATURES);
-  const medical = await migrateOrLoadTable('rp_medical', db.medical, DEFAULT_MEDICAL);
-  const weights = await migrateOrLoadTable('rp_weights', db.weights, DEFAULT_WEIGHTS);
-  const syncQueue = await migrateOrLoadTable('rp_sync_queue', db.syncQueue, []);
-  const approvals = await migrateOrLoadTable('rp_approvals', db.approvals, []);
-
-  // Mark migration as done
-  if (!isMigrated) {
-    localStorage.setItem('rp_migrated_to_dexie_v3', 'true');
+  if (migrationPromise) {
+    return migrationPromise;
   }
 
-  return {
-    adminBreeders,
-    rabbits,
-    breedings,
-    litters,
-    ledger,
-    shows,
-    showEntries,
-    chores,
-    transfers,
-    signatures,
-    medical,
-    weights,
-    syncQueue,
-    approvals
-  };
+  migrationPromise = (async () => {
+    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v3');
+    
+    const migrateOrLoadTable = async (localStorageKey, dexieTable, defaultList = []) => {
+      // If not migrated yet, we check localStorage first. If migrated, we check IndexedDB count.
+      if (isMigrated) {
+        const count = await dexieTable.count();
+        if (count > 0) {
+          return await dexieTable.toArray();
+        }
+      }
+      
+      // Check localStorage
+      const saved = localStorage.getItem(localStorageKey);
+      let list = defaultList;
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            list = parsed;
+          }
+        } catch (e) {
+          console.error(`Error parsing localStorage key ${localStorageKey}:`, e);
+        }
+      }
+      
+      // Clear and populate Dexie
+      await dexieTable.clear();
+      if (list.length > 0) {
+        await dexieTable.bulkAdd(list);
+      }
+      return list;
+    };
+
+    // Run all migrations/loaders
+    const adminBreeders = await migrateOrLoadTable('rp_admin_breeders', db.adminBreeders, DEFAULT_BREEDERS);
+    const rabbits = await migrateOrLoadTable('rp_rabbits', db.rabbits, DEFAULT_RABBITS);
+    const breedings = await migrateOrLoadTable('rp_breedings', db.breedings, DEFAULT_BREEDINGS);
+    const litters = await migrateOrLoadTable('rp_litters', db.litters, DEFAULT_LITTERS);
+    const ledger = await migrateOrLoadTable('rp_ledger', db.ledger, DEFAULT_LEDGER);
+    const shows = await migrateOrLoadTable('rp_shows', db.shows, DEFAULT_SHOWS);
+    const showEntries = await migrateOrLoadTable('rp_show_entries', db.showEntries, []);
+    const chores = await migrateOrLoadTable('rp_chores', db.chores, DEFAULT_CHORES);
+    const transfers = await migrateOrLoadTable('rp_transfers', db.transfers, DEFAULT_TRANSFERS);
+    // Map missing breederId fields on seed records dynamically to ensure strict schema index compliance
+    const medicalSeed = DEFAULT_MEDICAL.map(m => {
+      const r = DEFAULT_RABBITS.find(rx => rx.id === m.rabbitId);
+      return { ...m, breederId: r ? r.breederId : 'ab-1' };
+    });
+    const weightsSeed = DEFAULT_WEIGHTS.map(w => {
+      const r = DEFAULT_RABBITS.find(rx => rx.id === w.rabbitId);
+      return { ...w, breederId: r ? r.breederId : 'ab-1' };
+    });
+    const signaturesSeed = DEFAULT_SIGNATURES.map(s => {
+      const t = DEFAULT_TRANSFERS.find(tx => tx.id === s.transferId);
+      return { ...s, breederId: t ? t.breederId : 'ab-1' };
+    });
+
+    const signatures = await migrateOrLoadTable('rp_signatures', db.signatures, signaturesSeed);
+    const medical = await migrateOrLoadTable('rp_medical', db.medical, medicalSeed);
+    const weights = await migrateOrLoadTable('rp_weights', db.weights, weightsSeed);
+    const syncQueue = await migrateOrLoadTable('rp_sync_queue', db.syncQueue, []);
+    const approvals = await migrateOrLoadTable('rp_approvals', db.approvals, []);
+
+    // Mark migration as done
+    if (!isMigrated) {
+      localStorage.setItem('rp_migrated_to_dexie_v3', 'true');
+    }
+
+    return {
+      adminBreeders,
+      rabbits,
+      breedings,
+      litters,
+      ledger,
+      shows,
+      showEntries,
+      chores,
+      transfers,
+      signatures,
+      medical,
+      weights,
+      syncQueue,
+      approvals
+    };
+  })().catch(err => {
+    migrationPromise = null; // Clear lock on error to allow retry
+    throw err;
+  });
+
+  return migrationPromise;
 }
