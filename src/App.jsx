@@ -978,6 +978,11 @@ export default function App() {
         setDbLoaded(true);
       } catch (err) {
         console.error("Failed to migrate or load database:", err);
+        if (err.failures) {
+          console.error("BulkError failures:", err.failures.map(f => f.message || f.toString()));
+        } else if (err.inner) {
+          console.error("Inner error:", err.inner);
+        }
         setDbLoaded(true);
       }
     }
