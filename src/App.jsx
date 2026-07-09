@@ -17,130 +17,9 @@ import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
 import { uuidv7 } from './db/uuid';
+import { BREED_COLORS } from './db/breedColors';
 
-// Initial Breed Standards Data (Ounces: 16 oz = 1 lb)
-const BREED_STANDARDS = {
-  'Holland Lop': {
-    name: 'Holland Lop',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 48, buckSrMin: 32, buckSrMax: 64, // max 4.0 lbs (64 oz), Senior min 2.0 lbs (32 oz)
-    doeJrMin: 0, doeJrMax: 48, doeSrMin: 32, doeSrMax: 64
-  },
-  'Netherland Dwarf': {
-    name: 'Netherland Dwarf',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 32, buckSrMin: 16, buckSrMax: 40, // max 2.5 lbs (40 oz), Senior min 1.0 lbs (16 oz)
-    doeJrMin: 0, doeJrMax: 32, doeSrMin: 16, doeSrMax: 40
-  },
-  'Flemish Giant': {
-    name: 'Flemish Giant',
-    classType: '6-class',
-    buckJrMin: 0, buckJrMax: 160, buckIntMin: 144, buckIntMax: 192, buckSrMin: 208, buckSrMax: 9999, // Sr Bucks min 13 lbs (208 oz)
-    doeJrMin: 0, doeJrMax: 176, doeIntMin: 160, doeIntMax: 208, doeSrMin: 224, doeSrMax: 9999    // Sr Does min 14 lbs (224 oz)
-  },
-  'New Zealand': {
-    name: 'New Zealand',
-    classType: '6-class',
-    buckJrMin: 0, buckJrMax: 128, buckIntMin: 112, buckIntMax: 144, buckSrMin: 144, buckSrMax: 176, // Sr Bucks 9-11 lbs (144-176 oz)
-    doeJrMin: 0, doeJrMax: 144, doeIntMin: 128, doeIntMax: 160, doeSrMin: 160, doeSrMax: 192    // Sr Does 10-12 lbs (160-192 oz)
-  },
-  'Californian': {
-    name: 'Californian',
-    classType: '6-class',
-    buckJrMin: 88, buckJrMax: 128, buckIntMin: 0, buckIntMax: 144, buckSrMin: 144, buckSrMax: 160, // Jr 5.5-8 lbs, Int max 9 lbs, Sr 9-10 lbs
-    doeJrMin: 88, doeJrMax: 136, doeIntMin: 0, doeIntMax: 152, doeSrMin: 152, doeSrMax: 168     // Jr 5.5-8.5 lbs, Int max 9.5 lbs, Sr 9.5-10.5 lbs
-  },
-  'Mini Rex': {
-    name: 'Mini Rex',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 52, buckSrMin: 48, buckSrMax: 68, // Jr max 3.25 lbs, Sr Bucks 3-4.25 lbs
-    doeJrMin: 0, doeJrMax: 52, doeSrMin: 52, doeSrMax: 72  // Jr max 3.25 lbs, Sr Does 3.25-4.5 lbs
-  },
-  'Mini Lop': {
-    name: 'Mini Lop',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 72, buckSrMin: 72, buckSrMax: 104, // Jr max 4.5 lbs, Sr 4.5-6.5 lbs
-    doeJrMin: 0, doeJrMax: 72, doeSrMin: 72, doeSrMax: 104
-  },
-  'Dutch': {
-    name: 'Dutch',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 56, buckSrMin: 56, buckSrMax: 88, // Jr max 3.5 lbs, Sr 3.5-5.5 lbs
-    doeJrMin: 0, doeJrMax: 56, doeSrMin: 56, doeSrMax: 88
-  },
-  'Rex': {
-    name: 'Rex',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 128, buckSrMin: 120, buckSrMax: 152, // Jr max 8 lbs, Sr Bucks 7.5-9.5 lbs
-    doeJrMin: 0, doeJrMax: 128, doeSrMin: 128, doeSrMax: 168   // Jr max 8 lbs, Sr Does 8-10.5 lbs
-  },
-  'Lionhead': {
-    name: 'Lionhead',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 52, buckSrMin: 40, buckSrMax: 60, // Jr max 3.25 lbs, Sr 2.5-3.75 lbs
-    doeJrMin: 0, doeJrMax: 52, doeSrMin: 40, doeSrMax: 60
-  },
-  'Jersey Wooly': {
-    name: 'Jersey Wooly',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 48, buckSrMin: 32, buckSrMax: 56, // Jr max 3 lbs, Sr 2-3.5 lbs (ideal 3 lbs)
-    doeJrMin: 0, doeJrMax: 48, doeSrMin: 32, doeSrMax: 56
-  },
-  'French Lop': {
-    name: 'French Lop',
-    classType: '6-class',
-    buckJrMin: 0, buckJrMax: 168, buckIntMin: 0, buckIntMax: 184, buckSrMin: 168, buckSrMax: 9999, // Sr Bucks min 10.5 lbs (168 oz)
-    doeJrMin: 0, doeJrMax: 168, doeIntMin: 0, doeIntMax: 184, doeSrMin: 176, doeSrMax: 9999     // Sr Does min 11 lbs (176 oz)
-  },
-  'Champagne d\'Argent': {
-    name: 'Champagne d\'Argent',
-    classType: '6-class',
-    buckJrMin: 0, buckJrMax: 144, buckIntMin: 0, buckIntMax: 160, buckSrMin: 144, buckSrMax: 176, // Jr max 9 lbs, Sr 9-11 lbs
-    doeJrMin: 0, doeJrMax: 144, doeIntMin: 0, doeIntMax: 168, doeSrMin: 152, doeSrMax: 192     // Jr max 9 lbs, Sr 9.5-12 lbs
-  },
-  'English Angora': {
-    name: 'English Angora',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 88, buckSrMin: 80, buckSrMax: 120, // Jr max 5.5 lbs, Sr 5-7.5 lbs
-    doeJrMin: 0, doeJrMax: 88, doeSrMin: 80, doeSrMax: 120
-  },
-  'Satin': {
-    name: 'Satin',
-    classType: '6-class',
-    buckJrMin: 0, buckJrMax: 128, buckIntMin: 0, buckIntMax: 144, buckSrMin: 136, buckSrMax: 168, // Jr max 8 lbs, Int max 9 lbs, Sr Bucks 8.5-10.5 lbs
-    doeJrMin: 0, doeJrMax: 128, doeIntMin: 0, doeIntMax: 144, doeSrMin: 144, doeSrMax: 176     // Jr max 8 lbs, Int max 9 lbs, Sr Does 9-11 lbs
-  },
-  'Havana': {
-    name: 'Havana',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 80, buckSrMin: 72, buckSrMax: 104, // Jr max 5 lbs, Sr 4.5-6.5 lbs
-    doeJrMin: 0, doeJrMax: 80, doeSrMin: 72, doeSrMax: 104
-  },
-  'Himalayan': {
-    name: 'Himalayan',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 40, buckSrMin: 40, buckSrMax: 72, // Jr max 2.5 lbs, Sr 2.5-4.5 lbs
-    doeJrMin: 0, doeJrMax: 40, doeSrMin: 40, doeSrMax: 72
-  },
-  'Polish': {
-    name: 'Polish',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 40, buckSrMin: 0, buckSrMax: 56,  // Jr max 2.5 lbs, Sr max 3.5 lbs
-    doeJrMin: 0, doeJrMax: 40, doeSrMin: 0, doeSrMax: 56
-  },
-  'Thrianta': {
-    name: 'Thrianta',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 80, buckSrMin: 64, buckSrMax: 96,  // Jr max 5 lbs, Sr 4-6 lbs
-    doeJrMin: 0, doeJrMax: 80, doeSrMin: 64, doeSrMax: 96
-  },
-  'Silver Marten': {
-    name: 'Silver Marten',
-    classType: '4-class',
-    buckJrMin: 0, buckJrMax: 104, buckSrMin: 104, buckSrMax: 136, // Jr max 6.5 lbs, Sr Bucks 6.5-8.5 lbs
-    doeJrMin: 0, doeJrMax: 104, doeSrMin: 112, doeSrMax: 152   // Jr max 6.5 lbs, Sr Does 7-9.5 lbs
-  }
-};
+import { BREED_STANDARDS } from './db/breedStandards';
 
 const LOGO_OPTIONS = [
   { id: 'logo-meadow', label: 'Meadow Bunny 🐇', emoji: '🐇' },
@@ -1274,7 +1153,8 @@ export default function App() {
     return {
       tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
       sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
-      sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: ''
+      sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
+      isCharlie: false
     };
   });
 
@@ -1991,7 +1871,8 @@ export default function App() {
     setNewRabbit({
       tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
       sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
-      sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: ''
+      sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
+      isCharlie: false
     });
     setShowAddRabbit(false);
     triggerConfetti();
@@ -5210,6 +5091,31 @@ export default function App() {
                         value={newRabbit.variety}
                         onChange={(e) => setNewRabbit({...newRabbit, variety: e.target.value})}
                       />
+                      {/* Variety color swatch quick picker */}
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {(BREED_COLORS[newRabbit.breed] || BREED_COLORS['Default']).map(c => (
+                          <button
+                            key={c.name}
+                            type="button"
+                            onClick={() => setNewRabbit({...newRabbit, variety: c.name})}
+                            title={c.name}
+                            className={`w-6 h-6 rounded-full border transition-all hover:scale-110 flex items-center justify-center ${newRabbit.variety === c.name ? 'border-indigo-400 ring-2 ring-indigo-300' : 'border-slate-500'}`}
+                            style={{
+                              background: c.hex,
+                              boxShadow: c.border ? `inset 0 0 0 1px ${c.border}` : 'none'
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <label className="flex items-center gap-1.5 mt-1.5 text-[10px] text-amber-400 font-semibold cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={newRabbit.isCharlie} 
+                          onChange={(e) => setNewRabbit({...newRabbit, isCharlie: e.target.checked})}
+                          className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-3 h-3"
+                        />
+                        ⚠️ Flag as 'Charlie' (Homozygous En/En)
+                      </label>
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-bold">Sex</label>
@@ -5465,7 +5371,8 @@ export default function App() {
                               location: selectedRabbit.location || '',
                               notes: selectedRabbit.notes || '',
                               registrationNumber: selectedRabbit.registrationNumber || '',
-                              gcNumber: selectedRabbit.gcNumber || ''
+                              gcNumber: selectedRabbit.gcNumber || '',
+                              isCharlie: selectedRabbit.isCharlie || false
                             });
                           }}
                           className="btn-interactive text-xs py-1.5 px-4 bg-indigo-600 hover:bg-indigo-700 font-bold text-white border-none flex items-center gap-1.5"
@@ -5537,6 +5444,15 @@ export default function App() {
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Notes</span>
                           <span className="font-semibold text-slate-300">{selectedRabbit.notes || 'No notes recorded.'}</span>
                         </div>
+                        {selectedRabbit.isCharlie && (
+                          <div className="col-span-2 md:col-span-3 lg:col-span-4 mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
+                            <span className="text-base leading-none">⚠️</span>
+                            <div>
+                              <strong className="text-amber-200 block">Charlie Spotting Pattern (Homozygous En/En)</strong>
+                              <p className="mt-0.5 opacity-90">Disqualified from ARBA show competition due to insufficient color coverage. Charlies carry homozygous dominant spotting genes and are prone to genetic megacolon, making them unsuitable for show-quality breeding programs.</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       /* Editable form grid */
@@ -5556,6 +5472,31 @@ export default function App() {
                         <div className="flex flex-col gap-1">
                           <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Variety</label>
                           <input type="text" value={editProfileData.variety} onChange={(e) => setEditProfileData({...editProfileData, variety: e.target.value})} className="text-xs" />
+                          {/* Variety color swatch quick picker */}
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {(BREED_COLORS[editProfileData.breed] || BREED_COLORS['Default']).map(c => (
+                              <button
+                                key={c.name}
+                                type="button"
+                                onClick={() => setEditProfileData({...editProfileData, variety: c.name})}
+                                title={c.name}
+                                className={`w-5 h-5 rounded-full border transition-all hover:scale-110 flex items-center justify-center ${editProfileData.variety === c.name ? 'border-indigo-400 ring-2 ring-indigo-300' : 'border-slate-500'}`}
+                                style={{
+                                  background: c.hex,
+                                  boxShadow: c.border ? `inset 0 0 0 1px ${c.border}` : 'none'
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <label className="flex items-center gap-1.5 mt-1 text-[9px] text-amber-400 font-semibold cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={editProfileData.isCharlie} 
+                              onChange={(e) => setEditProfileData({...editProfileData, isCharlie: e.target.checked})}
+                              className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-2.5 h-2.5"
+                            />
+                            ⚠️ Charlie Pattern (En/En)
+                          </label>
                         </div>
                         <div className="flex flex-col gap-1">
                           <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Sex</label>
@@ -9142,6 +9083,31 @@ export default function App() {
                         placeholder="E.g. Broken Blue"
                         className="bg-slate-800 border-white/10 text-sm"
                       />
+                      {/* Variety color swatch quick picker */}
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {(BREED_COLORS[nodeForm.breed] || BREED_COLORS['Default']).map(c => (
+                          <button
+                            key={c.name}
+                            type="button"
+                            onClick={() => setNodeForm({...nodeForm, variety: c.name})}
+                            title={c.name}
+                            className={`w-5 h-5 rounded-full border transition-all hover:scale-110 flex items-center justify-center ${nodeForm.variety === c.name ? 'border-indigo-400 ring-2 ring-indigo-300' : 'border-slate-500'}`}
+                            style={{
+                              background: c.hex,
+                              boxShadow: c.border ? `inset 0 0 0 1px ${c.border}` : 'none'
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <label className="flex items-center gap-1.5 mt-1 text-[10px] text-amber-400 font-semibold cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={nodeForm.isCharlie} 
+                          onChange={(e) => setNodeForm({...nodeForm, isCharlie: e.target.checked})}
+                          className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-3 h-3"
+                        />
+                        ⚠️ Flag as 'Charlie' (En/En)
+                      </label>
                     </div>
 
                     <div className="flex flex-col gap-1">
