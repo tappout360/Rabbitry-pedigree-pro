@@ -20,6 +20,7 @@ import { uuidv7 } from './db/uuid';
 import { BREED_COLORS } from './db/breedColors';
 
 import { BREED_STANDARDS } from './db/breedStandards';
+import { calculateRabbitShowClass } from './db/helpers';
 
 const LOGO_OPTIONS = [
   { id: 'logo-meadow', label: 'Meadow Bunny 🐇', emoji: '🐇' },
@@ -522,6 +523,17 @@ const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:50
 
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
+
+  const matchLocationKey = (locValue, locKey) => {
+    if (!locValue || !locKey) return false;
+    const normVal = locValue.toLowerCase().replace(/[\s-]/g, '');
+    const normKey = locKey.toLowerCase().replace(/[\s-]/g, '');
+    if (normVal === normKey) return true;
+    if (normVal.length === 2 && normKey.length === 3) {
+      if (normVal + '2' === normKey) return true;
+    }
+    return false;
+  };
   // adminBreeders list
   const [adminBreeders, setAdminBreeders] = useState(() => {
     const saved = localStorage.getItem('rp_admin_breeders');
@@ -774,7 +786,15 @@ export default function App() {
 
   const [nodeForm, setNodeForm] = useState({
     tattooNumber: '', name: '', breed: '', variety: '',
-    weightOz: 40, dob: '', registrationNumber: '', gcNumber: '', notes: '', legs: []
+    weightOz: 40, dob: '', registrationNumber: '', gcNumber: '', notes: '', legs: [],
+    colorCarrier: '',
+    winningsBOB: 0,
+    winningsBOV: 0,
+    winningsBOS: 0,
+    winningsBOSV: 0,
+    winningsBIS: 0,
+    winningsOther: 0,
+    showClass: 'Auto'
   });
   const [nodeFormType, setNodeFormType] = useState('new');
   const [selectedExistingId, setSelectedExistingId] = useState('');
@@ -882,6 +902,31 @@ export default function App() {
         db.medical, db.weights
       ], async () => {
         for (const tbl of Object.keys(tablesData)) {
+          if (tbl === 'configs') {
+            const { puts } = tablesData[tbl];
+            puts.forEach(cfg => {
+              if (cfg.key === 'barnRows') {
+                try {
+                  const val = typeof cfg.value === 'string' ? JSON.parse(cfg.value) : cfg.value;
+                  localStorage.setItem('rp_barn_rows', JSON.stringify(val));
+                  setBarnRows(val);
+                } catch (e) {
+                  console.error("Error parsing pulled barnRows:", e);
+                }
+              }
+              if (cfg.key === 'growOutCages') {
+                try {
+                  const val = typeof cfg.value === 'string' ? JSON.parse(cfg.value) : cfg.value;
+                  localStorage.setItem('rp_grow_out_cages', JSON.stringify(val));
+                  setGrowOutCages(val);
+                } catch (e) {
+                  console.error("Error parsing pulled growOutCages:", e);
+                }
+              }
+            });
+            continue;
+          }
+
           const tableInstance = db[tbl];
           if (!tableInstance) continue;
           
@@ -892,7 +937,7 @@ export default function App() {
           }
           if (puts.length > 0) {
             const encryptedPuts = puts.map(record => {
-              if (tbl === 'rabbits') return encryptRecord(record, key, ['dob', 'notes']);
+              if (tbl === 'rabbits') return encryptRecord(record, key, ['dob', 'notes', 'colorCarrier']);
               if (tbl === 'medical') return encryptRecord(record, key, ['treatment', 'notes']);
               if (tbl === 'ledger') return encryptRecord(record, key, ['amount', 'notes']);
               return record;
@@ -904,7 +949,7 @@ export default function App() {
 
       // Reload state from database
       const rawRabbits = await db.rabbits.toArray();
-      setAllRabbits(rawRabbits.map(r => decryptRecord(r, key, ['dob', 'notes'])));
+      setAllRabbits(rawRabbits.map(r => ({ showClass: 'Auto', ...decryptRecord(r, key, ['dob', 'notes', 'colorCarrier']) })));
 
       const rawBreedings = await db.breedings.toArray();
       setAllBreedings(rawBreedings || []);
@@ -954,7 +999,7 @@ export default function App() {
         const key = deriveSessionKey(currentUser?.password, currentUser?.email);
         
         // Transparent decryption of sensitive at-rest database fields
-        const decryptedRabbits = (data.rabbits || []).map(r => decryptRecord(r, key, ['dob', 'notes']));
+        const decryptedRabbits = (data.rabbits || []).map(r => ({ showClass: 'Auto', ...decryptRecord(r, key, ['dob', 'notes', 'colorCarrier']) }));
         const decryptedMedical = (data.medical || []).map(m => decryptRecord(m, key, ['treatment', 'notes']));
         const decryptedLedger = (data.ledger || []).map(lt => {
           const decrypted = decryptRecord(lt, key, ['amount', 'notes']);
@@ -1146,7 +1191,15 @@ export default function App() {
           registrationNumber: editRabbit.registrationNumber || '',
           gcNumber: editRabbit.gcNumber || '',
           notes: editRabbit.notes || '',
-          legs: editRabbit.legs || []
+          legs: editRabbit.legs || [],
+          colorCarrier: editRabbit.colorCarrier || '',
+          winningsBOB: editRabbit.winningsBOB || 0,
+          winningsBOV: editRabbit.winningsBOV || 0,
+          winningsBOS: editRabbit.winningsBOS || 0,
+          winningsBOSV: editRabbit.winningsBOSV || 0,
+          winningsBIS: editRabbit.winningsBIS || 0,
+          winningsOther: editRabbit.winningsOther || 0,
+          showClass: editRabbit.showClass || 'Auto'
         });
         setNodeFormType('new');
         setSelectedExistingId('');
@@ -1161,7 +1214,15 @@ export default function App() {
           registrationNumber: '',
           gcNumber: '',
           notes: '',
-          legs: []
+          legs: [],
+          colorCarrier: '',
+          winningsBOB: 0,
+          winningsBOV: 0,
+          winningsBOS: 0,
+          winningsBOSV: 0,
+          winningsBIS: 0,
+          winningsOther: 0,
+          showClass: 'Auto'
         });
         setNodeFormType('existing');
         setSelectedExistingId('');
@@ -1282,7 +1343,15 @@ export default function App() {
       tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
       sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
       sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
-      isCharlie: false
+      isCharlie: false,
+      colorCarrier: '',
+      winningsBOB: 0,
+      winningsBOV: 0,
+      winningsBOS: 0,
+      winningsBOSV: 0,
+      winningsBIS: 0,
+      winningsOther: 0,
+      showClass: 'Auto'
     };
   });
 
@@ -1368,7 +1437,7 @@ export default function App() {
   useEffect(() => {
     if (!dbLoaded) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
-    const encrypted = allRabbits.map(r => encryptRecord(r, key, ['dob', 'notes']));
+    const encrypted = allRabbits.map(r => encryptRecord(r, key, ['dob', 'notes', 'colorCarrier']));
     db.rabbits.clear().then(() => db.rabbits.bulkAdd(encrypted)).catch(err => console.error("Error saving rabbits to Dexie:", err));
   }, [allRabbits, dbLoaded, currentUser]);
 
@@ -2067,7 +2136,15 @@ export default function App() {
       tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
       sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
       sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
-      isCharlie: false
+      isCharlie: false,
+      colorCarrier: '',
+      winningsBOB: 0,
+      winningsBOV: 0,
+      winningsBOS: 0,
+      winningsBOSV: 0,
+      winningsBIS: 0,
+      winningsOther: 0,
+      showClass: 'Auto'
     });
     setShowAddRabbit(false);
     triggerConfetti();
@@ -2134,11 +2211,13 @@ export default function App() {
         if (selectedRabbit && selectedRabbit.id === rabbitId) {
           setSelectedRabbit(updated);
         }
+        if (isOffline) {
+          addSyncAction('UPDATE', 'rabbits', updated);
+        }
         return updated;
       }
       return r;
     }));
-    addSyncAction('UPDATE', 'rabbits', { id: rabbitId, location: newLocation });
     setCageMoveRabbitId(null);
     showToast(`Rabbit moved to cage ${newLocation}`, 'success');
   };
@@ -2280,7 +2359,15 @@ export default function App() {
             dob: nodeForm.dob,
             registrationNumber: nodeForm.registrationNumber,
             gcNumber: nodeForm.gcNumber,
-            notes: sanitizeTextInput(nodeForm.notes)
+            notes: sanitizeTextInput(nodeForm.notes),
+            colorCarrier: nodeForm.colorCarrier || '',
+            winningsBOB: Number(nodeForm.winningsBOB) || 0,
+            winningsBOV: Number(nodeForm.winningsBOV) || 0,
+            winningsBOS: Number(nodeForm.winningsBOS) || 0,
+            winningsBOSV: Number(nodeForm.winningsBOSV) || 0,
+            winningsBIS: Number(nodeForm.winningsBIS) || 0,
+            winningsOther: Number(nodeForm.winningsOther) || 0,
+            showClass: nodeForm.showClass || 'Auto'
           };
           setSelectedRabbit(updated);
           return updated;
@@ -2333,7 +2420,15 @@ export default function App() {
               dob: nodeForm.dob,
               registrationNumber: nodeForm.registrationNumber,
               gcNumber: nodeForm.gcNumber,
-              notes: sanitizeTextInput(nodeForm.notes)
+              notes: sanitizeTextInput(nodeForm.notes),
+              colorCarrier: nodeForm.colorCarrier || '',
+              winningsBOB: Number(nodeForm.winningsBOB) || 0,
+              winningsBOV: Number(nodeForm.winningsBOV) || 0,
+              winningsBOS: Number(nodeForm.winningsBOS) || 0,
+              winningsBOSV: Number(nodeForm.winningsBOSV) || 0,
+              winningsBIS: Number(nodeForm.winningsBIS) || 0,
+              winningsOther: Number(nodeForm.winningsOther) || 0,
+              showClass: nodeForm.showClass || 'Auto'
             };
           }
           return r;
@@ -2358,7 +2453,15 @@ export default function App() {
           notes: sanitizeTextInput(nodeForm.notes),
           legs: nodeForm.legs || [],
           sireId: '',
-          damId: ''
+          damId: '',
+          colorCarrier: nodeForm.colorCarrier || '',
+          winningsBOB: Number(nodeForm.winningsBOB) || 0,
+          winningsBOV: Number(nodeForm.winningsBOV) || 0,
+          winningsBOS: Number(nodeForm.winningsBOS) || 0,
+          winningsBOSV: Number(nodeForm.winningsBOSV) || 0,
+          winningsBIS: Number(nodeForm.winningsBIS) || 0,
+          winningsOther: Number(nodeForm.winningsOther) || 0,
+          showClass: nodeForm.showClass || 'Auto'
         };
         updatedRabbits.push(newAncestor);
 
@@ -2404,6 +2507,91 @@ export default function App() {
     triggerConfetti();
   };
 
+  const [barnRows, setBarnRows] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rp_barn_rows');
+      return saved ? JSON.parse(saved) : [
+        { id: 'A', name: 'Row A', hutchCount: 4 },
+        { id: 'B', name: 'Row B', hutchCount: 4 },
+        { id: 'C', name: 'Row C', hutchCount: 4 },
+        { id: 'D', name: 'Row D', hutchCount: 4 }
+      ];
+    } catch {
+      return [
+        { id: 'A', name: 'Row A', hutchCount: 4 },
+        { id: 'B', name: 'Row B', hutchCount: 4 },
+        { id: 'C', name: 'Row C', hutchCount: 4 },
+        { id: 'D', name: 'Row D', hutchCount: 4 }
+      ];
+    }
+  });
+
+  const [showLayoutManager, setShowLayoutManager] = useState(false);
+  const [newRowName, setNewRowName] = useState('');
+  const [newRowHutchCount, setNewRowHutchCount] = useState(4);
+
+  const handleAddBarnRow = (name, hutchCount) => {
+    if (!name || !name.trim()) {
+      alert("Row name cannot be empty.");
+      return;
+    }
+    const cleanName = name.trim();
+    const rowId = cleanName.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!rowId) {
+      alert("Invalid row name. Must contain letters or numbers.");
+      return;
+    }
+    
+    if (barnRows.some(r => r.id === rowId)) {
+      alert(`A row or street with the name/identifier "${cleanName}" already exists.`);
+      return;
+    }
+
+    const newRow = { id: rowId, name: cleanName, hutchCount: Number(hutchCount) };
+    const updated = [...barnRows, newRow];
+    setBarnRows(updated);
+    localStorage.setItem('rp_barn_rows', JSON.stringify(updated));
+    addSyncAction('PUT', 'configs', { id: 'barnRows', key: 'barnRows', value: updated });
+    
+    setNewRowName('');
+    showToast(`Added row "${cleanName}" with ${hutchCount} hutches.`, "success");
+  };
+
+  const handleUpdateBarnRow = (id, updates) => {
+    const updated = barnRows.map(row => {
+      if (row.id === id) {
+        return { ...row, ...updates };
+      }
+      return row;
+    });
+    setBarnRows(updated);
+    localStorage.setItem('rp_barn_rows', JSON.stringify(updated));
+    addSyncAction('PUT', 'configs', { id: 'barnRows', key: 'barnRows', value: updated });
+  };
+
+  const handleDeleteBarnRow = (id) => {
+    const isOccupied = rabbits.some(r => {
+      if (!r.location) return false;
+      const parts = r.location.split('-');
+      return parts[0] === id;
+    });
+
+    if (isOccupied) {
+      alert(`Cannot delete Row/Street "${id}" because it currently has rabbits assigned to its hutch cages.`);
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete Row/Street "${id}"?`)) {
+      return;
+    }
+
+    const updated = barnRows.filter(r => r.id !== id);
+    setBarnRows(updated);
+    localStorage.setItem('rp_barn_rows', JSON.stringify(updated));
+    addSyncAction('PUT', 'configs', { id: 'barnRows', key: 'barnRows', value: updated });
+    showToast(`Deleted hutch row "${id}".`, "success");
+  };
+
   const [growOutCages, setGrowOutCages] = useState(() => {
     try {
       const saved = localStorage.getItem('rp_grow_out_cages');
@@ -2419,6 +2607,7 @@ export default function App() {
     setGrowOutCages(prev => {
       const updated = prev.includes(locKey) ? prev.filter(k => k !== locKey) : [...prev, locKey];
       localStorage.setItem('rp_grow_out_cages', JSON.stringify(updated));
+      addSyncAction('PUT', 'configs', { id: 'growOutCages', key: 'growOutCages', value: updated });
       return updated;
     });
   };
@@ -2427,6 +2616,12 @@ export default function App() {
     e.preventDefault();
     const input = quickGrowOutInputs[locKey];
     if (!input || !input.tattooNumber) return;
+
+    const existingCount = rabbits.filter(r => matchLocationKey(r.location, locKey)).length;
+    if (existingCount >= 20) {
+      alert("Grow-out cage capacity reached! You can put up to 20 rabbits in a grow-out cage.");
+      return;
+    }
 
     const activeBreederId = selectedBreederContext === 'all' ? currentUser.id : selectedBreederContext;
     const newRabbit = {
@@ -2525,7 +2720,7 @@ export default function App() {
 
         // Hydrate IndexedDB using Dexie transaction
         const key = deriveSessionKey(currentUser?.password, currentUser?.email);
-        const encryptedRabbits = (parsed.rabbits || []).map(r => encryptRecord(r, key, ['dob', 'notes']));
+        const encryptedRabbits = (parsed.rabbits || []).map(r => encryptRecord(r, key, ['dob', 'notes', 'colorCarrier']));
         const encryptedMedical = (parsed.medical || []).map(m => encryptRecord(m, key, ['treatment', 'notes']));
         const encryptedLedger = (parsed.ledger || []).map(lt => encryptRecord(lt, key, ['amount', 'notes']));
 
@@ -3017,6 +3212,16 @@ export default function App() {
   // Assign Rabbit to Cage Location
   const handleAssignRabbitToCage = (rabbitId, cageLoc) => {
     if (!rabbitId) return;
+
+    const isGrowOut = growOutCages.includes(cageLoc);
+    if (isGrowOut) {
+      const existingCount = rabbits.filter(r => r.id !== rabbitId && matchLocationKey(r.location, cageLoc)).length;
+      if (existingCount >= 20) {
+        alert("Grow-out cage capacity reached! You can put up to 20 rabbits in a grow-out cage.");
+        return;
+      }
+    }
+
     setAllRabbits(prev => prev.map(r => {
       if (r.id === rabbitId) {
         const updated = { ...r, location: cageLoc };
@@ -3205,8 +3410,11 @@ export default function App() {
     const weight = Number(rabbit.weightOz);
     const sex = rabbit.sex;
 
-    if (standard.classType === '4-class') {
-      const isSenior = ageMonths >= 6;
+     if (standard.classType === '4-class') {
+      let isSenior = ageMonths >= 6;
+      if (rabbit.showClass && rabbit.showClass !== 'Auto') {
+        isSenior = rabbit.showClass === 'Senior';
+      }
       if (isSenior) {
         const min = sex === 'buck' ? standard.buckSrMin : standard.doeSrMin;
         const max = sex === 'buck' ? standard.buckSrMax : standard.doeSrMax;
@@ -3220,8 +3428,12 @@ export default function App() {
         }
       }
     } else {
-      const isSenior = ageMonths >= 8;
-      const isInt = ageMonths >= 6 && ageMonths < 8;
+      let isSenior = ageMonths >= 8;
+      let isInt = ageMonths >= 6 && ageMonths < 8;
+      if (rabbit.showClass && rabbit.showClass !== 'Auto') {
+        isSenior = rabbit.showClass === 'Senior';
+        isInt = rabbit.showClass === 'Intermediate';
+      }
       if (isSenior) {
         const min = sex === 'buck' ? standard.buckSrMin : standard.doeSrMin;
         if (weight < min) {
@@ -5634,6 +5846,67 @@ export default function App() {
                         onChange={(e) => setNewRabbit({...newRabbit, gcNumber: e.target.value})}
                       />
                     </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold">Show Class Override</label>
+                      <select 
+                        value={newRabbit.showClass || 'Auto'}
+                        onChange={(e) => setNewRabbit({...newRabbit, showClass: e.target.value})}
+                      >
+                        <option value="Auto">Auto (Calculate from DOB)</option>
+                        <option value="Junior">Junior</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Senior">Senior</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1 md:col-span-3">
+                      <label className="text-xs font-bold">Breeder/Veterinary Notes (optional)</label>
+                      <textarea 
+                        rows={1}
+                        placeholder="Add breeder notes, health observations..."
+                        value={newRabbit.notes || ''}
+                        onChange={(e) => setNewRabbit({...newRabbit, notes: e.target.value})}
+                        className="bg-slate-800 border-white/10 text-xs rounded-lg p-2"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 md:col-span-3">
+                      <label className="text-xs font-bold">Color Carrier / Genotype Notes (optional)</label>
+                      <textarea 
+                        rows={1}
+                        placeholder="e.g. Carries dilute, chocolate, non-extension"
+                        value={newRabbit.colorCarrier || ''}
+                        onChange={(e) => setNewRabbit({...newRabbit, colorCarrier: e.target.value})}
+                        className="bg-slate-800 border-white/10 text-xs rounded-lg p-2"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 md:col-span-3 border-t border-white/5 pt-3">
+                      <label className="text-xs font-bold text-indigo-400">Show Winnings counts (optional)</label>
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOB</label>
+                          <input type="number" min="0" placeholder="0" value={newRabbit.winningsBOB || ''} onChange={(e) => setNewRabbit({...newRabbit, winningsBOB: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOV</label>
+                          <input type="number" min="0" placeholder="0" value={newRabbit.winningsBOV || ''} onChange={(e) => setNewRabbit({...newRabbit, winningsBOV: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOS</label>
+                          <input type="number" min="0" placeholder="0" value={newRabbit.winningsBOS || ''} onChange={(e) => setNewRabbit({...newRabbit, winningsBOS: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOSV</label>
+                          <input type="number" min="0" placeholder="0" value={newRabbit.winningsBOSV || ''} onChange={(e) => setNewRabbit({...newRabbit, winningsBOSV: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BIS</label>
+                          <input type="number" min="0" placeholder="0" value={newRabbit.winningsBIS || ''} onChange={(e) => setNewRabbit({...newRabbit, winningsBIS: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">Other</label>
+                          <input type="number" min="0" placeholder="0" value={newRabbit.winningsOther || ''} onChange={(e) => setNewRabbit({...newRabbit, winningsOther: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                      </div>
+                    </div>
                     
                     <div className="md:col-span-3 mt-2">
                       <button type="submit" className="btn-interactive w-full">Save Profile to SQLite</button>
@@ -5815,7 +6088,15 @@ export default function App() {
                               notes: selectedRabbit.notes || '',
                               registrationNumber: selectedRabbit.registrationNumber || '',
                               gcNumber: selectedRabbit.gcNumber || '',
-                              isCharlie: selectedRabbit.isCharlie || false
+                              isCharlie: selectedRabbit.isCharlie || false,
+                              colorCarrier: selectedRabbit.colorCarrier || '',
+                              winningsBOB: selectedRabbit.winningsBOB || 0,
+                              winningsBOV: selectedRabbit.winningsBOV || 0,
+                              winningsBOS: selectedRabbit.winningsBOS || 0,
+                              winningsBOSV: selectedRabbit.winningsBOSV || 0,
+                              winningsBIS: selectedRabbit.winningsBIS || 0,
+                              winningsOther: selectedRabbit.winningsOther || 0,
+                              showClass: selectedRabbit.showClass || 'Auto'
                             });
                           }}
                           className="btn-interactive text-xs py-1.5 px-4 bg-indigo-600 hover:bg-indigo-700 font-bold text-white border-none flex items-center gap-1.5"
@@ -5866,6 +6147,15 @@ export default function App() {
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Date of Birth</span>
                           <span className="font-semibold">{selectedRabbit.dob || '—'}</span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Show Class</span>
+                          <span className="font-bold text-yellow-450">
+                            {selectedRabbit.showClass && selectedRabbit.showClass !== 'Auto' 
+                              ? `${selectedRabbit.showClass} (Manual)`
+                              : `${calculateRabbitShowClass(selectedRabbit.dob, selectedRabbit.breed, selectedRabbit.sex)}`
+                            }
+                          </span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Weight</span>
@@ -5968,9 +6258,51 @@ export default function App() {
                           <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Grand Champion #</label>
                           <input type="text" value={editProfileData.gcNumber} onChange={(e) => setEditProfileData({...editProfileData, gcNumber: e.target.value})} className="text-xs" />
                         </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Show Class Override</label>
+                          <select value={editProfileData.showClass || 'Auto'} onChange={(e) => setEditProfileData({...editProfileData, showClass: e.target.value})} className="text-xs py-1 px-2 rounded bg-slate-850 text-white border-white/10">
+                            <option value="Auto">Auto (Calculate from DOB)</option>
+                            <option value="Junior">Junior</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Senior">Senior</option>
+                          </select>
+                        </div>
                         <div className="flex flex-col gap-1 col-span-2">
                           <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Notes</label>
-                          <textarea rows={2} value={editProfileData.notes} onChange={(e) => setEditProfileData({...editProfileData, notes: e.target.value})} className="text-xs" placeholder="Add breeder notes, health observations, etc." />
+                          <textarea rows={1} value={editProfileData.notes} onChange={(e) => setEditProfileData({...editProfileData, notes: e.target.value})} className="text-xs" placeholder="Add breeder notes, health observations, etc." />
+                        </div>
+                        <div className="flex flex-col gap-1 col-span-2">
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Color Carrier / Genotype Notes</label>
+                          <textarea rows={1} value={editProfileData.colorCarrier || ''} onChange={(e) => setEditProfileData({...editProfileData, colorCarrier: e.target.value})} className="text-xs" placeholder="e.g. Carries dilute, chocolate, non-extension" />
+                        </div>
+                        <div className="flex flex-col gap-1 col-span-2 border-t border-white/5 pt-2">
+                          <label className="text-[10px] font-bold uppercase text-indigo-400 tracking-wider">Show Winnings counts</label>
+                          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] text-slate-400 font-semibold text-center">BOB</label>
+                              <input type="number" min="0" placeholder="0" value={editProfileData.winningsBOB || ''} onChange={(e) => setEditProfileData({...editProfileData, winningsBOB: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] text-slate-400 font-semibold text-center">BOV</label>
+                              <input type="number" min="0" placeholder="0" value={editProfileData.winningsBOV || ''} onChange={(e) => setEditProfileData({...editProfileData, winningsBOV: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] text-slate-400 font-semibold text-center">BOS</label>
+                              <input type="number" min="0" placeholder="0" value={editProfileData.winningsBOS || ''} onChange={(e) => setEditProfileData({...editProfileData, winningsBOS: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] text-slate-400 font-semibold text-center">BOSV</label>
+                              <input type="number" min="0" placeholder="0" value={editProfileData.winningsBOSV || ''} onChange={(e) => setEditProfileData({...editProfileData, winningsBOSV: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] text-slate-400 font-semibold text-center">BIS</label>
+                              <input type="number" min="0" placeholder="0" value={editProfileData.winningsBIS || ''} onChange={(e) => setEditProfileData({...editProfileData, winningsBIS: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] text-slate-400 font-semibold text-center">Other</label>
+                              <input type="number" min="0" placeholder="0" value={editProfileData.winningsOther || ''} onChange={(e) => setEditProfileData({...editProfileData, winningsOther: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -6143,6 +6475,7 @@ export default function App() {
                       }
                     }}
                     onPrintPedigree={(rabbit) => setShowPrintPedigreeModal(rabbit)}
+                    onEditNode={(nodeData) => setPedigreeEditNode(nodeData)}
                   />
 
                 </div>
@@ -6678,7 +7011,7 @@ export default function App() {
                                               {registeredEntries.map(entry => {
                                                 const r = rabbits.find(rab => rab.id === entry.rabbitId);
                                                 if (!r) return null;
-                                                const computedClass = calculateRabbitShowClass(r.dob, r.breed, r.sex, s.date);
+                                                const computedClass = calculateRabbitShowClass(r.dob, r.breed, r.sex, s.date, r.showClass);
                                                 const fda = isUnderFdaWithdrawal(r.id);
 
                                                 return (
@@ -7599,34 +7932,22 @@ export default function App() {
 
           {/* TAB: CAGE & BARN MAP */}
           {activeTab === 'cages' && (() => {
-            const ROWS = ['A', 'B', 'C', 'D'];
-            const HUTCHES = [1, 2, 3, 4];
             const TIERS = [2, 1]; // Tier 2 (Top), Tier 1 (Bottom)
-            
-            const matchLocationKey = (locValue, locKey) => {
-              if (!locValue || !locKey) return false;
-              const normVal = locValue.toLowerCase().replace(/[\s-]/g, '');
-              const normKey = locKey.toLowerCase().replace(/[\s-]/g, '');
-              if (normVal === normKey) return true;
-              if (normVal.length === 2 && normKey.length === 3) {
-                if (normVal + '2' === normKey) return true;
-              }
-              return false;
-            };
 
             const occupiedCages = [];
-            ROWS.forEach(r => {
-              HUTCHES.forEach(h => {
+            barnRows.forEach(rowObj => {
+              for (let h = 1; h <= rowObj.hutchCount; h++) {
                 TIERS.forEach(t => {
-                  const locKey = `${r}-${h}-${t}`;
+                  const locKey = `${rowObj.id}-${h}-${t}`;
                   const hasRabbits = rabbits.some(rx => matchLocationKey(rx.location, locKey));
                   if (hasRabbits) occupiedCages.push(locKey);
                 });
-              });
+              }
             });
 
+            const totalCagesCount = barnRows.reduce((acc, row) => acc + (row.hutchCount * 2), 0);
             const occupiedCount = occupiedCages.length;
-            const vacantCount = 32 - occupiedCount;
+            const vacantCount = totalCagesCount - occupiedCount;
             
             const assignableRabbits = rabbits.filter(
               r => r.status !== 'pedigree_only' && r.status !== 'sold'
@@ -7642,14 +7963,22 @@ export default function App() {
                       <Grid className="w-6 h-6 text-indigo-400" /> Cage & Barn Mapping Grid
                     </h3>
                     <p className="text-xs opacity-75">
-                      Visual hutch allocation map. Assign active inventory rabbits to cage slots or unassign them.
+                      Visual hutch allocation map. Assign active inventory rabbits to hutch slots or unassign them.
                     </p>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 text-xs">
+                    <button
+                      onClick={() => setShowLayoutManager(!showLayoutManager)}
+                      className={`btn-interactive text-xs py-1.5 px-3 border-none flex items-center gap-1.5 font-bold transition-all ${showLayoutManager ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800 text-slate-350 border border-white/10'}`}
+                      type="button"
+                    >
+                      <Settings className="w-4 h-4 text-indigo-450" /> Layout Settings
+                    </button>
+
                     <div className="bg-slate-950/45 px-3 py-1.5 rounded-lg border border-white/5 text-center text-xs">
                       <span className="opacity-60 block text-[9px] uppercase font-bold">Total Cages</span>
-                      <strong className="text-sm">32</strong>
+                      <strong className="text-sm">{totalCagesCount}</strong>
                     </div>
                     <div className="bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 text-center text-xs">
                       <span className="opacity-60 block text-[9px] uppercase font-bold text-indigo-300">Occupied</span>
@@ -7662,33 +7991,120 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Layout Manager Panel */}
+                {showLayoutManager && (
+                  <div className="glass-container p-6 border border-indigo-500/20 bg-slate-950/20 flex flex-col gap-6 animate-slideDown">
+                    <div>
+                      <h4 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-indigo-400 animate-spin-slow" /> Manage Hutch Rows & Layout
+                      </h4>
+                      <p className="text-xs opacity-75">
+                        Add rows, rename them (e.g., street names, streets, custom names), or adjust the number of double-stacked hutch cages per row.
+                      </p>
+                    </div>
+
+                    {/* Add New Row Form */}
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col md:flex-row items-end gap-4">
+                      <div className="flex-1 flex flex-col gap-1 w-full">
+                        <label className="text-xs font-bold text-white">Row Name or Street (e.g. Row E, Doe Lane, Main Street)</label>
+                        <input
+                          type="text"
+                          placeholder="E.g. Doe Lane"
+                          value={newRowName}
+                          onChange={(e) => setNewRowName(e.target.value)}
+                          className="bg-slate-900 border-white/10 text-xs py-2 px-3 text-white rounded-lg w-full"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 w-full md:w-32">
+                        <label className="text-xs font-bold text-white">Hutch Slots</label>
+                        <select
+                          value={newRowHutchCount}
+                          onChange={(e) => setNewRowHutchCount(Number(e.target.value))}
+                          className="bg-slate-900 border-white/10 text-xs py-2 px-3 text-white rounded-lg w-full"
+                        >
+                          <option value={2}>2 Hutches (4 cages)</option>
+                          <option value={3}>3 Hutches (6 cages)</option>
+                          <option value={4}>4 Hutches (8 cages)</option>
+                          <option value={5}>5 Hutches (10 cages)</option>
+                          <option value={6}>6 Hutches (12 cages)</option>
+                          <option value={8}>8 Hutches (16 cages)</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => handleAddBarnRow(newRowName, newRowHutchCount)}
+                        type="button"
+                        className="btn-interactive text-xs font-bold py-2 px-4 bg-emerald-600 hover:bg-emerald-650 text-white rounded-lg border-none cursor-pointer h-9 shrink-0 flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" /> Add Row
+                      </button>
+                    </div>
+
+                    {/* Current Rows List */}
+                    <div className="flex flex-col gap-3">
+                      <span className="text-xs font-bold opacity-60">Active Rows Configuration</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {barnRows.map(rowObj => (
+                          <div key={rowObj.id} className="p-4 rounded-xl bg-slate-950/40 border border-white/5 flex items-center justify-between gap-4">
+                            <div className="flex-1 flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase">
+                                  ID: {rowObj.id}
+                                </span>
+                                <span className="text-xs text-white opacity-60">Hutches: {rowObj.hutchCount}</span>
+                              </div>
+                              <input
+                                type="text"
+                                value={rowObj.name}
+                                onChange={(e) => handleUpdateBarnRow(rowObj.id, { name: e.target.value })}
+                                className="bg-slate-900/60 border-white/10 text-xs py-1 px-2 text-white rounded-lg w-full font-semibold"
+                                placeholder="Rename row"
+                                title="Change the display name of this row"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleDeleteBarnRow(rowObj.id)}
+                              type="button"
+                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg cursor-pointer flex items-center justify-center shrink-0"
+                              title="Delete row (only allowed if row is empty)"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Rows Mapping */}
                 <div className="flex flex-col gap-8">
-                  {ROWS.map(row => (
-                    <div key={row} className="glass-container p-6 flex flex-col gap-4 bg-slate-900/40">
-                      <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                        <span className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm text-white">
-                          {row}
-                        </span>
-                        <div>
-                          <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-                            Row {row} Cages
-                          </h4>
-                          <p className="text-[10px] opacity-65">Double-stacked breeder cages (Hutches 1-4, Tiers 1-2)</p>
+                  {barnRows.map(rowObj => {
+                    const rowHutches = Array.from({ length: rowObj.hutchCount }, (_, i) => i + 1);
+                    return (
+                      <div key={rowObj.id} className="glass-container p-6 flex flex-col gap-4 bg-slate-900/40">
+                        <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                          <span className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm text-white shrink-0 uppercase">
+                            {rowObj.id.substring(0, 3)}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                              {rowObj.name}
+                            </h4>
+                            <p className="text-[10px] opacity-65">Double-stacked breeder cages (Hutches 1-{rowObj.hutchCount}, Tiers 1-2)</p>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {HUTCHES.map(hutch => (
-                          <div key={hutch} className="flex flex-col gap-3 p-3 bg-black/25 rounded-xl border border-white/5">
-                            <div className="text-xs font-bold text-center border-b border-white/5 pb-1 opacity-70 tracking-wide">
-                              Hutch {hutch}
-                            </div>
-                            
-                            {TIERS.map(tier => {
-                              const locationKey = `${row}-${hutch}-${tier}`;
-                              const isGrowOut = growOutCages.includes(locationKey);
-                              const occupyingRabbits = rabbits.filter(r => matchLocationKey(r.location, locationKey));
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {rowHutches.map(hutch => (
+                            <div key={hutch} className="flex flex-col gap-3 p-3 bg-black/25 rounded-xl border border-white/5">
+                              <div className="text-xs font-bold text-center border-b border-white/5 pb-1 opacity-70 tracking-wide">
+                                Hutch {hutch}
+                              </div>
+                              
+                              {TIERS.map(tier => {
+                                const locationKey = `${rowObj.id}-${hutch}-${tier}`;
+                                const isGrowOut = growOutCages.includes(locationKey);
+                                const occupyingRabbits = rabbits.filter(r => matchLocationKey(r.location, locationKey));
                               
                               if (isGrowOut) {
                                 return (
@@ -7866,19 +8282,17 @@ export default function App() {
                                     </div>
                                     {/* Move mode — show vacant slot picker */}
                                     {cageMoveRabbitId === occupyingRabbit.id && (() => {
-                                      const MOVE_ROWS = ['A', 'B', 'C', 'D'];
-                                      const MOVE_HUTCHES = [1, 2, 3, 4];
                                       const MOVE_TIERS = [1, 2];
                                       const vacantSlots = [];
-                                      MOVE_ROWS.forEach(mr => {
-                                        MOVE_HUTCHES.forEach(mh => {
+                                      barnRows.forEach(rowObj => {
+                                        for (let mh = 1; mh <= rowObj.hutchCount; mh++) {
                                           MOVE_TIERS.forEach(mt => {
-                                            const loc = `${mr}-${mh}-${mt}`;
+                                            const loc = `${rowObj.id}-${mh}-${mt}`;
                                             if (loc !== locationKey && !rabbits.find(rx => matchLocationKey(rx.location, loc))) {
                                               vacantSlots.push(loc);
                                             }
                                           });
-                                        });
+                                        }
                                       });
                                       return (
                                         <div className="mt-1.5 p-2 bg-amber-950/20 border border-amber-500/20 rounded-lg flex flex-col gap-1.5">
@@ -7971,8 +8385,9 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+              </div>
 
               </div>
             );
@@ -9607,6 +10022,42 @@ export default function App() {
           r.status !== 'pedigree_only'
         );
 
+        const modalNameSuggestions = nodeForm.name && nodeForm.name.trim().length >= 1
+          ? allRabbits.filter(r => 
+              r.name.toLowerCase().includes(nodeForm.name.trim().toLowerCase()) && 
+              r.id !== selectedRabbit.id
+            ).slice(0, 5)
+          : [];
+
+        const modalTattooSuggestions = nodeForm.tattooNumber && nodeForm.tattooNumber.trim().length >= 1
+          ? allRabbits.filter(r => 
+              r.tattooNumber && r.tattooNumber.toLowerCase().includes(nodeForm.tattooNumber.trim().toLowerCase()) && 
+              r.id !== selectedRabbit.id
+            ).slice(0, 5)
+          : [];
+
+        const fillNodeFormFromRabbit = (r) => {
+          setNodeForm({
+            tattooNumber: r.tattooNumber || '',
+            name: r.name || '',
+            breed: r.breed || '',
+            variety: r.variety || '',
+            weightOz: r.weightOz || 0,
+            dob: r.dob || '',
+            registrationNumber: r.registrationNumber || '',
+            gcNumber: r.gcNumber || '',
+            notes: r.notes || '',
+            legs: r.legs || [],
+            colorCarrier: r.colorCarrier || '',
+            winningsBOB: r.winningsBOB || 0,
+            winningsBOV: r.winningsBOV || 0,
+            winningsBOS: r.winningsBOS || 0,
+            winningsBOSV: r.winningsBOSV || 0,
+            winningsBIS: r.winningsBIS || 0,
+            winningsOther: r.winningsOther || 0
+          });
+        };
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
             <div className="w-full max-w-2xl bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-6 flex flex-col gap-6 shadow-2xl max-h-[90vh] overflow-y-auto text-slate-100">
@@ -9679,7 +10130,7 @@ export default function App() {
                 {(nodeFormType === 'new' || pedigreeEditNode.isOffspring || pedigreeEditNode.rabbitId) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 relative">
                       <label className="text-xs font-bold text-slate-300">Tattoo / Ear Number *</label>
                       <input
                         type="text"
@@ -9689,9 +10140,23 @@ export default function App() {
                         placeholder="E.g. S1"
                         className="bg-slate-800 border-white/10 text-sm"
                       />
+                      {modalTattooSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 z-30 w-full bg-slate-950 border border-indigo-500/40 rounded-lg shadow-xl max-h-32 overflow-y-auto text-[10px] mt-0.5">
+                          {modalTattooSuggestions.map(s => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => fillNodeFormFromRabbit(s)}
+                              className="w-full text-left p-1.5 hover:bg-indigo-650/35 text-white border-b border-white/5 last:border-b-0 cursor-pointer block"
+                            >
+                              <span className="font-bold">{s.tattooNumber}</span> - {s.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 relative">
                       <label className="text-xs font-bold text-slate-300">Name *</label>
                       <input
                         type="text"
@@ -9701,6 +10166,20 @@ export default function App() {
                         placeholder="E.g. Grandview's Blue Pearl"
                         className="bg-slate-800 border-white/10 text-sm"
                       />
+                      {modalNameSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 z-30 w-full bg-slate-950 border border-indigo-500/40 rounded-lg shadow-xl max-h-32 overflow-y-auto text-[10px] mt-0.5">
+                          {modalNameSuggestions.map(s => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => fillNodeFormFromRabbit(s)}
+                              className="w-full text-left p-1.5 hover:bg-indigo-650/35 text-white border-b border-white/5 last:border-b-0 cursor-pointer block"
+                            >
+                              {s.name} <span className="opacity-60 font-mono">({s.tattooNumber || 'No Tat'})</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -9802,6 +10281,20 @@ export default function App() {
                         className="bg-slate-800 border-white/10 text-sm font-mono border-yellow-500/35"
                       />
                     </div>
+                    
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-slate-300">Show Class Override</label>
+                      <select
+                        value={nodeForm.showClass || 'Auto'}
+                        onChange={(e) => setNodeForm({...nodeForm, showClass: e.target.value})}
+                        className="bg-slate-800 border-white/10 text-sm py-2 px-3 rounded-lg text-white"
+                      >
+                        <option value="Auto">Auto (Calculate from DOB)</option>
+                        <option value="Junior">Junior</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Senior">Senior</option>
+                      </select>
+                    </div>
 
                     <div className="flex flex-col gap-1 md:col-span-2">
                       <label className="text-xs font-bold text-slate-300">Notes (Vet / Breeder Records)</label>
@@ -9809,9 +10302,50 @@ export default function App() {
                         value={nodeForm.notes}
                         onChange={(e) => setNodeForm({...nodeForm, notes: e.target.value})}
                         placeholder="Notes about quality, background, or veterinary care..."
-                        rows={2}
+                        rows={1}
                         className="bg-slate-800 border-white/10 text-sm rounded-xl"
                       />
+                    </div>
+                    
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                      <label className="text-xs font-bold text-slate-300">Color Carrier / Genotype Notes</label>
+                      <textarea
+                        value={nodeForm.colorCarrier || ''}
+                        onChange={(e) => setNodeForm({...nodeForm, colorCarrier: e.target.value})}
+                        placeholder="e.g. Carries dilute, chocolate, non-extension"
+                        rows={1}
+                        className="bg-slate-800 border-white/10 text-sm rounded-xl"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1 md:col-span-2 border-t border-white/5 pt-3">
+                      <label className="text-xs font-bold text-indigo-400">Show Winnings counts</label>
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOB</label>
+                          <input type="number" min="0" placeholder="0" value={nodeForm.winningsBOB || ''} onChange={(e) => setNodeForm({...nodeForm, winningsBOB: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOV</label>
+                          <input type="number" min="0" placeholder="0" value={nodeForm.winningsBOV || ''} onChange={(e) => setNodeForm({...nodeForm, winningsBOV: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOS</label>
+                          <input type="number" min="0" placeholder="0" value={nodeForm.winningsBOS || ''} onChange={(e) => setNodeForm({...nodeForm, winningsBOS: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BOSV</label>
+                          <input type="number" min="0" placeholder="0" value={nodeForm.winningsBOSV || ''} onChange={(e) => setNodeForm({...nodeForm, winningsBOSV: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">BIS</label>
+                          <input type="number" min="0" placeholder="0" value={nodeForm.winningsBIS || ''} onChange={(e) => setNodeForm({...nodeForm, winningsBIS: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] text-slate-400 font-semibold text-center">Other</label>
+                          <input type="number" min="0" placeholder="0" value={nodeForm.winningsOther || ''} onChange={(e) => setNodeForm({...nodeForm, winningsOther: parseInt(e.target.value, 10) || 0})} className="text-xs py-1 px-1 bg-slate-800 text-center" />
+                        </div>
+                      </div>
                     </div>
 
                   </div>
@@ -9970,14 +10504,28 @@ export default function App() {
           
           const namePrefix = ancestor.gcNumber ? `GC ` : '';
           const weightLbs = (ancestor.weightOz / 16).toFixed(2);
+          
+          const parts = [];
+          if (ancestor.winningsBOB) parts.push(`${ancestor.winningsBOB} BOB`);
+          if (ancestor.winningsBOV) parts.push(`${ancestor.winningsBOV} BOV`);
+          if (ancestor.winningsBOS) parts.push(`${ancestor.winningsBOS} BOS`);
+          if (ancestor.winningsBOSV) parts.push(`${ancestor.winningsBOSV} BOSV`);
+          if (ancestor.winningsBIS) parts.push(`${ancestor.winningsBIS} BIS`);
+          if (ancestor.winningsOther) parts.push(`${ancestor.winningsOther} Leg${ancestor.winningsOther > 1 ? 's' : ''}`);
+          
+          let winsText = parts.join(', ');
+          
           const legsCount = ancestor.legs?.length || 0;
+          if (winsText === '' && legsCount > 0) {
+            winsText = `${legsCount} Leg${legsCount > 1 ? 's' : ''}`;
+          }
 
           return (
             <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'}`}>
               <div>
                 <div className="flex justify-between items-start gap-1 leading-none">
                   <span className="text-[7px] uppercase font-bold text-slate-500">{roleLabel}</span>
-                  {legsCount > 0 && <span className="text-[7px] bg-indigo-100 text-indigo-800 font-bold px-1 rounded">Legs: {legsCount}</span>}
+                  {winsText && <span className="text-[7px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px]">🏆 {winsText}</span>}
                 </div>
                 <h5 className="font-serif font-bold text-[10px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px]">
                   {namePrefix}{ancestor.name}
@@ -9989,6 +10537,7 @@ export default function App() {
                 <div className="col-span-2">Breed/Var: <strong>{ancestor.breed} - {ancestor.variety}</strong></div>
                 {ancestor.registrationNumber && <div className="col-span-2">Reg #: <strong>{ancestor.registrationNumber}</strong></div>}
                 {ancestor.gcNumber && <div className="col-span-2 text-[7px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
+                {ancestor.colorCarrier && <div className="col-span-2 text-[7px] text-indigo-700 italic font-semibold truncate leading-tight">Carries: {ancestor.colorCarrier}</div>}
               </div>
             </div>
           );
@@ -10053,8 +10602,9 @@ export default function App() {
                     <div>Sex: <strong className="capitalize">{rabbit.sex}</strong></div>
                     <div>Breed: <strong>{rabbit.breed}</strong></div>
                     <div>Variety: <strong>{rabbit.variety}</strong></div>
-                    <div>DOB: <strong>{rabbit.dob}</strong></div>
+                    <div>DOB: <strong>{rabbit.dob || 'Unknown'}</strong></div>
                     <div>Weight: <strong>{(rabbit.weightOz / 16).toFixed(2)} lbs</strong></div>
+                    <div className="col-span-2">Show Class: <strong>{rabbit.showClass && rabbit.showClass !== 'Auto' ? rabbit.showClass : calculateRabbitShowClass(rabbit.dob, rabbit.breed, rabbit.sex).split(' ')[0]}</strong></div>
                     <div>Inbreeding (F): <strong>{(rabbit.inbreedingCoeff * 100).toFixed(2)}%</strong></div>
                     {rabbit.registrationNumber && <div className="col-span-2">Reg #: <strong>{rabbit.registrationNumber}</strong></div>}
                   </div>

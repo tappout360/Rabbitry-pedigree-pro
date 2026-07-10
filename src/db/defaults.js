@@ -12,6 +12,13 @@ export const DEFAULT_BREEDERS = [
 export const DEFAULT_RABBITS = [
   { 
     id: 'r-1', breederId: 'ab-1', tattooNumber: 'S01', name: 'Blue Thunder', breed: 'Holland Lop', variety: 'Blue', sex: 'buck', dob: '2025-01-10', weightOz: 60, status: 'active', sireId: 'r-4', damId: 'r-5', inbreedingCoeff: 0.0, registrationNumber: 'REG-12345', gcNumber: 'GC-5544', location: 'A-1-2', notes: 'Proven sire, extremely calm.',
+    colorCarrier: 'Carries dilute, self',
+    winningsBOB: 1,
+    winningsBOV: 2,
+    winningsBOS: 0,
+    winningsBOSV: 0,
+    winningsBIS: 0,
+    winningsOther: 0,
     photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'leg-1', date: '2025-09-15', showName: 'ARBA National Show', judge: 'Dr. John Miller', award: 'Best of Variety', classSize: 24 }],
     timeline: [

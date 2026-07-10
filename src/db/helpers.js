@@ -115,11 +115,15 @@ export const getDivisionQuizLevel = (division) => {
   return 'Beginner'; // default
 };
 
-export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr = null) => {
-  if (!dobStr) return 'Senior ' + (sex === 'buck' ? 'Buck' : 'Doe');
+export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr = null, manualOverrideClass = null) => {
+  const sexLabel = sex === 'buck' ? 'Buck' : 'Doe';
+  if (manualOverrideClass && manualOverrideClass !== 'Auto') {
+    return manualOverrideClass + ' ' + sexLabel;
+  }
+  if (!dobStr) return 'Senior ' + sexLabel;
   
   const dobDate = new Date(dobStr);
-  if (isNaN(dobDate.getTime())) return 'Senior ' + (sex === 'buck' ? 'Buck' : 'Doe');
+  if (isNaN(dobDate.getTime())) return 'Senior ' + sexLabel;
   
   const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
   const diffTime = targetDate - dobDate;
@@ -129,7 +133,6 @@ export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr =
   const diffMonths = diffDays / 30.4375;
   
   const breedInfo = BREED_STANDARDS[breedName] || { classType: '4-class' };
-  const sexLabel = sex === 'buck' ? 'Buck' : 'Doe';
   
   if (breedInfo.classType === '6-class') {
     if (diffMonths < 6) {

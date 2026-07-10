@@ -44,6 +44,14 @@ CREATE TABLE IF NOT EXISTS rabbits (
     registration_number VARCHAR(50),
     gc_number VARCHAR(50),
     inbreeding_coeff NUMERIC(5,4) DEFAULT 0.0000,
+    color_carrier TEXT,
+    winnings_bob INTEGER DEFAULT 0,
+    winnings_bov INTEGER DEFAULT 0,
+    winnings_bos INTEGER DEFAULT 0,
+    winnings_bosv INTEGER DEFAULT 0,
+    winnings_bis INTEGER DEFAULT 0,
+    winnings_other INTEGER DEFAULT 0,
+    show_class VARCHAR(20) DEFAULT 'Auto',
     FOREIGN KEY (breeder_id) REFERENCES breeders(id)
 );
 
