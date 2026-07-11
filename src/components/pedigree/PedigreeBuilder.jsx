@@ -630,9 +630,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       if (obj) createdAncestors.push(obj);
     });
 
-    createdAncestors.forEach(anc => {
-      onUpdateRabbit(anc);
-    });
+    const allUpdates = [...createdAncestors];
 
     const updatedProband = { ...activeRabbit };
     if (ids.sire) updatedProband.sireId = ids.sire;
@@ -647,7 +645,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       if (probandData.dob) updatedProband.dob = probandData.dob;
     }
 
-    onUpdateRabbit(updatedProband);
+    allUpdates.push(updatedProband);
+    onUpdateRabbit(allUpdates);
 
     setShowImportWizard(false);
     setImportText('');

@@ -6462,17 +6462,26 @@ export default function App() {
                   <PedigreeBuilder 
                     rabbits={rabbits} 
                     onUpdateRabbit={(updatedRabbit) => {
+                      const list = Array.isArray(updatedRabbit) ? updatedRabbit : [updatedRabbit];
                       setAllRabbits(prev => {
-                        const exists = prev.some(r => r.id === updatedRabbit.id);
-                        if (exists) {
-                          return prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r);
-                        } else {
-                          return [...prev, updatedRabbit];
-                        }
+                        let next = [...prev];
+                        list.forEach(item => {
+                          const idx = next.findIndex(r => r.id === item.id);
+                          if (idx !== -1) {
+                            next[idx] = item;
+                          } else {
+                            next.push(item);
+                          }
+                        });
+                        return next;
                       });
-                      if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
-                        setSelectedRabbit(updatedRabbit);
+                      const selfUpdate = list.find(item => selectedRabbit && item.id === selectedRabbit.id);
+                      if (selfUpdate) {
+                        setSelectedRabbit(selfUpdate);
                       }
+                      list.forEach(item => {
+                        addSyncAction('UPDATE', 'rabbits', item);
+                      });
                     }}
                     onPrintPedigree={(rabbit) => setShowPrintPedigreeModal(rabbit)}
                     onEditNode={(nodeData) => setPedigreeEditNode(nodeData)}
