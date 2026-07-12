@@ -1,4 +1,4 @@
-import { BREED_STANDARDS } from './breedStandards';
+import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from './breedStandards';
 
 export const getPrimaryPhoto = (rabbit) => {
   if (rabbit && rabbit.photos && rabbit.photos.length > 0) {
@@ -116,9 +116,9 @@ export const getDivisionQuizLevel = (division) => {
 };
 
 export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr = null, manualOverrideClass = null) => {
-  const sexLabel = sex === 'buck' ? 'Buck' : 'Doe';
+  const sexLabel = sex === 'buck' ? 'Boar' : 'Sow';
   if (manualOverrideClass && manualOverrideClass !== 'Auto') {
-    return manualOverrideClass + ' ' + sexLabel;
+    return manualOverrideClass + ' ' + (sex === 'buck' ? 'Buck' : 'Doe');
   }
   if (!dobStr) return 'Senior ' + sexLabel;
   
@@ -127,27 +127,31 @@ export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr =
   
   const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
   const diffTime = targetDate - dobDate;
-  if (diffTime < 0) return 'Junior ' + (sex === 'buck' ? 'Buck' : 'Doe');
+  if (diffTime < 0) return 'Junior ' + sexLabel;
   
   const diffDays = diffTime / (1000 * 60 * 60 * 24);
   const diffMonths = diffDays / 30.4375;
   
-  const breedInfo = BREED_STANDARDS[breedName] || { classType: '4-class' };
+  const breedInfo = BREED_STANDARDS[breedName] || CAVY_BREED_STANDARDS[breedName] || { classType: '4-class' };
   
+  // Cavies use Boar/Sow terminology, Rabbits use Buck/Doe terminology
+  const isCavy = !!CAVY_BREED_STANDARDS[breedName];
+  const finalSexLabel = isCavy ? (sex === 'buck' ? 'Boar' : 'Sow') : (sex === 'buck' ? 'Buck' : 'Doe');
+
   if (breedInfo.classType === '6-class') {
-    if (diffMonths < 6) {
-      return 'Junior ' + sexLabel;
-    } else if (diffMonths >= 6 && diffMonths < 8) {
-      return 'Intermediate ' + sexLabel;
+    if (diffMonths < 4) {
+      return 'Junior ' + finalSexLabel;
+    } else if (diffMonths >= 4 && diffMonths < 6) {
+      return 'Intermediate ' + finalSexLabel;
     } else {
-      return 'Senior ' + sexLabel;
+      return 'Senior ' + finalSexLabel;
     }
   } else {
     // 4-class breed
     if (diffMonths < 6) {
-      return 'Junior ' + sexLabel;
+      return 'Junior ' + finalSexLabel;
     } else {
-      return 'Senior ' + sexLabel;
+      return 'Senior ' + finalSexLabel;
     }
   }
 };

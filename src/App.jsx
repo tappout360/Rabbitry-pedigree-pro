@@ -12,15 +12,17 @@ import NetworkStatusBanner from './components/ui/NetworkStatusBanner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import HealthCheck from './components/ui/HealthCheck';
 import Academy from './views/Academy';
+import RegistrarPrep from './views/RegistrarPrep';
 import TimelineGallery from './components/gallery/TimelineGallery';
 import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
 import { uuidv7 } from './db/uuid';
-import { BREED_COLORS } from './db/breedColors';
+import { BREED_COLORS, BREED_VARIETY_GROUPS } from './db/breedColors';
 
-import { BREED_STANDARDS } from './db/breedStandards';
+import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from './db/breedStandards';
 import { calculateRabbitShowClass } from './db/helpers';
+import ColorSelector from './components/ColorSelector';
 
 const LOGO_OPTIONS = [
   { id: 'logo-meadow', label: 'Meadow Bunny 🐇', emoji: '🐇' },
@@ -816,13 +818,33 @@ export default function App() {
 
   // Data State (Partitioned by breederId)
   const [allRabbits, setAllRabbits] = useState([]);
-  const rabbits = allRabbits.filter(r => selectedBreederContext === 'all' || r.breederId === selectedBreederContext);
+  const rabbits = allRabbits.filter(r => {
+    const matchesBreeder = selectedBreederContext === 'all' || r.breederId === selectedBreederContext;
+    if (!matchesBreeder) return false;
+    if (selectedSpecies === 'all') return true;
+    const rabbitSpecies = r.species || 'rabbit';
+    return rabbitSpecies === selectedSpecies;
+  });
 
   const [allBreedings, setAllBreedings] = useState([]);
-  const breedings = allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext);
+  const breedings = allBreedings.filter(b => {
+    const matchesBreeder = selectedBreederContext === 'all' || b.breederId === selectedBreederContext;
+    if (!matchesBreeder) return false;
+    if (selectedSpecies === 'all') return true;
+    const parent = allRabbits.find(r => r.id === b.buckId || r.id === b.doeId);
+    return (parent?.species || 'rabbit') === selectedSpecies;
+  });
 
   const [allLitters, setAllLitters] = useState([]);
-  const litters = allLitters.filter(l => selectedBreederContext === 'all' || l.breederId === selectedBreederContext);
+  const litters = allLitters.filter(l => {
+    const matchesBreeder = selectedBreederContext === 'all' || l.breederId === selectedBreederContext;
+    if (!matchesBreeder) return false;
+    if (selectedSpecies === 'all') return true;
+    const breeding = allBreedings.find(b => b.id === l.breedingId);
+    if (!breeding) return true;
+    const parent = allRabbits.find(r => r.id === breeding.buckId || r.id === breeding.doeId);
+    return (parent?.species || 'rabbit') === selectedSpecies;
+  });
 
   const [allLedger, setAllLedger] = useState([]);
   const ledger = allLedger.filter(lt => selectedBreederContext === 'all' || lt.breederId === selectedBreederContext);
@@ -1061,8 +1083,10 @@ export default function App() {
 
   // Active inputs / Modals
   const [showAddRabbit, setShowAddRabbit] = useState(false);
+  const [colorWizardConfig, setColorWizardConfig] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRabbit, setSelectedRabbit] = useState(null);
+  const [prepRabbitId, setPrepRabbitId] = useState('');
   const [healthSelectedRabbitId, setHealthSelectedRabbitId] = useState('');
   const [printCardRabbit, setPrintCardRabbit] = useState(null);
   const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
@@ -1122,6 +1146,7 @@ export default function App() {
   const [customAccent, setCustomAccent] = useState(() => localStorage.getItem('rp_custom_accent') || '#6366f1');
   const [barnMode, setBarnMode] = useState(() => localStorage.getItem('rp_barn_mode') === 'true');
   const [weightUnit, setWeightUnit] = useState(() => localStorage.getItem('rp_weight_unit') || 'oz');
+  const [selectedSpecies, setSelectedSpecies] = useState(() => localStorage.getItem('rp_selected_species') || 'rabbit');
 
   const formatWeightShort = (oz) => {
     if (!oz) return '-';
@@ -3518,7 +3543,8 @@ export default function App() {
       return weightUnit === 'lbs' ? `${(oz / 16).toFixed(2)} lbs` : `${oz} oz`;
     };
     const ageMonths = getAgeMonths(rabbit.dob);
-    const standard = BREED_STANDARDS[rabbit.breed];
+    const rabbitSpecies = rabbit.species || 'rabbit';
+    const standard = rabbitSpecies === 'cavy' ? CAVY_BREED_STANDARDS[rabbit.breed] : BREED_STANDARDS[rabbit.breed];
     if (!standard) return { valid: true };
 
     const weight = Number(rabbit.weightOz);
@@ -4622,6 +4648,40 @@ export default function App() {
             {designMode === 'fun' ? '🐰 Fun Mode' : '📜 Pro Mode'}
           </button>
 
+          {/* Species Context Switcher */}
+          <div className="flex items-center gap-0.5 bg-slate-800 border border-white/10 rounded-lg p-0.5 shadow-sm">
+            <button
+              onClick={() => {
+                setSelectedSpecies('rabbit');
+                localStorage.setItem('rp_selected_species', 'rabbit');
+                showToast("Switched hutch view to Rabbits", "info");
+              }}
+              className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'rabbit' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
+            >
+              🐰 Rabbits
+            </button>
+            <button
+              onClick={() => {
+                setSelectedSpecies('cavy');
+                localStorage.setItem('rp_selected_species', 'cavy');
+                showToast("Switched hutch view to Cavies", "info");
+              }}
+              className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'cavy' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
+            >
+              🐹 Cavies
+            </button>
+            <button
+              onClick={() => {
+                setSelectedSpecies('all');
+                localStorage.setItem('rp_selected_species', 'all');
+                showToast("Viewing all hutch animals", "info");
+              }}
+              className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'all' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
+            >
+              All
+            </button>
+          </div>
+
           {/* Weight Unit Switcher */}
           <button
             onClick={() => {
@@ -4788,6 +4848,12 @@ export default function App() {
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'academy' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
               <Award className="w-5 h-5 text-yellow-400" /> 🎓 4-H Academy
+            </button>
+            <button 
+              onClick={() => setActiveTab('registrarPrep')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'registrarPrep' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <FileText className="w-5 h-5 text-indigo-400" /> 📜 Registrar Prep
             </button>
             <button 
               onClick={() => setActiveTab('help')}
@@ -5829,10 +5895,29 @@ export default function App() {
                   </div>
 
                   <button 
-                    onClick={() => setShowAddRabbit(true)}
+                    onClick={() => {
+                      const initialSpecies = selectedSpecies === 'all' ? 'rabbit' : selectedSpecies;
+                      const initialBreed = initialSpecies === 'cavy' ? 'Abyssinian' : 'Holland Lop';
+                      setNewRabbit({
+                        tattooNumber: '', name: '', breed: initialBreed, variety: 'Blue',
+                        sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: weightUnit === 'lbs' ? 2.5 : 40,
+                        sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
+                        isCharlie: false,
+                        colorCarrier: '',
+                        winningsBOB: 0,
+                        winningsBOV: 0,
+                        winningsBOS: 0,
+                        winningsBOSV: 0,
+                        winningsBIS: 0,
+                        winningsOther: 0,
+                        showClass: 'Auto',
+                        species: initialSpecies
+                      });
+                      setShowAddRabbit(true);
+                    }}
                     className="btn-interactive w-full sm:w-auto"
                   >
-                    <Plus className="w-5 h-5" /> Add New Rabbit
+                    <Plus className="w-5 h-5" /> Add New {selectedSpecies === 'cavy' ? 'Cavy' : 'Rabbit'}
                   </button>
                 </div>
 
@@ -5840,15 +5925,34 @@ export default function App() {
               {showAddRabbit && (
                 <div className="glass-container p-6 border border-pink-500/30">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold">New Rabbit Registration</h3>
+                    <h3 className="text-lg font-bold">New {newRabbit.species === 'cavy' ? 'Cavy' : 'Rabbit'} Registration</h3>
                     <button onClick={() => setShowAddRabbit(false)} className="opacity-70 hover:opacity-100"><X className="w-6 h-6" /></button>
                   </div>
 
                   <form onSubmit={handleAddRabbit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold">Tattoo Number *</label>
+                      <label className="text-xs font-bold">Species *</label>
+                      <select 
+                        value={newRabbit.species || 'rabbit'}
+                        onChange={(e) => {
+                          const nextSpecies = e.target.value;
+                          const nextBreedList = nextSpecies === 'cavy' ? CAVY_BREED_STANDARDS : BREED_STANDARDS;
+                          const defaultBreed = Object.keys(nextBreedList)[0];
+                          setNewRabbit({
+                            ...newRabbit, 
+                            species: nextSpecies,
+                            breed: defaultBreed
+                          });
+                        }}
+                      >
+                        <option value="rabbit">🐰 Rabbit</option>
+                        <option value="cavy">🐹 Guinea Pig (Cavy)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold">{newRabbit.species === 'cavy' ? 'Ear Tag' : 'Tattoo Number'} *</label>
                       <input 
-                        type="text" required placeholder="E.g., B12" 
+                        type="text" required placeholder={newRabbit.species === 'cavy' ? "E.g. CT-101" : "E.g. B12"} 
                         value={newRabbit.tattooNumber}
                         onChange={(e) => setNewRabbit({...newRabbit, tattooNumber: e.target.value})}
                       />
@@ -5867,15 +5971,32 @@ export default function App() {
                         value={newRabbit.breed}
                         onChange={(e) => setNewRabbit({...newRabbit, breed: e.target.value})}
                       >
-                        {Object.keys(BREED_STANDARDS).map(breedName => (
-                          <option key={breedName} value={breedName}>
-                            {breedName} ({BREED_STANDARDS[breedName].classType})
-                          </option>
-                        ))}
+                        {Object.keys(newRabbit.species === 'cavy' ? CAVY_BREED_STANDARDS : BREED_STANDARDS).map(breedName => {
+                          const standardsMap = newRabbit.species === 'cavy' ? CAVY_BREED_STANDARDS : BREED_STANDARDS;
+                          return (
+                            <option key={breedName} value={breedName}>
+                              {breedName} ({standardsMap[breedName].classType})
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold">Variety (Color)</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold">Variety (Color)</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setColorWizardConfig({
+                              breed: newRabbit.breed,
+                              onSelect: (variety) => setNewRabbit({ ...newRabbit, variety })
+                            });
+                          }}
+                          className="text-[10px] text-indigo-400 font-bold border-none bg-transparent hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer"
+                        >
+                          🎨 Color Wizard
+                        </button>
+                      </div>
                       <input 
                         type="text" placeholder="E.g. Broken Blue" 
                         value={newRabbit.variety}
@@ -6205,9 +6326,24 @@ export default function App() {
                   {/* Profile Details & Quick Edit Card */}
                   <div className="glass-container p-6 flex flex-col gap-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-base font-bold flex items-center gap-2">
-                        📋 Profile Details
-                      </h3>
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-base font-bold flex items-center gap-2">
+                          📋 Profile Details
+                        </h3>
+                        {!editProfileMode && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPrepRabbitId(selectedRabbit.id);
+                              setActiveTab('registrarPrep');
+                              setSelectedRabbit(null); // Close details overlay
+                            }}
+                            className="btn-interactive text-[10px] py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold border border-white/10 rounded-lg flex items-center gap-1 cursor-pointer"
+                          >
+                            📜 Registrar Prep Packet
+                          </button>
+                        )}
+                      </div>
                       {!editProfileMode ? (
                         <button
                           onClick={() => {
@@ -6622,6 +6758,10 @@ export default function App() {
                     }}
                     onPrintPedigree={(rabbit) => setShowPrintPedigreeModal(rabbit)}
                     onEditNode={(nodeData) => setPedigreeEditNode(nodeData)}
+                    onOpenRegistrarPrep={(rabbit) => {
+                      setPrepRabbitId(rabbit.id);
+                      setActiveTab('registrarPrep');
+                    }}
                   />
 
                 </div>
@@ -8632,6 +8772,18 @@ export default function App() {
             </ErrorBoundary>
           )}
 
+          {/* TAB: ARBA REGISTRAR INPSECTION PREP */}
+          {activeTab === 'registrarPrep' && (
+            <ErrorBoundary>
+              <RegistrarPrep
+                rabbits={rabbits}
+                allRabbits={allRabbits}
+                selectedRabbitId={prepRabbitId}
+                setSelectedRabbitId={setPrepRabbitId}
+              />
+            </ErrorBoundary>
+          )}
+
           {/* TAB: HELP CENTER, MANUAL & TERMS */}
           {activeTab === 'help' && (
             <div className="flex flex-col gap-6">
@@ -10336,16 +10488,33 @@ export default function App() {
                         className="bg-slate-800 border-white/10 text-sm py-2 px-3 rounded-lg text-white"
                       >
                         <option value="">-- Select Breed --</option>
-                        {Object.keys(BREED_STANDARDS).map(breedName => (
-                          <option key={breedName} value={breedName}>
-                            {breedName} ({BREED_STANDARDS[breedName].classType})
-                          </option>
-                        ))}
+                        {Object.keys(selectedRabbit?.species === 'cavy' ? CAVY_BREED_STANDARDS : BREED_STANDARDS).map(breedName => {
+                          const standardsMap = selectedRabbit?.species === 'cavy' ? CAVY_BREED_STANDARDS : BREED_STANDARDS;
+                          return (
+                            <option key={breedName} value={breedName}>
+                              {breedName} ({standardsMap[breedName].classType})
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-300">Variety (Color)</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold text-slate-300">Variety (Color)</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setColorWizardConfig({
+                              breed: nodeForm.breed || (selectedRabbit?.species === 'cavy' ? 'Abyssinian' : 'Holland Lop'),
+                              onSelect: (variety) => setNodeForm({ ...nodeForm, variety })
+                            });
+                          }}
+                          className="text-[10px] text-indigo-400 font-bold border-none bg-transparent hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer"
+                        >
+                          🎨 Color Wizard
+                        </button>
+                      </div>
                       <input
                         type="text"
                         value={nodeForm.variety}
@@ -11429,6 +11598,15 @@ export default function App() {
           <span>Ledger</span>
         </button>
       </div>
+
+      {/* Color Selector Wizard Modal */}
+      {colorWizardConfig && (
+        <ColorSelector
+          breed={colorWizardConfig.breed}
+          onClose={() => setColorWizardConfig(null)}
+          onSelect={colorWizardConfig.onSelect}
+        />
+      )}
 
       {/* Toast Notifications Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">

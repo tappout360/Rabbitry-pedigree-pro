@@ -42,6 +42,26 @@ db.version(2).stores({
   approvals: 'id, breederId, timestamp'
 });
 
+// Version 3: Multi-species cavy field and youth progress/quiz tables
+db.version(3).stores({
+  adminBreeders: 'id, email, username, role',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex]',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status',
+  litters: 'id, breederId, breedingId, kindleDate',
+  ledger: 'id, breederId, rabbitId, date',
+  shows: 'id, breederId, date',
+  showEntries: 'id, breederId, showId, rabbitId',
+  chores: 'id, breederId, dueDate',
+  transfers: 'id, breederId, rabbitId, date',
+  signatures: 'id, breederId',
+  medical: 'id, breederId, rabbitId, date',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date]',
+  syncQueue: 'id, breederId, timestamp',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback'
+});
+
 let migrationPromise = null;
 
 export async function performMigrationAndLoad() {
@@ -112,6 +132,8 @@ export async function performMigrationAndLoad() {
     const weights = await migrateOrLoadTable('rp_weights', db.weights, weightsSeed);
     const syncQueue = await migrateOrLoadTable('rp_sync_queue', db.syncQueue, []);
     const approvals = await migrateOrLoadTable('rp_approvals', db.approvals, []);
+    const youthProgress = await migrateOrLoadTable('rp_youth_progress', db.youthProgress, []);
+    const youthQuizLogs = await migrateOrLoadTable('rp_youth_quiz_logs', db.youthQuizLogs, []);
 
     // Mark migration as done
     if (!isMigrated) {
@@ -132,7 +154,9 @@ export async function performMigrationAndLoad() {
       medical,
       weights,
       syncQueue,
-      approvals
+      approvals,
+      youthProgress,
+      youthQuizLogs
     };
   })().catch(err => {
     migrationPromise = null; // Clear lock on error to allow retry

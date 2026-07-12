@@ -300,3 +300,54 @@ export const BREED_STANDARDS = {
     doeJrMin: 0, doeJrMax: 80, doeSrMin: 64, doeSrMax: 96
   }
 };
+
+export const CAVY_BREED_STANDARDS = {
+  'Abyssinian': {
+    name: 'Abyssinian',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'American': {
+    name: 'American',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'Coronet': {
+    name: 'Coronet',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'Peruvian': {
+    name: 'Peruvian',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'Silkie': {
+    name: 'Silkie',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'Teddy': {
+    name: 'Teddy',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'Texel': {
+    name: 'Texel',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  },
+  'White Crested': {
+    name: 'White Crested',
+    classType: '6-class',
+    buckJrMin: 12, buckJrMax: 22, buckIntMin: 22, buckIntMax: 32, buckSrMin: 32, buckSrMax: 50,
+    doeJrMin: 12, doeJrMax: 22, doeIntMin: 22, doeIntMax: 32, doeSrMin: 32, doeSrMax: 50
+  }
+};

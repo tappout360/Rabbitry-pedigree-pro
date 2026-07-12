@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Award, BookOpen, Brain, CheckCircle, HelpCircle, Trophy, RefreshCw, Star, Play, Award as BadgeIcon, Printer, ShieldCheck } from 'lucide-react';
 import { QUIZ_QUESTIONS } from '../db/quizQuestions';
+import { db } from '../db/registryDb';
 
 // Rabbit Anatomy Parts for the SVG Locator (22 parts)
 const ANATOMY_PARTS = [
@@ -15,6 +16,15 @@ const ANATOMY_PARTS = [
   { name: "Rump", cx: 40, cy: 165, r: 25, label: "Rump 🍑" },
   { name: "Hock", cx: 45, cy: 220, r: 15, label: "Hock (Ankle) 🦵" },
   { name: "Tail", cx: 15, cy: 175, r: 12, label: "Tail 🥕" }
+];
+
+const CAVY_ANATOMY_PARTS = [
+  { name: "Crown / Crest", cx: 140, cy: 80, r: 12, label: "Crown / Crest 👑" },
+  { name: "Ears", cx: 120, cy: 60, r: 10, label: "Ears 👂" },
+  { name: "Eyes", cx: 160, cy: 92, r: 8, label: "Eyes 👁️" },
+  { name: "Nose", cx: 190, cy: 110, r: 9, label: "Nose 👃" },
+  { name: "Saddle", cx: 80, cy: 120, r: 24, label: "Saddle / Back 🥩" },
+  { name: "Hindquarters", cx: 45, cy: 140, r: 22, label: "Hindquarters 🍑" }
 ];
 
 import { calculateArbaDivision, getDivisionQuizLevel } from '../db/helpers';
@@ -57,9 +67,103 @@ export default function Academy({
   // Study Mode State
   const [studyIdx, setStudyIdx] = useState(0);
 
-  // Parent/Leader States
+  // Parent/Leader States & Multi-Exhibitor Database
   const [parentExhibitorName, setParentExhibitorName] = useState('Hop Master');
+  const [members, setMembers] = useState([]);
+  const [activeMemberId, setActiveMemberId] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberAge, setNewMemberAge] = useState(10);
+  const [coachFeedbackText, setCoachFeedbackText] = useState('');
+  const [assignedQuizLevel, setAssignedQuizLevel] = useState('Beginner');
+  const [quizLogs, setQuizLogs] = useState([]);
 
+  // Anatomy Game Species Switcher
+  const [anatomySpecies, setAnatomySpecies] = useState('rabbit');
+
+  // Load members from Dexie
+  const loadMembers = async () => {
+    try {
+      const list = await db.youthProgress.toArray();
+      if (list.length === 0) {
+        const seed = [
+          { id: 'm-1', memberName: 'Johnny Miller', ageGroup: 'Intermediate', currentLevel: 3, xp: 240, streak: 5, lastActiveDate: '2026-07-12', coachId: currentUser?.id || 'ab-1' },
+          { id: 'm-2', memberName: 'Emily Stone', ageGroup: 'Junior', currentLevel: 1, xp: 80, streak: 2, lastActiveDate: '2026-07-11', coachId: currentUser?.id || 'ab-1' }
+        ];
+        await db.youthProgress.bulkAdd(seed);
+        setMembers(seed);
+        setActiveMemberId(seed[0].id);
+      } else {
+        setMembers(list);
+        if (list.length > 0 && !activeMemberId) {
+          setActiveMemberId(list[0].id);
+        }
+      }
+      
+      const logs = await db.youthQuizLogs.toArray();
+      setQuizLogs(logs);
+    } catch (e) {
+      console.error("Error loading youth progress:", e);
+    }
+  };
+
+  useEffect(() => {
+    loadMembers();
+  }, [academyMode]);
+
+  const activeMember = useMemo(() => {
+    return members.find(m => m.id === activeMemberId) || null;
+  }, [activeMemberId, members]);
+
+  // Sync exhibitor name with selected child
+  useEffect(() => {
+    if (activeMember) {
+      setParentExhibitorName(activeMember.memberName);
+    }
+  }, [activeMember]);
+
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    if (!newMemberName) return;
+    
+    let division = 'Junior';
+    if (newMemberAge >= 12 && newMemberAge <= 14) division = 'Intermediate';
+    else if (newMemberAge >= 15) division = 'Senior';
+
+    const newM = {
+      id: 'm-' + Date.now(),
+      memberName: newMemberName,
+      ageGroup: division,
+      currentLevel: 1,
+      xp: 0,
+      streak: 0,
+      lastActiveDate: new Date().toISOString().split('T')[0],
+      coachId: currentUser?.id || 'ab-1'
+    };
+
+    await db.youthProgress.add(newM);
+    setNewMemberName('');
+    await loadMembers();
+    setActiveMemberId(newM.id);
+  };
+
+  const handleSaveFeedback = async () => {
+    if (!activeMember) return;
+    
+    const log = {
+      id: 'log-' + Date.now(),
+      progressId: activeMember.id,
+      quizType: 'Coach Review',
+      score: 100,
+      passed: true,
+      date: new Date().toISOString().split('T')[0],
+      coachFeedback: coachFeedbackText
+    };
+    await db.youthQuizLogs.add(log);
+    
+    alert(`Feedback saved for ${activeMember.memberName}: "${coachFeedbackText}"`);
+    setCoachFeedbackText('');
+    loadMembers();
+  };
   // Showmanship Scoring Simulator States
   const [scoringScenarioIdx, setScoringScenarioIdx] = useState(0);
   const [inputScores, setInputScores] = useState({ attire: 10, carry: 5, pose: 10, exam: 40, qa: 30 });
@@ -158,18 +262,19 @@ export default function Academy({
   // Anatomy Click Handler
   const handleAnatomyClick = (partName) => {
     if (anatomyComplete) return;
-    const target = ANATOMY_PARTS[anatomyTargetIdx].name;
+    const partsList = anatomySpecies === 'cavy' ? CAVY_ANATOMY_PARTS : ANATOMY_PARTS;
+    const target = partsList[anatomyTargetIdx].name;
     if (partName === target) {
       setAnatomyScore(prev => prev + 1);
       addPoints(15);
       setAnatomyFeedback('🎉 Correct! That is the ' + partName + '!');
       triggerConfetti();
       
-      if (anatomyTargetIdx + 1 < ANATOMY_PARTS.length) {
+      if (anatomyTargetIdx + 1 < partsList.length) {
         setAnatomyTargetIdx(prev => prev + 1);
       } else {
         setAnatomyComplete(true);
-        unlockBadge("Anatomy Expert 🐇");
+        unlockBadge(anatomySpecies === 'cavy' ? "Cavy Anatomy Expert 🐹" : "Anatomy Expert 🐇");
         addPoints(50); // Bonus
       }
     } else {
@@ -510,29 +615,69 @@ export default function Academy({
           {/* Anatomy quiz workspace */}
           <div className="glass-container p-6 flex flex-col gap-4 items-center">
             <h3 className="text-lg font-bold">Interactive Anatomy Map</h3>
-            <p className="text-xs opacity-75 text-center">Locate the correct part of the rabbit below by clicking on the yellow target dots.</p>
+            <p className="text-xs opacity-75 text-center">Locate the correct part of the animal below by clicking on the yellow target dots.</p>
+
+            {/* Species Selector for Anatomy */}
+            <div className="flex gap-2 mb-2 bg-slate-950 p-1 rounded-lg border border-white/10">
+              <button
+                type="button"
+                onClick={() => {
+                  setAnatomySpecies('rabbit');
+                  setAnatomyTargetIdx(0);
+                  setAnatomyFeedback('');
+                  setAnatomyComplete(false);
+                }}
+                className={`text-[11px] py-1.5 px-3 rounded font-bold border-none transition-all cursor-pointer ${anatomySpecies === 'rabbit' ? 'bg-indigo-600 text-white' : 'text-slate-400 bg-transparent'}`}
+              >
+                🐰 Rabbit Anatomy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAnatomySpecies('cavy');
+                  setAnatomyTargetIdx(0);
+                  setAnatomyFeedback('');
+                  setAnatomyComplete(false);
+                }}
+                className={`text-[11px] py-1.5 px-3 rounded font-bold border-none transition-all cursor-pointer ${anatomySpecies === 'cavy' ? 'bg-amber-600 text-white' : 'text-slate-400 bg-transparent'}`}
+              >
+                🐹 Cavy Anatomy
+              </button>
+            </div>
 
             <div className="relative bg-black/40 border border-white/5 rounded-2xl p-4 flex flex-col items-center w-full">
               {!anatomyComplete && (
                 <div className="mb-4 text-center">
-                  <p className="text-xs opacity-75 font-semibold">Click on the rabbit's:</p>
+                  <p className="text-xs opacity-75 font-semibold">Click on the {anatomySpecies === 'cavy' ? 'cavy' : 'rabbit'}'s:</p>
                   <span className="text-xl font-black text-yellow-400 uppercase tracking-widest block mt-1">
-                    {ANATOMY_PARTS[anatomyTargetIdx].label}
+                    {(anatomySpecies === 'cavy' ? CAVY_ANATOMY_PARTS : ANATOMY_PARTS)[anatomyTargetIdx].label}
                   </span>
                 </div>
               )}
 
-              {/* Vector Rabbit anatomy */}
+              {/* Vector Anatomy SVG */}
               <div className="relative w-full max-w-[360px] aspect-square flex items-center justify-center">
                 <svg viewBox="0 0 250 250" className="w-full h-full drop-shadow-md">
-                  {/* Outer body outline */}
-                  <path d="M 30,190 C 20,160 30,120 70,120 C 90,120 100,140 120,140 C 130,140 140,110 150,90 C 160,70 180,50 175,85 C 185,85 195,95 190,110 C 195,115 205,125 195,140 C 185,155 170,170 150,185 C 130,200 90,210 50,210 C 40,210 32,200 30,190 Z" fill="#312e81" stroke="#4f46e5" strokeWidth="3" />
-                  {/* Ears outline */}
-                  <path d="M 140,80 C 130,50 110,30 120,30 C 130,30 140,50 145,80 Z" fill="#312e81" stroke="#4f46e5" strokeWidth="2" />
+                  {anatomySpecies === 'cavy' ? (
+                    <>
+                      {/* Outer cavy body outline */}
+                      <path d="M 35,160 C 25,140 35,110 70,105 C 90,100 110,120 135,120 C 150,120 160,95 170,85 C 180,75 195,85 190,105 C 195,110 200,120 195,130 C 185,145 170,155 150,165 C 130,175 90,180 50,180 C 40,180 35,170 35,160 Z" fill="#b45309" stroke="#d97706" strokeWidth="3" />
+                      {/* Cavy ears */}
+                      <ellipse cx="120" cy="70" rx="8" ry="12" fill="#b45309" stroke="#d97706" strokeWidth="2" transform="rotate(-30 120 70)" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Outer rabbit body outline */}
+                      <path d="M 30,190 C 20,160 30,120 70,120 C 90,120 100,140 120,140 C 130,140 140,110 150,90 C 160,70 180,50 175,85 C 185,85 195,95 190,110 C 195,115 205,125 195,140 C 185,155 170,170 150,185 C 130,200 90,210 50,210 C 40,210 32,200 30,190 Z" fill="#312e81" stroke="#4f46e5" strokeWidth="3" />
+                      {/* Rabbit ears outline */}
+                      <path d="M 140,80 C 130,50 110,30 120,30 C 130,30 140,50 145,80 Z" fill="#312e81" stroke="#4f46e5" strokeWidth="2" />
+                    </>
+                  )}
                   
                   {/* Clickable pins */}
-                  {ANATOMY_PARTS.map((p) => {
-                    const isTarget = p.name === ANATOMY_PARTS[anatomyTargetIdx].name;
+                  {(anatomySpecies === 'cavy' ? CAVY_ANATOMY_PARTS : ANATOMY_PARTS).map((p) => {
+                    const activeParts = anatomySpecies === 'cavy' ? CAVY_ANATOMY_PARTS : ANATOMY_PARTS;
+                    const isTarget = p.name === activeParts[anatomyTargetIdx].name;
                     return (
                       <circle
                         key={p.name}
@@ -962,82 +1107,223 @@ export default function Academy({
 
       {/* PARENT & LEADER TOOLS MODE */}
       {academyMode === 'parent' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto w-full">
           
-          {/* Report configuration */}
-          <div className="glass-container p-6 flex flex-col gap-4">
-            <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-1">
-              <ShieldCheck className="w-5 h-5" /> 4-H Supervisor Approval
+          {/* Member Selection & Registration Portal */}
+          <div className="glass-container p-6 flex flex-col gap-5 border border-emerald-500/20">
+            <h3 className="text-lg font-black text-emerald-400 flex items-center gap-1.5">
+              <ShieldCheck className="w-5 h-5" /> 4-H Coach & Parent Portal
             </h3>
-            <p className="text-xs opacity-75">Enter the youth exhibitor's details and club details below to update and print their official achievement certificate.</p>
-            
-            <div className="flex flex-col gap-3 text-xs">
-              <div className="flex flex-col gap-1">
-                <label className="font-bold">Youth Exhibitor Name</label>
-                <input 
-                  type="text" 
-                  value={parentExhibitorName} 
-                  onChange={(e) => setParentExhibitorName(e.target.value)}
-                  placeholder="e.g. Jason Jr" 
-                  className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white" 
-                />
-              </div>
+            <p className="text-xs opacity-75">Manage your youth members, track their learning history, and assign quizzes.</p>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-bold">4-H Club / Project Group</label>
-                <input 
-                  type="text" 
-                  value={parentClubName} 
-                  onChange={(e) => setParentClubName(e.target.value)}
-                  placeholder="e.g. WarrenWise Rabbit Club" 
-                  className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white" 
-                />
+            {/* List Active Members */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] uppercase font-bold text-slate-350">Active Club Members:</span>
+              <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                {members.map(m => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setActiveMemberId(m.id)}
+                    className={`p-3 rounded-xl border text-xs font-bold flex justify-between items-center transition-all cursor-pointer ${
+                      activeMemberId === m.id 
+                        ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300' 
+                        : 'bg-slate-800/40 border-white/5 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>👤 {m.memberName} ({m.ageGroup} Division)</span>
+                    <span className="bg-indigo-650 px-2 py-0.5 rounded text-[10px] text-white">{m.xp} XP</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/5 p-4 rounded-xl text-xs flex flex-col gap-2 mt-4">
-              <span className="font-bold text-yellow-400">Academy Statistics Log:</span>
-              <p>🏆 Points Earned: {points} XP</p>
-              <p>🔥 Practice Streak: {streak} Days</p>
-              <p>⭐ Unlocked Badges: {unlockedBadges.join(', ')}</p>
-            </div>
+            {/* Add New Member Form */}
+            <form onSubmit={handleAddMember} className="p-3.5 bg-slate-950/40 border border-white/5 rounded-2xl flex flex-col gap-3">
+              <span className="text-[10px] uppercase font-bold text-indigo-400">Add Club Member</span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold">Member Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    placeholder="e.g. Jason Jr"
+                    className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold">Age</label>
+                  <input
+                    type="number"
+                    required
+                    min="5"
+                    max="18"
+                    value={newMemberAge}
+                    onChange={(e) => setNewMemberAge(Number(e.target.value))}
+                    className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="btn-interactive text-[11px] py-1.5 bg-indigo-600 border-none font-bold text-white w-full rounded-lg"
+              >
+                ➕ Add Member
+              </button>
+            </form>
 
-            <button 
-              onClick={() => {
-                const canvas = document.getElementById('certificateCanvas');
-                if (canvas) {
-                  const dataUrl = canvas.toDataURL("image/png");
-                  const link = document.createElement('a');
-                  link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`;
-                  link.href = dataUrl;
-                  link.click();
-                }
-              }}
-              className="btn-interactive text-xs bg-emerald-600 border-none font-bold text-white mt-auto py-2.5 px-4"
-            >
-              Export Certificate as PNG File
-            </button>
+            {/* Assign Lesson / Quiz Section */}
+            {activeMember && (
+              <div className="p-3.5 bg-slate-950/40 border border-white/5 rounded-2xl flex flex-col gap-3">
+                <span className="text-[10px] uppercase font-bold text-amber-400">Assign Custom Quiz</span>
+                <div className="flex gap-2 items-center text-xs">
+                  <select
+                    value={assignedQuizLevel}
+                    onChange={(e) => setAssignedQuizLevel(e.target.value)}
+                    className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white shrink-0"
+                  >
+                    <option value="Beginner">Beginner Level</option>
+                    <option value="Junior">Junior Level</option>
+                    <option value="Senior">Senior Level</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      // Save assigned log
+                      const log = {
+                        id: 'log-' + Date.now(),
+                        progressId: activeMember.id,
+                        quizType: `${assignedQuizLevel} Quiz (Assigned)`,
+                        score: 0,
+                        passed: false,
+                        date: new Date().toISOString().split('T')[0],
+                        coachFeedback: 'Pending completion.'
+                      };
+                      await db.youthQuizLogs.add(log);
+                      alert(`Successfully assigned ${assignedQuizLevel} Quiz to ${activeMember.memberName}!`);
+                      loadMembers();
+                    }}
+                    className="btn-interactive text-[11px] py-2 bg-amber-600 border-none font-bold text-white w-full rounded-lg"
+                  >
+                    📝 Assign Lesson
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Certificate Preview */}
-          <div className="glass-container p-6 flex flex-col gap-4 items-center">
-            <h3 className="text-base font-bold text-white">Certificate Live Canvas Preview</h3>
+          {/* Member Analytics, Feedback & Certificate Preview */}
+          <div className="flex flex-col gap-6">
             
-            <div className="w-full bg-slate-950 border border-white/10 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-2">
-              <canvas 
-                id="certificateCanvas" 
-                width="800" 
-                height="500" 
-                className="w-full h-auto border border-emerald-500/50 rounded-xl"
-              />
+            {activeMember ? (
+              <div className="glass-container p-6 flex flex-col gap-4 border border-emerald-500/20">
+                <div className="flex justify-between items-start border-b border-white/10 pb-3">
+                  <div>
+                    <h3 className="text-base font-black text-white">Member: {activeMember.memberName}</h3>
+                    <span className="text-xs opacity-75">Streak: 🔥 {activeMember.streak} Days | Level: {activeMember.currentLevel}</span>
+                  </div>
+                  <span className="bg-indigo-600/35 border border-indigo-400 text-[10px] text-indigo-300 font-bold px-2 py-0.5 rounded-full">
+                    {activeMember.ageGroup} Division
+                  </span>
+                </div>
+
+                {/* Progress metrics */}
+                <div className="text-xs flex flex-col gap-2.5">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                      <span>Showmanship Simulator Conformation Score</span>
+                      <span>85%</span>
+                    </div>
+                    <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                      <div className="bg-emerald-500 h-2" style={{ width: '85%' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                      <span>Breed & Variety ID Game Score</span>
+                      <span>92%</span>
+                    </div>
+                    <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                      <div className="bg-sky-500 h-2" style={{ width: '92%' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                      <span>ARBA Show Rules & Health Standards</span>
+                      <span>50%</span>
+                    </div>
+                    <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                      <div className="bg-amber-500 h-2" style={{ width: '50%' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coach Feedback Box */}
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Coach Feedback / Review Remarks:</label>
+                  <textarea
+                    rows="2"
+                    value={coachFeedbackText}
+                    onChange={(e) => setCoachFeedbackText(e.target.value)}
+                    placeholder="Provide constructive feedback or encouragement..."
+                    className="bg-slate-950/80 border border-white/10 rounded-xl p-2.5 text-xs text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveFeedback}
+                    className="btn-interactive text-xs py-1.5 bg-emerald-600 border-none font-bold text-white ml-auto"
+                  >
+                    Save Coach Review
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="glass-container p-6 text-center text-xs opacity-75">
+                Select a club member to view their performance metrics.
+              </div>
+            )}
+
+            {/* Live Certificate preview */}
+            <div className="glass-container p-6 flex flex-col gap-4 items-center border border-emerald-500/20">
+              <h3 className="text-sm font-black text-white">Official 4-H Academy Certificate Preview</h3>
+              
+              <div className="w-full bg-slate-950 border border-white/10 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center p-2">
+                <canvas 
+                  id="certificateCanvas" 
+                  width="800" 
+                  height="500" 
+                  className="w-full h-auto border border-emerald-500/50 rounded-xl"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => setAcademyMode('menu')}
+                  className="btn-interactive text-xs bg-slate-700 hover:bg-slate-650 border-none font-bold text-white"
+                >
+                  Back to Menu
+                </button>
+                <button 
+                  onClick={() => {
+                    const canvas = document.getElementById('certificateCanvas');
+                    if (canvas) {
+                      const dataUrl = canvas.toDataURL("image/png");
+                      const link = document.createElement('a');
+                      link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`;
+                      link.href = dataUrl;
+                      link.click();
+                    }
+                  }}
+                  className="btn-interactive text-xs bg-emerald-600 border-none font-bold text-white py-2.5 px-4"
+                >
+                  Export PNG Certificate
+                </button>
+              </div>
             </div>
 
-            <button 
-              onClick={() => setAcademyMode('menu')}
-              className="btn-interactive text-xs bg-slate-700 hover:bg-slate-650 border-none font-bold text-white w-full"
-            >
-              Back to Academy Menu
-            </button>
           </div>
 
         </div>

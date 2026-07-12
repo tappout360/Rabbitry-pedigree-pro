@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, AlertTriangle, X, Wand2 } from 'lucide-react';
 import { uuidv7 } from '../../db/uuid';
-import { BREED_STANDARDS } from '../../db/breedStandards';
+import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from '../../db/breedStandards';
 import { BREED_COLORS } from '../../db/breedColors';
 
 const parsePedigreeText = (text) => {
@@ -134,7 +134,7 @@ const renderWinningsBadge = (node, sizeClass = "text-[8px] px-1 py-0.2 rounded")
   );
 };
 
-export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode, weightUnit = 'oz' }) {
+export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode, weightUnit = 'oz', onOpenRegistrarPrep }) {
   const formatWeight = (oz) => {
     if (!oz) return 'N/A';
     return weightUnit === 'lbs' 
@@ -686,7 +686,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   // ARBA Standards audit checking
   const arbaAudit = useMemo(() => {
     if (!activeRabbit) return null;
-    const std = BREED_STANDARDS[activeRabbit.breed];
+    const rabbitSpecies = activeRabbit?.species || 'rabbit';
+    const std = rabbitSpecies === 'cavy' ? CAVY_BREED_STANDARDS[activeRabbit.breed] : BREED_STANDARDS[activeRabbit.breed];
     if (!std) return null;
 
     const isSenior = activeRabbit.dob ? (new Date() - new Date(activeRabbit.dob)) / (1000 * 60 * 60 * 24 * 30.4) >= 6 : true;
@@ -1291,7 +1292,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                           className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500 cursor-pointer"
                         >
                           <option value="">-- Select Breed --</option>
-                          {Object.keys(BREED_STANDARDS).sort().map(b => (
+                          {Object.keys(activeRabbit?.species === 'cavy' ? CAVY_BREED_STANDARDS : BREED_STANDARDS).sort().map(b => (
                             <option key={b} value={b}>{b}</option>
                           ))}
                         </select>
@@ -1565,6 +1566,17 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
             >
               📜 Print Official ARBA Pedigree
             </button>
+
+            {/* Get Registrar Prep Packet button */}
+            {onOpenRegistrarPrep && (
+              <button
+                type="button"
+                onClick={() => onOpenRegistrarPrep(activeRabbit)}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer border border-white/10 mt-2"
+              >
+                📜 Get Registrar Prep Packet
+              </button>
+            )}
           </div>
         </div>
       </div>

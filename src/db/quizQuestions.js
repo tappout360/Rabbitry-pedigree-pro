@@ -411,5 +411,36 @@ export const QUIZ_QUESTIONS = [
     options: ["Cecotropes bloating", "Enteritis / Gastrointestinal Stasis (GI Stasis)", "Coccidiosis", "Vent Disease"],
     answer: "Enteritis / Gastrointestinal Stasis (GI Stasis)",
     explanation: "GI Stasis is a life-threatening condition where the stomach/intestines slow down or stop completely, causing painful gas buildup and dehydration. Diet high in fiber is the best preventative."
+  },
+  // === CAVY QUESTIONS ===
+  {
+    id: "q-beg-cavy-1",
+    level: "Beginner",
+    category: "Care & Health",
+    type: "multiple-choice",
+    question: "How many toes does a Guinea Pig (Cavy) have on its back feet?",
+    options: ["2", "3", "4", "5"],
+    answer: "3",
+    explanation: "Cavies have 4 toes on their front feet and 3 toes on their hind feet, making 14 toes in total. (Unlike rabbits, which have 18 toes!)"
+  },
+  {
+    id: "q-jun-cavy-1",
+    level: "Junior",
+    category: "Breed Standards",
+    type: "multiple-choice",
+    question: "What is the minimum number of rosettes required on a show Abyssinian cavy?",
+    options: ["4", "6", "8", "10"],
+    answer: "8",
+    explanation: "An Abyssinian cavy must have a minimum of 8 rosettes (ideally 10) in a symmetrical pattern across the body to be compliant with ARBA standards."
+  },
+  {
+    id: "q-sen-cavy-1",
+    level: "Senior",
+    category: "Breed Standards",
+    type: "multiple-choice",
+    question: "Which cavy breed features a single rosette (crest) on its forehead that must be white, contrasting with a solid body color?",
+    options: ["Teddy", "Peruvian", "White Crested", "Coronet"],
+    answer: "White Crested",
+    explanation: "The White Crested cavy standard requires a clean white crest rosette on the forehead, with the rest of the cavy's body being a solid self or agouti color."
   }
 ];
