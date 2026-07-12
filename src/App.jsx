@@ -2423,6 +2423,21 @@ export default function App() {
         return;
       }
 
+      // Check ARBA standard validation
+      const finalWeightOz = weightUnit === 'lbs' ? Math.round((Number(nodeForm.weightOz) || 0) * 16) : (Number(nodeForm.weightOz) || 0);
+      const ancestorForValidation = {
+        breed: nodeForm.breed || (selectedRabbit ? selectedRabbit.breed : ''),
+        sex: pedigreeEditNode.gender,
+        dob: nodeForm.dob,
+        weightOz: finalWeightOz,
+        showClass: nodeForm.showClass || 'Auto'
+      };
+      const valResult = validateArbaStandard(ancestorForValidation);
+      if (!valResult.valid) {
+        const confirmBypass = window.confirm(`ARBA Standard Validation Warning for this ancestor:\n${valResult.reason}\n\nWould you like to save this ancestor anyway?`);
+        if (!confirmBypass) return;
+      }
+
       let ancestorId = pedigreeEditNode.rabbitId;
 
       if (ancestorId) {
@@ -2435,7 +2450,7 @@ export default function App() {
               tattooNumber: nodeForm.tattooNumber,
               breed: nodeForm.breed,
               variety: nodeForm.variety,
-              weightOz: weightUnit === 'lbs' ? Math.round((Number(nodeForm.weightOz) || 0) * 16) : (Number(nodeForm.weightOz) || 0),
+              weightOz: finalWeightOz,
               dob: nodeForm.dob,
               registrationNumber: nodeForm.registrationNumber,
               gcNumber: nodeForm.gcNumber,
@@ -2454,6 +2469,48 @@ export default function App() {
         });
         showToast("Ancestor details updated!", "success");
       } else {
+        // Check for duplicates by tattoo number (case-insensitive)
+        if (nodeForm.tattooNumber && nodeForm.tattooNumber.trim().length > 0) {
+          const matchingRabbit = allRabbits.find(r => r.tattooNumber && r.tattooNumber.trim().toLowerCase() === nodeForm.tattooNumber.trim().toLowerCase());
+          if (matchingRabbit) {
+            const confirmLink = window.confirm(`A rabbit with tattoo "${nodeForm.tattooNumber}" already exists in your database: "${matchingRabbit.name}" (${matchingRabbit.breed} - ${matchingRabbit.variety}).\n\nWould you like to LINK to this existing rabbit record instead of creating a duplicate?\n\n- Click OK to LINK to the existing record.\n- Click Cancel to create a separate duplicate pedigree record.`);
+            if (confirmLink) {
+              // LINK to existing
+              updatedRabbits = updatedRabbits.map(r => {
+                if (r.id === pedigreeEditNode.parentOfId) {
+                  const updated = {
+                    ...r,
+                    [pedigreeEditNode.field]: matchingRabbit.id
+                  };
+                  if (r.id === selectedRabbit.id) {
+                    setSelectedRabbit(updated);
+                  }
+                  return updated;
+                }
+                return r;
+              });
+
+              // Recalculate inbreeding coefficients
+              const engine = new GeneticsEngine(updatedRabbits);
+              const finalRabbits = updatedRabbits.map(r => ({
+                ...r,
+                inbreedingCoeff: engine.calculateInbreedingCoefficient(r.sireId, r.damId)
+              }));
+              setAllRabbits(finalRabbits);
+
+              if (isOffline) {
+                const targetParent = finalRabbits.find(r => r.id === pedigreeEditNode.parentOfId);
+                if (targetParent) {
+                  addSyncAction('UPDATE', 'rabbits', targetParent);
+                }
+              }
+              setPedigreeEditNode(null);
+              showToast("Linked to existing rabbit record!", "success");
+              return;
+            }
+          }
+        }
+
         // Creating new pedigree-only ancestor
         ancestorId = `r-pedigree-${Date.now()}`;
         const newAncestor = {
@@ -2465,7 +2522,7 @@ export default function App() {
           variety: nodeForm.variety,
           sex: pedigreeEditNode.gender,
           dob: nodeForm.dob,
-          weightOz: weightUnit === 'lbs' ? Math.round((Number(nodeForm.weightOz) || 2.5) * 16) : (Number(nodeForm.weightOz) || 40),
+          weightOz: finalWeightOz,
           status: 'pedigree_only',
           registrationNumber: nodeForm.registrationNumber,
           gcNumber: nodeForm.gcNumber,
@@ -2819,6 +2876,39 @@ export default function App() {
 
     setPedigreeEditNode(null);
     showToast("Ancestor link removed.", "info");
+  };
+
+  const handleDeletePedigreeOnlyAncestor = (rabbitId) => {
+    if (isAssistantWriteOnly) {
+      alert("Permission denied. Barn Assistants cannot delete records.");
+      return;
+    }
+    if (window.confirm("Are you sure you want to permanently delete this pedigree-only ancestor record from your database? This will remove them from all pedigree trees.")) {
+      let updatedRabbits = allRabbits.map(r => {
+        const updated = { ...r };
+        if (updated.sireId === rabbitId) updated.sireId = '';
+        if (updated.damId === rabbitId) updated.damId = '';
+        return updated;
+      }).filter(r => r.id !== rabbitId);
+
+      const engine = new GeneticsEngine(updatedRabbits);
+      const finalRabbits = updatedRabbits.map(r => ({
+        ...r,
+        inbreedingCoeff: engine.calculateInbreedingCoefficient(r.sireId, r.damId)
+      }));
+
+      setAllRabbits(finalRabbits);
+      
+      const updatedSel = finalRabbits.find(r => r.id === selectedRabbit?.id);
+      if (updatedSel) setSelectedRabbit(updatedSel);
+
+      if (isOffline) {
+        addSyncAction('DELETE', 'rabbits', { id: rabbitId });
+      }
+
+      setPedigreeEditNode(null);
+      showToast("Ancestor record permanently deleted.", "error");
+    }
   };
 
   const handleAddAncestorLeg = (e) => {
@@ -10496,15 +10586,33 @@ export default function App() {
 
                 {/* Actions */}
                 <div className="flex justify-between gap-2 border-t border-white/10 pt-4 flex-wrap">
-                  <div>
+                  <div className="flex gap-2">
                     {!pedigreeEditNode.isOffspring && pedigreeEditNode.rabbitId && (
-                      <button
-                        type="button"
-                        onClick={handleRemovePedigreeNode}
-                        className="btn-interactive text-xs bg-red-650 hover:bg-red-700 font-bold py-2 px-4 border-none text-white"
-                      >
-                        Remove Link (Make Unknown)
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleRemovePedigreeNode}
+                          className="btn-interactive text-xs bg-red-650 hover:bg-red-700 font-bold py-2 px-4 border-none text-white"
+                        >
+                          Remove Link (Make Unknown)
+                        </button>
+                        {(() => {
+                          const targetRab = allRabbits.find(r => r.id === pedigreeEditNode.rabbitId);
+                          if (targetRab && targetRab.status === 'pedigree_only') {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePedigreeOnlyAncestor(pedigreeEditNode.rabbitId)}
+                                className="btn-interactive text-xs bg-rose-900 hover:bg-rose-950 font-bold py-2 px-4 border-none text-white"
+                                title="Permanently deletes this saved pedigree-only ancestor record from your database."
+                              >
+                                🗑️ Delete Ancestor Record
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </>
                     )}
                   </div>
                   <div className="flex gap-2">
