@@ -3587,7 +3587,7 @@ export default function App() {
                 <h1 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
                   Rabbitry Pedigree Pro
                 </h1>
-                <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-mono font-bold">ARBA Compliance Suite</span>
+                <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-mono font-bold">ARBA-Compatible Registry Suite</span>
               </div>
             </div>
             
@@ -3609,7 +3609,7 @@ export default function App() {
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-pink-400 font-mono">Premium Rabbitry Management</span>
                 <h2 className="text-3xl md:text-4xl font-black text-white leading-tight tracking-tight">
-                  The ultimate ARBA pedigree engine.
+                  The ultimate standard-compliant pedigree engine.
                 </h2>
                 <p className="text-xs md:text-sm text-slate-350 leading-relaxed font-semibold">
                   A high-performance offline hutch ledger and interactive lineage designer. Empowering professional breeders and 4-H youth with cryptographic safety and Standard of Perfection analytics.
@@ -4182,6 +4182,13 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* Trademark Disclaimer Footer */}
+          <footer className="w-full max-w-6xl mx-auto text-center border-t border-white/5 pt-4 pb-2 mt-4">
+            <p className="text-[10px] text-slate-500 leading-relaxed max-w-3xl mx-auto">
+              <strong>Disclaimer:</strong> Rabbitry Pedigree Pro is an independent software application developed for rabbitry management and record-keeping. It is not affiliated with, endorsed by, sanctioned by, or associated with the American Rabbit Breeders Association (ARBA). All product and company names, logos, trademarks, or registered trademarks (including "ARBA" and "Standard of Perfection") remain the property of their respective holders. Their use in this application does not imply any affiliation, sponsorship, or endorsement.
+            </p>
+          </footer>
         </div>
       </div>
     );
