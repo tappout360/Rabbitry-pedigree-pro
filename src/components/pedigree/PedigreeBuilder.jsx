@@ -134,7 +134,14 @@ const renderWinningsBadge = (node, sizeClass = "text-[8px] px-1 py-0.2 rounded")
   );
 };
 
-export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode }) {
+export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode, weightUnit = 'oz' }) {
+  const formatWeight = (oz) => {
+    if (!oz) return 'N/A';
+    return weightUnit === 'lbs' 
+      ? `${(oz / 16).toFixed(2)} lbs` 
+      : `${oz} oz`;
+  };
+
   const [selectedRabbitId, setSelectedRabbitId] = useState(rabbits[0]?.id || '');
   const [activeAssignNode, setActiveAssignNode] = useState(null); // { id: 'sire' | 'dam' | 'sireSire' etc, label: string }
   const [searchQuery, setSearchQuery] = useState('');
@@ -429,7 +436,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       variety: customForm.variety || '',
       sex: activeAssignNode.id.toLowerCase().endsWith('sire') ? 'buck' : 'doe',
       dob: customForm.dob || '',
-      weightOz: customForm.weightOz ? parseFloat(customForm.weightOz) : '',
+      weightOz: customForm.weightOz ? (weightUnit === 'lbs' ? Math.round(parseFloat(customForm.weightOz) * 16) : parseFloat(customForm.weightOz)) : '',
       registrationNumber: customForm.registrationNumber || '',
       gcNumber: customForm.gcNumber || '',
       breederName: customForm.breederName || '',
@@ -698,11 +705,17 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     const isOver = currentWeight > maxWeight;
     const isUnder = currentWeight < minWeight;
 
+    const formatAuditVal = (oz) => {
+      return weightUnit === 'lbs' 
+        ? `${(oz / 16).toFixed(2)} lbs` 
+        : `${oz} oz`;
+    };
+
     return {
       breed: activeRabbit.breed,
-      minWeightLbs: (minWeight / 16).toFixed(2),
-      maxWeightLbs: (maxWeight / 16).toFixed(2),
-      currentWeightLbs: (currentWeight / 16).toFixed(2),
+      minWeightDisplay: formatAuditVal(minWeight),
+      maxWeightDisplay: formatAuditVal(maxWeight),
+      currentWeightDisplay: formatAuditVal(currentWeight),
       isCompliant: !isOver && !isUnder,
       issue: isOver ? 'Overweight' : isUnder ? 'Underweight' : 'Compliant'
     };
@@ -730,7 +743,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       breed: r.breed || '',
       variety: r.variety || '',
       dob: r.dob || '',
-      weightOz: r.weightOz || '',
+      weightOz: weightUnit === 'lbs' && r.weightOz ? (r.weightOz / 16).toFixed(2) : (r.weightOz || ''),
       registrationNumber: r.registrationNumber || '',
       gcNumber: r.gcNumber || '',
       breederName: r.breederName || '',
@@ -847,7 +860,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                     {renderWinningsBadge(pedigreeNodes.self, "text-[9px] px-1.5 py-0.5 rounded-full mt-1")}
                     <p className="text-[10px] text-slate-400 mt-0.5">Tattoo: {pedigreeNodes.self.tattooNumber || 'None'}</p>
                     <p className="text-[10px] text-indigo-300 font-semibold mt-1">{pedigreeNodes.self.breed}</p>
-                    <p className="text-[10px] text-slate-300 mt-0.5">Weight: {pedigreeNodes.self.weightOz ? `${(pedigreeNodes.self.weightOz / 16).toFixed(2)} lbs` : 'N/A'}</p>
+                    <p className="text-[10px] text-slate-300 mt-0.5">Weight: {formatWeight(pedigreeNodes.self.weightOz)}</p>
                     {onEditNode && (
                       <button
                         type="button"
@@ -877,7 +890,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                           <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.sire.name}</h5>
                           {renderWinningsBadge(pedigreeNodes.sire, "text-[8px] px-1.5 py-0.5 rounded mt-0.5")}
                           <p className="text-[10px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.sire.tattooNumber || 'None'}</p>
-                          <p className="text-[10px] text-slate-300 mt-1">Weight: {pedigreeNodes.sire.weightOz ? `${(pedigreeNodes.sire.weightOz / 16).toFixed(2)} lbs` : 'N/A'}</p>
+                          <p className="text-[10px] text-slate-300 mt-1">Weight: {formatWeight(pedigreeNodes.sire.weightOz)}</p>
                           <div className="flex gap-2.5 mt-2">
                             {onEditNode && (
                               <button
@@ -923,7 +936,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                           <h5 className="font-bold text-white text-xs truncate">{pedigreeNodes.dam.name}</h5>
                           {renderWinningsBadge(pedigreeNodes.dam, "text-[8px] px-1.5 py-0.5 rounded mt-0.5")}
                           <p className="text-[10px] text-slate-400 mt-0.5">Tat: {pedigreeNodes.dam.tattooNumber || 'None'}</p>
-                          <p className="text-[10px] text-slate-300 mt-1">Weight: {pedigreeNodes.dam.weightOz ? `${(pedigreeNodes.dam.weightOz / 16).toFixed(2)} lbs` : 'N/A'}</p>
+                          <p className="text-[10px] text-slate-300 mt-1">Weight: {formatWeight(pedigreeNodes.dam.weightOz)}</p>
                           <div className="flex gap-2.5 mt-2">
                             {onEditNode && (
                               <button
@@ -1150,14 +1163,14 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   <div>
                     <h4 className="text-sm font-bold text-white">ARBA Show Weight Standard Audit</h4>
                     <p className="text-[11px] text-slate-300">
-                      {arbaAudit.breed} standards mandate: <strong className="text-white">{arbaAudit.minWeightLbs} - {arbaAudit.maxWeightLbs} lbs</strong>.
+                      {arbaAudit.breed} standards mandate: <strong className="text-white">{arbaAudit.minWeightDisplay} - {arbaAudit.maxWeightDisplay}</strong>.
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right sm:text-right flex flex-col items-center sm:items-end">
                   <span className={`text-xs font-bold px-3 py-1 rounded-full ${arbaAudit.isCompliant ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                    Current: {arbaAudit.currentWeightLbs} lbs ({arbaAudit.issue})
+                    Current: {arbaAudit.currentWeightDisplay} ({arbaAudit.issue})
                   </span>
                   <span className="text-[9px] text-slate-400 mt-1">Checked against official ARBA class metrics</span>
                 </div>
@@ -1321,7 +1334,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="text-slate-400 font-bold">Weight (oz)</label>
+                        <label className="text-slate-400 font-bold">Weight ({weightUnit})</label>
                         <input
                           type="number"
                           value={customForm.weightOz}
@@ -1596,7 +1609,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                       onClick={() => {
                         const template = `Name: ${activeRabbit?.name || ''}
 Ear No: ${activeRabbit?.tattooNumber || ''}
-Wt: ${activeRabbit?.weightOz ? (activeRabbit.weightOz / 16).toFixed(2) : ''}
+Wt: ${activeRabbit?.weightOz ? (weightUnit === 'lbs' ? (activeRabbit.weightOz / 16).toFixed(2) : activeRabbit.weightOz) : ''}
 Breed: ${activeRabbit?.breed || ''}
 Variety: ${activeRabbit?.variety || ''}
 
@@ -1703,7 +1716,7 @@ Dam's Dam's Dam: `;
                         <span className="font-mono text-[7px] text-indigo-400 font-bold uppercase">{roleLabel}</span>
                         <strong className="text-slate-200 truncate">{data.name || 'Unknown'}</strong>
                         {data.tattooNumber && <div className="text-slate-400">Ear: <span className="text-slate-350">{data.tattooNumber}</span></div>}
-                        {data.weightOz ? <div className="text-slate-400">Wt: <span className="text-slate-350">{(data.weightOz/16).toFixed(2)} lbs</span></div> : null}
+                        {data.weightOz ? <div className="text-slate-400">Wt: <span className="text-slate-350">{formatWeight(data.weightOz)}</span></div> : null}
                         {data.variety && <div className="text-slate-400">Var: <span className="text-slate-350 truncate block">{data.variety}</span></div>}
                       </div>
                     );

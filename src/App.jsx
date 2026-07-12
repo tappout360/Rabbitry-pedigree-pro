@@ -1121,6 +1121,21 @@ export default function App() {
   const [designMode, setDesignMode] = useState(() => localStorage.getItem('rp_design_mode') || 'fun');
   const [customAccent, setCustomAccent] = useState(() => localStorage.getItem('rp_custom_accent') || '#6366f1');
   const [barnMode, setBarnMode] = useState(() => localStorage.getItem('rp_barn_mode') === 'true');
+  const [weightUnit, setWeightUnit] = useState(() => localStorage.getItem('rp_weight_unit') || 'oz');
+
+  const formatWeightShort = (oz) => {
+    if (!oz) return '-';
+    return weightUnit === 'lbs' 
+      ? `${(oz / 16).toFixed(2)} lbs` 
+      : `${oz} oz`;
+  };
+
+  const formatWeightDisplay = (oz) => {
+    if (!oz) return '-';
+    return weightUnit === 'lbs' 
+      ? `${(oz / 16).toFixed(2)} lbs (${oz} oz)` 
+      : `${oz} oz (${(oz / 16).toFixed(2)} lbs)`;
+  };
 
   useEffect(() => {
     localStorage.setItem('rp_barn_mode', barnMode ? 'true' : 'false');
@@ -1186,7 +1201,7 @@ export default function App() {
           name: editRabbit.name || '',
           breed: editRabbit.breed || (selectedRabbit ? selectedRabbit.breed : ''),
           variety: editRabbit.variety || '',
-          weightOz: editRabbit.weightOz || 0,
+          weightOz: weightUnit === 'lbs' ? (editRabbit.weightOz / 16).toFixed(2) : (editRabbit.weightOz || 0),
           dob: editRabbit.dob || '',
           registrationNumber: editRabbit.registrationNumber || '',
           gcNumber: editRabbit.gcNumber || '',
@@ -1209,7 +1224,7 @@ export default function App() {
           name: '',
           breed: (selectedRabbit ? selectedRabbit.breed : ''),
           variety: '',
-          weightOz: 40,
+          weightOz: weightUnit === 'lbs' ? 2.5 : 40,
           dob: new Date().toISOString().split('T')[0],
           registrationNumber: '',
           gcNumber: '',
@@ -2100,13 +2115,16 @@ export default function App() {
       return;
     }
     const wt = parseFloat(newRabbit.weightOz);
-    if (isNaN(wt) || wt < 0 || wt > 500) {
-      alert("Invalid Weight: Weight must be between 0 and 500 ounces.");
+    if (isNaN(wt) || wt < 0 || (weightUnit === 'oz' ? wt > 500 : wt > 31.25)) {
+      alert(`Invalid Weight: Weight must be between 0 and ${weightUnit === 'oz' ? '500 ounces' : '31.25 pounds'}.`);
       return;
     }
 
+    const finalWeightOz = weightUnit === 'lbs' ? Math.round(wt * 16) : wt;
+    const rabbitWithOz = { ...newRabbit, weightOz: finalWeightOz };
+
     // ARBA Validation checks
-    const valResult = validateArbaStandard(newRabbit);
+    const valResult = validateArbaStandard(rabbitWithOz);
     if (!valResult.valid) {
       const confirmBypass = window.confirm(`ARBA WARNING: ${valResult.reason}\nWould you like to register this rabbit anyway?`);
       if (!confirmBypass) return;
@@ -2116,7 +2134,7 @@ export default function App() {
       ...newRabbit,
       id: uuidv7(),
       breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
-      weightOz: Number(newRabbit.weightOz),
+      weightOz: finalWeightOz,
       notes: sanitizeTextInput(newRabbit.notes),
       inbreedingCoeff: calculateF(newRabbit.sireId, newRabbit.damId),
       photos: ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300'], // default cute placeholder photo
@@ -2134,7 +2152,7 @@ export default function App() {
 
     setNewRabbit({
       tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
-      sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
+      sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: weightUnit === 'lbs' ? 2.5 : 40,
       sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
       isCharlie: false,
       colorCarrier: '',
@@ -2187,15 +2205,16 @@ export default function App() {
       return;
     }
     const wt = parseFloat(editProfileData.weightOz);
-    if (isNaN(wt) || wt < 0 || wt > 500) {
-      alert("Invalid Weight: Weight must be between 0 and 500 ounces.");
+    if (isNaN(wt) || wt < 0 || (weightUnit === 'oz' ? wt > 500 : wt > 31.25)) {
+      alert(`Invalid Weight: Weight must be between 0 and ${weightUnit === 'oz' ? '500 ounces' : '31.25 pounds'}.`);
       return;
     }
     if (!editProfileData.name || !editProfileData.tattooNumber) {
       alert("Name and Tattoo are required fields.");
       return;
     }
-    const updated = { ...selectedRabbit, ...editProfileData, weightOz: wt };
+    const finalWeightOz = weightUnit === 'lbs' ? Math.round(wt * 16) : wt;
+    const updated = { ...selectedRabbit, ...editProfileData, weightOz: finalWeightOz };
     setAllRabbits(prev => prev.map(r => r.id === updated.id ? updated : r));
     setSelectedRabbit(updated);
     setEditProfileMode(false);
@@ -2355,7 +2374,7 @@ export default function App() {
             tattooNumber: nodeForm.tattooNumber,
             breed: nodeForm.breed,
             variety: nodeForm.variety,
-            weightOz: Number(nodeForm.weightOz) || 0,
+            weightOz: weightUnit === 'lbs' ? Math.round((Number(nodeForm.weightOz) || 0) * 16) : (Number(nodeForm.weightOz) || 0),
             dob: nodeForm.dob,
             registrationNumber: nodeForm.registrationNumber,
             gcNumber: nodeForm.gcNumber,
@@ -2416,7 +2435,7 @@ export default function App() {
               tattooNumber: nodeForm.tattooNumber,
               breed: nodeForm.breed,
               variety: nodeForm.variety,
-              weightOz: Number(nodeForm.weightOz) || 0,
+              weightOz: weightUnit === 'lbs' ? Math.round((Number(nodeForm.weightOz) || 0) * 16) : (Number(nodeForm.weightOz) || 0),
               dob: nodeForm.dob,
               registrationNumber: nodeForm.registrationNumber,
               gcNumber: nodeForm.gcNumber,
@@ -2446,7 +2465,7 @@ export default function App() {
           variety: nodeForm.variety,
           sex: pedigreeEditNode.gender,
           dob: nodeForm.dob,
-          weightOz: Number(nodeForm.weightOz) || 40,
+          weightOz: weightUnit === 'lbs' ? Math.round((Number(nodeForm.weightOz) || 2.5) * 16) : (Number(nodeForm.weightOz) || 40),
           status: 'pedigree_only',
           registrationNumber: nodeForm.registrationNumber,
           gcNumber: nodeForm.gcNumber,
@@ -3166,11 +3185,13 @@ export default function App() {
       return;
     }
 
+    const weightOzValue = weightUnit === 'lbs' ? Math.round(Number(newWeightEntry.weightOz) * 16) : Number(newWeightEntry.weightOz);
+
     const createdWeight = {
       id: uuidv7(),
       rabbitId: healthSelectedRabbitId,
       date: newWeightEntry.date,
-      weightOz: Number(newWeightEntry.weightOz),
+      weightOz: weightOzValue,
       stage: newWeightEntry.stage
     };
 
@@ -3180,7 +3201,7 @@ export default function App() {
       setAllWeights(prev => [createdWeight, ...prev]);
       
       // Update the rabbit's current weight in the registry too!
-      setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: Number(newWeightEntry.weightOz) } : r));
+      setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: weightOzValue } : r));
 
       if (isOffline) {
         addSyncAction('INSERT', 'weights', createdWeight);
@@ -3403,6 +3424,9 @@ export default function App() {
 
   // ARBA Standards Checker
   const validateArbaStandard = (rabbit) => {
+    const formatValUnit = (oz) => {
+      return weightUnit === 'lbs' ? `${(oz / 16).toFixed(2)} lbs` : `${oz} oz`;
+    };
     const ageMonths = getAgeMonths(rabbit.dob);
     const standard = BREED_STANDARDS[rabbit.breed];
     if (!standard) return { valid: true };
@@ -3419,12 +3443,12 @@ export default function App() {
         const min = sex === 'buck' ? standard.buckSrMin : standard.doeSrMin;
         const max = sex === 'buck' ? standard.buckSrMax : standard.doeSrMax;
         if (weight < min || weight > max) {
-          return { valid: false, reason: `Senior ${rabbit.breed} ${sex} weight must be between ${min}oz and ${max}oz.` };
+          return { valid: false, reason: `Senior ${rabbit.breed} ${sex} weight must be between ${formatValUnit(min)} and ${formatValUnit(max)}.` };
         }
       } else {
         const max = sex === 'buck' ? standard.buckJrMax : standard.doeJrMax;
         if (weight > max) {
-          return { valid: false, reason: `Junior ${rabbit.breed} ${sex} weight must not exceed ${max}oz.` };
+          return { valid: false, reason: `Junior ${rabbit.breed} ${sex} weight must not exceed ${formatValUnit(max)}.` };
         }
       }
     } else {
@@ -3437,18 +3461,18 @@ export default function App() {
       if (isSenior) {
         const min = sex === 'buck' ? standard.buckSrMin : standard.doeSrMin;
         if (weight < min) {
-          return { valid: false, reason: `Senior ${rabbit.breed} ${sex} weight must be at least ${min}oz.` };
+          return { valid: false, reason: `Senior ${rabbit.breed} ${sex} weight must be at least ${formatValUnit(min)}.` };
         }
       } else if (isInt) {
         const min = sex === 'buck' ? standard.buckIntMin : standard.doeIntMin;
         const max = sex === 'buck' ? standard.buckIntMax : standard.doeIntMax;
         if (weight < min || weight > max) {
-          return { valid: false, reason: `Intermediate ${rabbit.breed} ${sex} weight must be between ${min}oz and ${max}oz.` };
+          return { valid: false, reason: `Intermediate ${rabbit.breed} ${sex} weight must be between ${formatValUnit(min)} and ${formatValUnit(max)}.` };
         }
       } else {
         const max = sex === 'buck' ? standard.buckJrMax : standard.doeJrMax;
         if (weight > max) {
-          return { valid: false, reason: `Junior ${rabbit.breed} ${sex} weight must not exceed ${max}oz.` };
+          return { valid: false, reason: `Junior ${rabbit.breed} ${sex} weight must not exceed ${formatValUnit(max)}.` };
         }
       }
     }
@@ -4506,6 +4530,20 @@ export default function App() {
             title="Toggle between Fun Mode (illustrations & guides) and Pro Mode (clean registrar view)"
           >
             {designMode === 'fun' ? '🐰 Fun Mode' : '📜 Pro Mode'}
+          </button>
+
+          {/* Weight Unit Switcher */}
+          <button
+            onClick={() => {
+              const nextUnit = weightUnit === 'oz' ? 'lbs' : 'oz';
+              setWeightUnit(nextUnit);
+              localStorage.setItem('rp_weight_unit', nextUnit);
+              showToast(`Weight unit switched to ${nextUnit === 'oz' ? 'Ounces (oz)' : 'Pounds (lbs)'}!`, "info");
+            }}
+            className="btn-interactive text-xs py-2 px-3 border border-white/10 bg-slate-800 text-slate-300 font-bold flex items-center gap-1"
+            title="Switch primary weight unit between Ounces (oz) and Pounds (lbs)"
+          >
+            ⚖️ Unit: {weightUnit.toUpperCase()}
           </button>
 
           {/* Barn Mode Switcher (Scoped to Cages tab) */}
@@ -5798,9 +5836,10 @@ export default function App() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold">Current Weight (ounces)</label>
+                      <label className="text-xs font-bold">Current Weight ({weightUnit})</label>
                       <input 
                         type="number" 
+                        step="0.01"
                         value={newRabbit.weightOz}
                         onChange={(e) => setNewRabbit({...newRabbit, weightOz: e.target.value})}
                       />
@@ -5956,7 +5995,7 @@ export default function App() {
                              </td>
                             <td className="py-3">{r.breed} - {r.variety}</td>
                             <td className="py-3 capitalize">{r.sex}</td>
-                            <td className="py-3">{(r.weightOz / 16).toFixed(2)} lbs</td>
+                            <td className="py-3">{formatWeightShort(r.weightOz)}</td>
                             <td className="py-3">
                               <span className={`px-2 py-0.5 rounded text-xs font-bold ${r.inbreedingCoeff > 0.1 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
                                 {(r.inbreedingCoeff * 100).toFixed(2)}%
@@ -6166,7 +6205,7 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Weight</span>
-                          <span className="font-bold text-emerald-400">{selectedRabbit.weightOz ? `${(selectedRabbit.weightOz / 16).toFixed(2)} lbs (${selectedRabbit.weightOz} oz)` : '—'}</span>
+                          <span className="font-bold text-emerald-400">{formatWeightDisplay(selectedRabbit.weightOz)}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Cage Location</span>
@@ -6250,8 +6289,8 @@ export default function App() {
                           <input type="date" value={editProfileData.dob} onChange={(e) => setEditProfileData({...editProfileData, dob: e.target.value})} className="text-xs" />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Weight (oz)</label>
-                          <input type="number" min="0" max="500" step="0.1" value={editProfileData.weightOz} onChange={(e) => setEditProfileData({...editProfileData, weightOz: e.target.value})} className="text-xs" />
+                          <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Weight ({weightUnit === 'lbs' ? 'lbs' : 'oz'})</label>
+                          <input type="number" min="0" step="0.01" value={weightUnit === 'lbs' ? (editProfileData.weightOz / 16).toFixed(2) : editProfileData.weightOz} onChange={(e) => setEditProfileData({...editProfileData, weightOz: weightUnit === 'lbs' ? parseFloat(e.target.value) * 16 : parseFloat(e.target.value)})} className="text-xs" />
                         </div>
                         <div className="flex flex-col gap-1">
                           <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Cage Location</label>
@@ -6468,6 +6507,7 @@ export default function App() {
                   {/* 3. Interactive Pedigree Tree View */}
                   <PedigreeBuilder 
                     rabbits={rabbits} 
+                    weightUnit={weightUnit}
                     onUpdateRabbit={(updatedRabbit) => {
                       const list = Array.isArray(updatedRabbit) ? updatedRabbit : [updatedRabbit];
                       setAllRabbits(prev => {
@@ -7348,7 +7388,7 @@ export default function App() {
                           
                           <div className="text-right">
                             <span className="text-xs font-bold block text-emerald-400">
-                              {lastWeight ? `${lastWeight.weightOz} oz` : `${r.weightOz || 0} oz`}
+                              {formatWeightShort(lastWeight ? lastWeight.weightOz : r.weightOz || 0)}
                             </span>
                             <span className="text-[9px] opacity-50 block uppercase tracking-wider font-mono">Last Weight</span>
                           </div>
@@ -7415,7 +7455,7 @@ export default function App() {
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Current Weight</span>
                           <span className={`text-sm font-bold ${validation.valid ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {currentWeight} oz ({ (currentWeight / 16).toFixed(2) } lbs)
+                            {formatWeightDisplay(currentWeight)}
                           </span>
                         </div>
 
@@ -7463,7 +7503,7 @@ export default function App() {
                         {(() => {
                           const getLatestWeightForStage = (stageName) => {
                             const match = [...sortedWeights].reverse().find(w => w.stage === stageName);
-                            return match ? `${match.weightOz} oz (${(match.weightOz / 16).toFixed(2)} lbs)` : '—';
+                            return match ? formatWeightDisplay(match.weightOz) : '—';
                           };
                           const is6Class = BREED_STANDARDS[rabbit.breed]?.classType === '6-class';
                           
@@ -7509,17 +7549,17 @@ export default function App() {
                               const srMax = sex === 'buck' ? standard.buckSrMax : standard.doeSrMax;
 
                               if (is4Class) {
-                                if (typeof jrMax === 'number' && jrMax > 0) bounds.push({ value: jrMax, label: `Jr Max (${jrMax}oz)`, color: 'stroke-amber-500/60' });
-                                if (typeof srMin === 'number' && srMin > 0) bounds.push({ value: srMin, label: `Sr Min (${srMin}oz)`, color: 'stroke-emerald-500/60' });
-                                if (typeof srMax === 'number' && srMax < 9900) bounds.push({ value: srMax, label: `Sr Max (${srMax}oz)`, color: 'stroke-rose-500/60' });
+                                if (typeof jrMax === 'number' && jrMax > 0) bounds.push({ value: jrMax, label: `Jr Max`, color: 'stroke-amber-500/60' });
+                                if (typeof srMin === 'number' && srMin > 0) bounds.push({ value: srMin, label: `Sr Min`, color: 'stroke-emerald-500/60' });
+                                if (typeof srMax === 'number' && srMax < 9900) bounds.push({ value: srMax, label: `Sr Max`, color: 'stroke-rose-500/60' });
                               } else {
                                 const intMin = sex === 'buck' ? standard.buckIntMin : standard.doeIntMin;
                                 const intMax = sex === 'buck' ? standard.buckIntMax : standard.doeIntMax;
-                                if (typeof jrMax === 'number' && jrMax > 0) bounds.push({ value: jrMax, label: `Jr Max (${jrMax}oz)`, color: 'stroke-amber-500/60' });
-                                if (typeof intMin === 'number' && intMin > 0) bounds.push({ value: intMin, label: `Int Min (${intMin}oz)`, color: 'stroke-cyan-500/60' });
-                                if (typeof intMax === 'number' && intMax < 9900) bounds.push({ value: intMax, label: `Int Max (${intMax}oz)`, color: 'stroke-sky-500/60' });
-                                if (typeof srMin === 'number' && srMin > 0) bounds.push({ value: srMin, label: `Sr Min (${srMin}oz)`, color: 'stroke-emerald-500/60' });
-                                if (typeof srMax === 'number' && srMax < 9900) bounds.push({ value: srMax, label: `Sr Max (${srMax}oz)`, color: 'stroke-rose-500/60' });
+                                if (typeof jrMax === 'number' && jrMax > 0) bounds.push({ value: jrMax, label: `Jr Max`, color: 'stroke-amber-500/60' });
+                                if (typeof intMin === 'number' && intMin > 0) bounds.push({ value: intMin, label: `Int Min`, color: 'stroke-cyan-500/60' });
+                                if (typeof intMax === 'number' && intMax < 9900) bounds.push({ value: intMax, label: `Int Max`, color: 'stroke-sky-500/60' });
+                                if (typeof srMin === 'number' && srMin > 0) bounds.push({ value: srMin, label: `Sr Min`, color: 'stroke-emerald-500/60' });
+                                if (typeof srMax === 'number' && srMax < 9900) bounds.push({ value: srMax, label: `Sr Max`, color: 'stroke-rose-500/60' });
                               }
                             }
 
@@ -7618,7 +7658,7 @@ export default function App() {
                                     <g key={w.id} className="group cursor-pointer">
                                       <circle cx={cx} cy={cy} r="5" fill="#10b981" className="stroke-slate-950 stroke-2 hover:r-7 transition-all" />
                                       <text x={cx} y={cy - 10} className="text-[10px] font-bold fill-white text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950 px-1 py-0.5 rounded" textAnchor="middle">
-                                        {w.weightOz} oz
+                                        {formatWeightShort(w.weightOz)}
                                       </text>
                                       
                                       {/* X-Axis labels */}
@@ -7711,7 +7751,7 @@ export default function App() {
                           {sortedWeights.map(w => (
                             <div key={w.id} className="p-3 rounded-lg bg-white/5 border border-white/5 flex justify-between items-center text-xs">
                               <div>
-                                <span className="font-semibold text-white">{w.weightOz} oz ({ (w.weightOz / 16).toFixed(2) } lbs)</span>
+                                <span className="font-semibold text-white">{formatWeightDisplay(w.weightOz)}</span>
                                 <span className="ml-3 opacity-60 text-[10px]">{w.date} • Stage: {w.stage}</span>
                               </div>
                               {!isAssistantWriteOnly ? (
@@ -10251,17 +10291,21 @@ export default function App() {
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-bold text-slate-300">Weight (in Ounces) *</label>
+                      <label className="text-xs font-bold text-slate-300">Weight ({weightUnit === 'lbs' ? 'in Pounds' : 'in Ounces'}) *</label>
                       <div className="flex gap-2 items-center">
                         <input
                           type="number"
+                          step="0.01"
                           value={nodeForm.weightOz}
                           onChange={(e) => setNodeForm({...nodeForm, weightOz: e.target.value})}
-                          placeholder="Oz"
+                          placeholder={weightUnit === 'lbs' ? "Lbs" : "Oz"}
                           className="bg-slate-800 border-white/10 text-sm flex-1"
                         />
                         <span className="text-xs opacity-75">
-                          ({(Number(nodeForm.weightOz) / 16).toFixed(2)} lbs)
+                          {weightUnit === 'lbs' 
+                            ? `(${Math.round(Number(nodeForm.weightOz || 0) * 16)} oz)` 
+                            : `(${(Number(nodeForm.weightOz || 0) / 16).toFixed(2)} lbs)`
+                          }
                         </span>
                       </div>
                     </div>
@@ -10961,21 +11005,22 @@ export default function App() {
                   alert("Please select a rabbit and specify weight.");
                   return;
                 }
+                const finalWeight = weightUnit === 'lbs' ? Math.round(Number(weight) * 16) : Number(weight);
                 const createdWeight = {
                   id: uuidv7(),
                   rabbitId: rabbitId,
                   date: new Date().toISOString().split('T')[0],
-                  weightOz: Number(weight),
+                  weightOz: finalWeight,
                   stage: 'Routine'
                 };
                 setAllWeights(prev => [createdWeight, ...prev]);
-                setAllRabbits(prev => prev.map(item => item.id === rabbitId ? { ...item, weightOz: Number(weight) } : item));
+                setAllRabbits(prev => prev.map(item => item.id === rabbitId ? { ...item, weightOz: finalWeight } : item));
                 
                 if (isOffline) {
                   addSyncAction('INSERT', 'weights', createdWeight);
                   const updatedRabbit = allRabbits.find(r => r.id === rabbitId);
                   if (updatedRabbit) {
-                    addSyncAction('UPDATE', 'rabbits', { ...updatedRabbit, weightOz: Number(weight) });
+                    addSyncAction('UPDATE', 'rabbits', { ...updatedRabbit, weightOz: finalWeight });
                   }
                 }
                 
@@ -11002,7 +11047,7 @@ export default function App() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold opacity-80 flex items-center justify-between">
-                  <span>Weight (ounces)</span>
+                  <span>Weight ({weightUnit === 'lbs' ? 'pounds' : 'ounces'})</span>
                   <button
                     type="button"
                     onClick={() => handleVoiceInput((val) => {
