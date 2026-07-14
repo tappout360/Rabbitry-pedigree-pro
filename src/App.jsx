@@ -1421,22 +1421,25 @@ export default function App() {
     localStorage.setItem('rp_barn_mode', barnMode ? 'true' : 'false');
   }, [barnMode]);
 
+  const syncNowRef = React.useRef(null);
+  useEffect(() => {
+    syncNowRef.current = handleSyncNow;
+  });
+
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       setDismissedOfflineTip(false);
       showToast("Online connection restored! Synchronizing sync queue...", "success");
-      if (syncQueue.length > 0) {
-        const sortedQueue = [...syncQueue].sort((a, b) => a.id.localeCompare(b.id));
-        const jsonStr = JSON.stringify(sortedQueue);
-        const packedSize = Math.ceil(jsonStr.length * 0.62);
-        console.log(`Silent Background Sync: processing ${sortedQueue.length} operations. MessagePack compressed payload: ${packedSize} bytes.`);
-        
-        setTimeout(() => {
-          setSyncQueue([]);
-          showToast(`Silent background sync completed successfully! Resolved conflicts via LWW & MessagePack payload compression (${packedSize} bytes).`, "success");
-        }, 1500);
-      }
+      
+      // Defer execution slightly to allow state to settle and call real background sync
+      setTimeout(() => {
+        if (syncNowRef.current) {
+          syncNowRef.current().catch(err => {
+            console.error("Background sync error on reconnect:", err);
+          });
+        }
+      }, 500);
     };
     const handleOffline = () => {
       setIsOffline(true);
@@ -1451,7 +1454,7 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [designMode, syncQueue]);
+  }, [designMode]);
 
   useEffect(() => {
     if (!navigator.onLine && designMode === 'fun') {
@@ -1729,65 +1732,158 @@ export default function App() {
     localStorage.setItem('rp_dash_widgets', JSON.stringify(dashboardWidgets));
   }, [dashboardWidgets]);
 
+  // References to preserve database-synchronized state for rollbacks
+  const prevRabbitsRef = React.useRef(allRabbits);
+  const prevBreedingsRef = React.useRef(allBreedings);
+  const prevLittersRef = React.useRef(allLitters);
+  const prevLedgerRef = React.useRef(allLedger);
+  const prevShowsRef = React.useRef(allShows);
+  const prevShowEntriesRef = React.useRef(allShowEntries);
+  const prevChoresRef = React.useRef(allChores);
+  const prevTransfersRef = React.useRef(allTransfers);
+  const prevSignaturesRef = React.useRef(allSignatures);
+  const prevMedicalRef = React.useRef(allMedical);
+  const prevWeightsRef = React.useRef(allWeights);
+  const prevAdminBreedersRef = React.useRef(adminBreeders);
+  const prevSyncQueueRef = React.useRef(syncQueue);
+  const prevApprovalsRef = React.useRef(allApprovals);
+
   useEffect(() => {
     if (!dbLoaded) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
     const encrypted = allRabbits.map(r => encryptRecord(r, key, ['dob', 'notes', 'colorCarrier']));
-    db.rabbits.clear().then(() => db.rabbits.bulkAdd(encrypted)).catch(err => console.error("Error saving rabbits to Dexie:", err));
+    db.rabbits.clear()
+      .then(() => db.rabbits.bulkAdd(encrypted))
+      .then(() => { prevRabbitsRef.current = allRabbits; })
+      .catch(err => {
+        console.error("Error saving rabbits to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved rabbits state.", "error");
+        setAllRabbits(prevRabbitsRef.current);
+      });
   }, [allRabbits, dbLoaded, currentUser]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.breedings.clear().then(() => db.breedings.bulkAdd(allBreedings)).catch(err => console.error("Error saving breedings to Dexie:", err));
+    db.breedings.clear()
+      .then(() => db.breedings.bulkAdd(allBreedings))
+      .then(() => { prevBreedingsRef.current = allBreedings; })
+      .catch(err => {
+        console.error("Error saving breedings to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved breedings state.", "error");
+        setAllBreedings(prevBreedingsRef.current);
+      });
   }, [allBreedings, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.litters.clear().then(() => db.litters.bulkAdd(allLitters)).catch(err => console.error("Error saving litters to Dexie:", err));
+    db.litters.clear()
+      .then(() => db.litters.bulkAdd(allLitters))
+      .then(() => { prevLittersRef.current = allLitters; })
+      .catch(err => {
+        console.error("Error saving litters to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved litters state.", "error");
+        setAllLitters(prevLittersRef.current);
+      });
   }, [allLitters, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
     const encrypted = allLedger.map(lt => encryptRecord(lt, key, ['amount', 'notes']));
-    db.ledger.clear().then(() => db.ledger.bulkAdd(encrypted)).catch(err => console.error("Error saving ledger to Dexie:", err));
+    db.ledger.clear()
+      .then(() => db.ledger.bulkAdd(encrypted))
+      .then(() => { prevLedgerRef.current = allLedger; })
+      .catch(err => {
+        console.error("Error saving ledger to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved ledger state.", "error");
+        setAllLedger(prevLedgerRef.current);
+      });
   }, [allLedger, dbLoaded, currentUser]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.shows.clear().then(() => db.shows.bulkAdd(allShows)).catch(err => console.error("Error saving shows to Dexie:", err));
+    db.shows.clear()
+      .then(() => db.shows.bulkAdd(allShows))
+      .then(() => { prevShowsRef.current = allShows; })
+      .catch(err => {
+        console.error("Error saving shows to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved shows state.", "error");
+        setAllShows(prevShowsRef.current);
+      });
   }, [allShows, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.showEntries.clear().then(() => db.showEntries.bulkAdd(allShowEntries)).catch(err => console.error("Error saving showEntries to Dexie:", err));
+    db.showEntries.clear()
+      .then(() => db.showEntries.bulkAdd(allShowEntries))
+      .then(() => { prevShowEntriesRef.current = allShowEntries; })
+      .catch(err => {
+        console.error("Error saving showEntries to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved show entries state.", "error");
+        setAllShowEntries(prevShowEntriesRef.current);
+      });
   }, [allShowEntries, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.chores.clear().then(() => db.chores.bulkAdd(allChores)).catch(err => console.error("Error saving chores to Dexie:", err));
+    db.chores.clear()
+      .then(() => db.chores.bulkAdd(allChores))
+      .then(() => { prevChoresRef.current = allChores; })
+      .catch(err => {
+        console.error("Error saving chores to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved chores state.", "error");
+        setAllChores(prevChoresRef.current);
+      });
   }, [allChores, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.transfers.clear().then(() => db.transfers.bulkAdd(allTransfers)).catch(err => console.error("Error saving transfers to Dexie:", err));
+    db.transfers.clear()
+      .then(() => db.transfers.bulkAdd(allTransfers))
+      .then(() => { prevTransfersRef.current = allTransfers; })
+      .catch(err => {
+        console.error("Error saving transfers to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved transfers state.", "error");
+        setAllTransfers(prevTransfersRef.current);
+      });
   }, [allTransfers, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.signatures.clear().then(() => db.signatures.bulkAdd(allSignatures)).catch(err => console.error("Error saving signatures to Dexie:", err));
+    db.signatures.clear()
+      .then(() => db.signatures.bulkAdd(allSignatures))
+      .then(() => { prevSignaturesRef.current = allSignatures; })
+      .catch(err => {
+        console.error("Error saving signatures to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved signatures state.", "error");
+        setAllSignatures(prevSignaturesRef.current);
+      });
   }, [allSignatures, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
     const encrypted = allMedical.map(m => encryptRecord(m, key, ['treatment', 'notes']));
-    db.medical.clear().then(() => db.medical.bulkAdd(encrypted)).catch(err => console.error("Error saving medical to Dexie:", err));
+    db.medical.clear()
+      .then(() => db.medical.bulkAdd(encrypted))
+      .then(() => { prevMedicalRef.current = allMedical; })
+      .catch(err => {
+        console.error("Error saving medical to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved medical state.", "error");
+        setAllMedical(prevMedicalRef.current);
+      });
   }, [allMedical, dbLoaded, currentUser]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.weights.clear().then(() => db.weights.bulkAdd(allWeights)).catch(err => console.error("Error saving weights to Dexie:", err));
+    db.weights.clear()
+      .then(() => db.weights.bulkAdd(allWeights))
+      .then(() => { prevWeightsRef.current = allWeights; })
+      .catch(err => {
+        console.error("Error saving weights to Dexie:", err);
+        showToast("Local database write failed. Reverting to last saved weights state.", "error");
+        setAllWeights(prevWeightsRef.current);
+      });
   }, [allWeights, dbLoaded]);
 
   useEffect(() => {
@@ -1800,17 +1896,38 @@ export default function App() {
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.adminBreeders.clear().then(() => db.adminBreeders.bulkAdd(adminBreeders)).catch(err => console.error("Error saving adminBreeders to Dexie:", err));
+    db.adminBreeders.clear()
+      .then(() => db.adminBreeders.bulkAdd(adminBreeders))
+      .then(() => { prevAdminBreedersRef.current = adminBreeders; })
+      .catch(err => {
+        console.error("Error saving adminBreeders to Dexie:", err);
+        showToast("Local database write failed. Reverting admin breeders.", "error");
+        setAdminBreeders(prevAdminBreedersRef.current);
+      });
   }, [adminBreeders, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.syncQueue.clear().then(() => db.syncQueue.bulkAdd(syncQueue)).catch(err => console.error("Error saving syncQueue to Dexie:", err));
+    db.syncQueue.clear()
+      .then(() => db.syncQueue.bulkAdd(syncQueue))
+      .then(() => { prevSyncQueueRef.current = syncQueue; })
+      .catch(err => {
+        console.error("Error saving syncQueue to Dexie:", err);
+        showToast("Local database write failed. Reverting sync queue.", "error");
+        setSyncQueue(prevSyncQueueRef.current);
+      });
   }, [syncQueue, dbLoaded]);
 
   useEffect(() => {
     if (!dbLoaded) return;
-    db.approvals.clear().then(() => db.approvals.bulkAdd(allApprovals)).catch(err => console.error("Error saving approvals to Dexie:", err));
+    db.approvals.clear()
+      .then(() => db.approvals.bulkAdd(allApprovals))
+      .then(() => { prevApprovalsRef.current = allApprovals; })
+      .catch(err => {
+        console.error("Error saving approvals to Dexie:", err);
+        showToast("Local database write failed. Reverting approvals.", "error");
+        setAllApprovals(prevApprovalsRef.current);
+      });
   }, [allApprovals, dbLoaded]);
 
   // Sync log helper
@@ -2218,24 +2335,24 @@ export default function App() {
     const { type, payload } = item;
     if (type === 'INSERT_RABBIT') {
       setAllRabbits(prev => [...prev, payload]);
-      if (isOffline) addSyncAction('INSERT', 'rabbits', payload);
+      addSyncAction('INSERT', 'rabbits', payload);
     } else if (type === 'INSERT_BREEDING') {
       setAllBreedings(prev => [payload, ...prev]);
-      if (isOffline) addSyncAction('INSERT', 'breedings', payload);
+      addSyncAction('INSERT', 'breedings', payload);
     } else if (type === 'INSERT_WEIGHT') {
       const { createdWeight, healthSelectedRabbitId } = payload;
       setAllWeights(prev => [createdWeight, ...prev]);
       setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: createdWeight.weightOz } : r));
-      if (isOffline) addSyncAction('INSERT', 'weights', createdWeight);
+      addSyncAction('INSERT', 'weights', createdWeight);
     } else if (type === 'INSERT_LEG') {
       const { createdLeg, rabbitId } = payload;
       setAllRabbits(prev => prev.map(r => r.id === rabbitId ? { ...r, legs: [...(r.legs || []), createdLeg] } : r));
     } else if (type === 'INSERT_TX') {
       setAllLedger(prev => [payload, ...prev]);
-      if (isOffline) addSyncAction('INSERT', 'ledger', payload);
+      addSyncAction('INSERT', 'ledger', payload);
     } else if (type === 'INSERT_MEDICAL') {
       setAllMedical(prev => [payload, ...prev]);
-      if (isOffline) addSyncAction('INSERT', 'medical', payload);
+      addSyncAction('INSERT', 'medical', payload);
     } else if (type === 'PALPATE_BREEDING') {
       const { id, result } = payload;
       setAllBreedings(prev => {
@@ -2425,9 +2542,7 @@ export default function App() {
       submitForApproval('INSERT_RABBIT', 'rabbits', createdRabbit);
     } else {
       setAllRabbits(prev => [...prev, createdRabbit]);
-      if (isOffline) {
-        addSyncAction('INSERT', 'rabbits', createdRabbit);
-      }
+      addSyncAction('INSERT', 'rabbits', createdRabbit);
     }
 
     setNewRabbit({
@@ -7038,6 +7153,7 @@ export default function App() {
                   <PedigreeBuilder 
                     rabbits={rabbits} 
                     weightUnit={weightUnit}
+                    selectedRabbitId={selectedRabbit.id}
                     onUpdateRabbit={(updatedRabbit) => {
                       const list = Array.isArray(updatedRabbit) ? updatedRabbit : [updatedRabbit];
                       setAllRabbits(prev => {
@@ -11133,12 +11249,14 @@ export default function App() {
         const matMatSire = matDam && matDam.sireId ? rabbits.find(r => r.id === matDam.sireId) : null;
         const matMatDam = matDam && matDam.damId ? rabbits.find(r => r.id === matDam.damId) : null;
 
-        const renderPrintBox = (ancestor, roleLabel, gender) => {
+        const renderPrintBox = (ancestor, roleLabel, gender, isGen3 = false) => {
           if (!ancestor) {
             return (
-              <div className="p-2 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full min-h-[50px]">
-                <span className="text-[7px] uppercase font-bold text-slate-400 block leading-none">{roleLabel}</span>
-                <span className="text-[9px] italic text-slate-400 font-semibold mt-1">Unknown Ancestor</span>
+              <div className={`p-1.5 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[38px] py-1' : 'min-h-[50px] py-2'}`}>
+                <span className={`${isGen3 ? 'text-[6px]' : 'text-[7px]'} uppercase font-bold text-slate-400 block leading-none`}>
+                  {isGen3 ? roleLabel.replace('Paternal', 'Pat.').replace('Maternal', 'Mat.').replace('Grand-Sire', 'G-Sire').replace('Grand-Dam', 'G-Dam') : roleLabel}
+                </span>
+                <span className={`${isGen3 ? 'text-[6.5px]' : 'text-[9px]'} italic text-slate-400 font-semibold mt-0.5`}>Unknown Ancestor</span>
               </div>
             );
           }
@@ -11159,6 +11277,43 @@ export default function App() {
           const legsCount = ancestor.legs?.length || 0;
           if (winsText === '' && legsCount > 0) {
             winsText = `${legsCount} Leg${legsCount > 1 ? 's' : ''}`;
+          }
+
+          if (isGen3) {
+            // Highly compact representation for 3rd generation
+            const shortRole = roleLabel
+              .replace('Paternal', 'Pat.')
+              .replace('Maternal', 'Mat.')
+              .replace('Grand-Sire', 'G-Sire')
+              .replace('Grand-Dam', 'G-Dam');
+              
+            return (
+              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5`}>
+                <div className="leading-none">
+                  <div className="flex justify-between items-start gap-1">
+                    <span className="text-[5.5px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
+                    {winsText && <span className="text-[5.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px]" title={winsText}>🏆 {winsText}</span>}
+                  </div>
+                  <h5 className="font-serif font-bold text-[8.5px] leading-tight text-slate-900 uppercase mt-0.5 truncate max-w-[170px]">
+                    {namePrefix}{ancestor.name}
+                  </h5>
+                </div>
+                <div className="border-t border-slate-200 mt-0.5 pt-0.5 text-[6.5px] text-slate-700 font-mono leading-tight">
+                  <div className="flex justify-between">
+                    <span>Tat: <strong>{ancestor.tattooNumber}</strong></span>
+                    <span>Wt: <strong>{weightLbs} lbs</strong></span>
+                  </div>
+                  <div className="truncate">Var: <strong>{ancestor.variety}</strong></div>
+                  {(ancestor.registrationNumber || ancestor.gcNumber) && (
+                    <div className="truncate text-[5.5px] text-slate-500">
+                      {ancestor.registrationNumber && <span>R:{ancestor.registrationNumber}</span>}
+                      {ancestor.registrationNumber && ancestor.gcNumber && <span className="mx-0.5">|</span>}
+                      {ancestor.gcNumber && <span className="text-yellow-700">G:{ancestor.gcNumber}</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
           }
 
           return (
@@ -11188,7 +11343,7 @@ export default function App() {
 
         return (
           <div className="printable-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-            <div className="printable-modal w-full max-w-5xl bg-white text-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto border-8 border-double border-slate-800 print:border-4 print:border-double print:border-slate-800 print:p-4 print:gap-4">
+            <div className="printable-modal w-full max-w-5xl bg-white text-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto border-8 border-double border-slate-800 print:border-4 print:border-double print:border-slate-800 print:p-3 print:gap-3">
               
               {/* Close & Print buttons (Hidden on Print) */}
               <div className="no-print absolute top-4 right-4 flex gap-2">
@@ -11207,10 +11362,10 @@ export default function App() {
               </div>
 
               {/* Certificate layout */}
-              <div className="flex flex-col gap-5 print:gap-3 w-full mt-2">
+              <div className="flex flex-col gap-5 print:gap-2.5 w-full mt-2">
                 
                 {/* Header section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b-2 border-black pb-4 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b-2 border-black pb-4 print:pb-2 items-center">
                   
                   {/* Left Side: Breeder Info */}
                   <div className="flex flex-col text-left text-xs gap-0.5 text-slate-700 font-lora">
@@ -11253,7 +11408,7 @@ export default function App() {
                 </div>
 
                 {/* Pedigree tree display */}
-                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[390px] w-full">
+                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[355px] w-full">
                   
                   {/* SVG Family Tree Branch Connectors */}
                   <svg className="absolute inset-0 pointer-events-none w-full h-full text-slate-300 print:text-slate-400 no-print-backdrop" stroke="currentColor" strokeWidth="1.5" fill="none" preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -11287,33 +11442,33 @@ export default function App() {
 
                   {/* Generation 3: Great-Grandparents */}
                   <div className="flex flex-col justify-around gap-1 w-[30%] z-10">
-                    {renderPrintBox(patPatSire, 'Paternal P. Grand-Sire', 'buck')}
-                    {renderPrintBox(patPatDam, 'Paternal P. Grand-Dam', 'doe')}
-                    {renderPrintBox(patMatSire, 'Paternal M. Grand-Sire', 'buck')}
-                    {renderPrintBox(patMatDam, 'Paternal M. Grand-Dam', 'doe')}
-                    {renderPrintBox(matPatSire, 'Maternal P. Grand-Sire', 'buck')}
-                    {renderPrintBox(matPatDam, 'Maternal P. Grand-Dam', 'doe')}
-                    {renderPrintBox(matMatSire, 'Maternal M. Grand-Sire', 'buck')}
-                    {renderPrintBox(matMatDam, 'Maternal M. Grand-Dam', 'doe')}
+                    {renderPrintBox(patPatSire, 'Paternal P. Grand-Sire', 'buck', true)}
+                    {renderPrintBox(patPatDam, 'Paternal P. Grand-Dam', 'doe', true)}
+                    {renderPrintBox(patMatSire, 'Paternal M. Grand-Sire', 'buck', true)}
+                    {renderPrintBox(patMatDam, 'Paternal M. Grand-Dam', 'doe', true)}
+                    {renderPrintBox(matPatSire, 'Maternal P. Grand-Sire', 'buck', true)}
+                    {renderPrintBox(matPatDam, 'Maternal P. Grand-Dam', 'doe', true)}
+                    {renderPrintBox(matMatSire, 'Maternal M. Grand-Sire', 'buck', true)}
+                    {renderPrintBox(matMatDam, 'Maternal M. Grand-Dam', 'doe', true)}
                   </div>
 
                 </div>
 
                 {/* Footer certifications / signatures */}
-                <div className="grid grid-cols-3 gap-4 border-t border-slate-300 pt-4 print:pt-2 text-xs print:text-[10px] text-slate-700 font-lora items-center">
+                <div className="grid grid-cols-3 gap-4 border-t border-slate-300 pt-3 print:pt-1.5 text-xs print:text-[10px] text-slate-700 font-lora items-center">
                   
                   {/* Left Column: Signature */}
-                  <div className="flex flex-col gap-1 text-left col-span-1">
-                    <p className="leading-normal">I hereby certify that this pedigree is true and correct to the best of my knowledge and belief.</p>
-                    <div className="flex gap-2 items-end mt-4 print:mt-1.5 flex-wrap">
-                      <span>Signed:</span>
+                  <div className="flex flex-col gap-0.5 text-left col-span-1">
+                    <p className="leading-tight text-[10px] print:text-[8px]">I hereby certify that this pedigree is true and correct to the best of my knowledge and belief.</p>
+                    <div className="flex gap-1.5 items-end mt-3 print:mt-1 flex-nowrap">
+                      <span className="shrink-0 text-[10px] print:text-[8.5px]">Signed:</span>
                       {rabbit.breederSignature ? (
-                        <img src={rabbit.breederSignature} alt="Breeder Signature" className="h-10 print:h-7 border-b border-black w-40 object-contain" />
+                        <img src={rabbit.breederSignature} alt="Breeder Signature" className="h-10 print:h-6 border-b border-black w-40 print:w-28 object-contain shrink-0" />
                       ) : (
-                        <div className="border-b border-black w-40 h-5 print:h-4 font-serif italic text-center text-sm print:text-xs">{activeBreeder.name}</div>
+                        <div className="border-b border-black w-40 print:w-28 h-5 print:h-4 font-serif italic text-center text-sm print:text-[10px] shrink-0 truncate">{activeBreeder.name}</div>
                       )}
-                      <span className="ml-2">Date:</span>
-                      <div className="border-b border-black w-24 h-5 print:h-4 text-center font-sans">{new Date().toISOString().split('T')[0]}</div>
+                      <span className="ml-1 shrink-0 text-[10px] print:text-[8.5px]">Date:</span>
+                      <div className="border-b border-black w-24 print:w-20 h-5 print:h-4 text-center font-sans shrink-0 text-[10px] print:text-[8.5px]">{new Date().toISOString().split('T')[0]}</div>
                     </div>
                   </div>
 

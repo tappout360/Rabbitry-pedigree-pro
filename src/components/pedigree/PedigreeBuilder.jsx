@@ -134,7 +134,7 @@ const renderWinningsBadge = (node, sizeClass = "text-[8px] px-1 py-0.2 rounded")
   );
 };
 
-export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode, weightUnit = 'oz', onOpenRegistrarPrep }) {
+export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode, weightUnit = 'oz', onOpenRegistrarPrep, selectedRabbitId: propSelectedRabbitId }) {
   const formatWeight = (oz) => {
     if (!oz) return 'N/A';
     return weightUnit === 'lbs' 
@@ -142,7 +142,13 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       : `${oz} oz`;
   };
 
-  const [selectedRabbitId, setSelectedRabbitId] = useState(rabbits[0]?.id || '');
+  const [selectedRabbitId, setSelectedRabbitId] = useState(propSelectedRabbitId || rabbits[0]?.id || '');
+  
+  React.useEffect(() => {
+    if (propSelectedRabbitId) {
+      setSelectedRabbitId(propSelectedRabbitId);
+    }
+  }, [propSelectedRabbitId]);
   const [activeAssignNode, setActiveAssignNode] = useState(null); // { id: 'sire' | 'dam' | 'sireSire' etc, label: string }
   const [searchQuery, setSearchQuery] = useState('');
   const [showCustomForm, setShowCustomForm] = useState(false);
