@@ -10469,8 +10469,8 @@ export default function App() {
         };
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-            <div className="w-full max-w-2xl bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] p-8 border-[6px] border-double border-indigo-905 relative">
+          <div className="printable-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+            <div className="printable-modal w-full max-w-2xl bg-white text-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] p-8 border-[6px] border-double border-slate-800 relative">
               
               {/* Close Button */}
               <button 
@@ -11187,8 +11187,8 @@ export default function App() {
         const activeBreeder = adminBreeders.find(b => b.id === (selectedBreederContext === 'all' ? (currentUser?.id || 'ab-2') : selectedBreederContext)) || adminBreeders[0];
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-            <div className="printable-modal w-full max-w-5xl bg-white text-slate-900 rounded-3xl p-8 shadow-2xl flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto border-4 border-indigo-650">
+          <div className="printable-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+            <div className="printable-modal w-full max-w-5xl bg-white text-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto border-8 border-double border-slate-800 print:border-4 print:border-double print:border-slate-800 print:p-4 print:gap-4">
               
               {/* Close & Print buttons (Hidden on Print) */}
               <div className="no-print absolute top-4 right-4 flex gap-2">
@@ -11207,7 +11207,7 @@ export default function App() {
               </div>
 
               {/* Certificate layout */}
-              <div className="flex flex-col gap-6 w-full mt-2">
+              <div className="flex flex-col gap-5 print:gap-3 w-full mt-2">
                 
                 {/* Header section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b-2 border-black pb-4 items-center">
@@ -11253,7 +11253,7 @@ export default function App() {
                 </div>
 
                 {/* Pedigree tree display */}
-                <div className="flex gap-4 items-stretch h-[480px]">
+                <div className="flex gap-4 items-stretch h-[390px] print:h-[390px]">
                   
                   {/* Generation 1: Parents */}
                   <div className="flex flex-col justify-around gap-4 flex-1">
@@ -11284,23 +11284,23 @@ export default function App() {
                 </div>
 
                 {/* Footer certifications / signatures */}
-                <div className="grid grid-cols-2 gap-8 border-t border-slate-300 pt-4 text-xs text-slate-700">
+                <div className="grid grid-cols-2 gap-8 print:gap-4 border-t border-slate-300 pt-4 print:pt-2 text-xs print:text-[10px] text-slate-700">
                   <div className="flex flex-col gap-1 text-left">
                     <p>I hereby certify that this pedigree is true and correct to the best of my knowledge and belief.</p>
-                    <div className="flex gap-2 items-end mt-4">
+                    <div className="flex gap-2 items-end mt-4 print:mt-1.5">
                       <span>Signed:</span>
                       {rabbit.breederSignature ? (
-                        <img src={rabbit.breederSignature} alt="Breeder Signature" className="h-10 border-b border-black w-48 object-contain" />
+                        <img src={rabbit.breederSignature} alt="Breeder Signature" className="h-10 print:h-7 border-b border-black w-48 object-contain" />
                       ) : (
-                        <div className="border-b border-black w-48 h-5 font-serif italic text-center text-sm">{activeBreeder.name}</div>
+                        <div className="border-b border-black w-48 h-5 print:h-4 font-serif italic text-center text-sm print:text-xs">{activeBreeder.name}</div>
                       )}
                       <span>Date:</span>
-                      <div className="border-b border-black w-24 h-5 text-center">{new Date().toISOString().split('T')[0]}</div>
+                      <div className="border-b border-black w-24 h-5 print:h-4 text-center">{new Date().toISOString().split('T')[0]}</div>
                     </div>
                   </div>
                   <div className="flex flex-col justify-end items-end text-right">
-                    <span className="text-[10px] font-bold tracking-widest text-indigo-905 uppercase">Rabbitry Registry Sync Certified</span>
-                    <p className="text-[8px] font-mono opacity-50 mt-1">Hash verification token: rp-block-{rabbit.id.slice(-6)}-{Date.now().toString().slice(-4)}</p>
+                    <span className="text-[10px] print:text-[8px] font-bold tracking-widest text-indigo-905 uppercase">Rabbitry Registry Sync Certified</span>
+                    <p className="text-[8px] print:text-[7px] font-mono opacity-50 mt-1 print:mt-0">Hash verification token: rp-block-{rabbit.id.slice(-6)}-{Date.now().toString().slice(-4)}</p>
                   </div>
                 </div>
 
@@ -11318,8 +11318,8 @@ export default function App() {
         const dam = rabbit.damId ? allRabbits.find(r => r.id === rabbit.damId) : null;
         
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-            <div className="printable-modal bg-white text-slate-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-6 relative border-4 border-indigo-650 no-print-backdrop">
+          <div className="printable-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+            <div className="printable-modal bg-white text-slate-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-6 relative border-4 border-slate-800 no-print-backdrop">
               
               {/* Close & Print buttons (Hidden on Print) */}
               <div className="no-print absolute top-4 right-4 flex gap-2">
