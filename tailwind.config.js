@@ -41,6 +41,28 @@ export default {
           DEFAULT: '#F472B6',
           light: '#FBCFE8',
           dark: '#EC4899',
+        },
+        indigo: {
+          550: '#564fe8',
+          650: '#493fdb',
+        },
+        slate: {
+          355: '#cbd5e1',
+          350: '#aab7c4',
+          850: '#172033',
+        },
+        amber: {
+          350: '#fdb139',
+        },
+        emerald: {
+          250: '#8becc3',
+          550: '#0ba775',
+        },
+        rose: {
+          250: '#fdb3be',
+        },
+        pink: {
+          650: '#cc206b',
         }
       },
       animation: {
@@ -48,6 +70,7 @@ export default {
         'shimmer-glow': 'shimmer 2s linear infinite',
         'sparkle-spin': 'spin 12s linear infinite',
         'fade-in-up': 'fadeInUp 0.4s ease-out forwards',
+        'fade-in': 'fadeIn 0.3s ease-out forwards',
         'wiggle': 'wiggle 0.3s ease-in-out infinite',
       },
       keyframes: {
@@ -63,6 +86,10 @@ export default {
         fadeInUp: {
           '0%': { opacity: 0, transform: 'translateY(10px)' },
           '100%': { opacity: 1, transform: 'translateY(0)' },
+        },
+        fadeIn: {
+          '0%': { opacity: 0 },
+          '100%': { opacity: 1 },
         },
         wiggle: {
           '0%, 100%': { transform: 'rotate(-3deg)' },

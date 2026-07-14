@@ -102,7 +102,7 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
             .header { border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 20px; }
             .title { font-size: 24px; font-weight: bold; text-transform: uppercase; color: #0f172a; }
             .subtitle { font-size: 14px; opacity: 0.8; margin-top: 5px; }
-            .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
             .section-title { font-size: 16px; font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; color: #475569; text-transform: uppercase; }
             .value { font-weight: 600; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }

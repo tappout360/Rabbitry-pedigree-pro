@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Award, BookOpen, Brain, CheckCircle, HelpCircle, Trophy, RefreshCw, Star, Play, Award as BadgeIcon, Printer, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { BookOpen, Brain, CheckCircle, HelpCircle, Trophy, RefreshCw, Star, Play, Award as BadgeIcon, Printer, ShieldCheck } from 'lucide-react';
 import { QUIZ_QUESTIONS } from '../db/quizQuestions';
 import { db } from '../db/registryDb';
 
@@ -55,6 +55,7 @@ export default function Academy({
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const quizScoreRef = useRef(0);
   const [showExplanation, setShowExplanation] = useState(false);
   const [mascotMood, setMascotMood] = useState('happy'); // happy, thinking, cheering, shield
 
@@ -211,6 +212,7 @@ export default function Academy({
     setSelectedAnswer(null);
     setAnswerSubmitted(false);
     setQuizScore(0);
+    quizScoreRef.current = 0;
     setShowExplanation(false);
     setMascotMood('thinking');
     setAcademyMode('quiz');
@@ -225,6 +227,7 @@ export default function Academy({
     const question = quizQuestions[currentQuestionIdx];
     if (option === question.answer) {
       setQuizScore(prev => prev + 1);
+      quizScoreRef.current = quizScoreRef.current + 1;
       addPoints(10);
       setMascotMood('cheering');
       triggerConfetti();
@@ -244,7 +247,8 @@ export default function Academy({
       setMascotMood('thinking');
     } else {
       // Quiz complete
-      if (quizScore === quizQuestions.length) {
+      const finalScore = quizScoreRef.current;
+      if (finalScore === quizQuestions.length) {
         addPoints(50); // bonus for perfect score
         unlockBadge(`${quizLevel} Champion 🏅`);
       }
@@ -254,7 +258,7 @@ export default function Academy({
         localStorage.setItem('academy_streak', next);
         return next;
       });
-      alert(`Quiz Finished! You got ${quizScore}/${quizQuestions.length} correct and earned ${quizScore * 10} points!`);
+      alert(`Quiz Finished! You got ${finalScore}/${quizQuestions.length} correct and earned ${finalScore * 10} points!`);
       setAcademyMode('menu');
     }
   };
@@ -705,8 +709,8 @@ export default function Academy({
               {anatomyComplete && (
                 <div className="mt-4 text-center flex flex-col gap-2 p-6 bg-emerald-950/40 border border-emerald-500/20 rounded-2xl w-full">
                   <h4 className="font-bold text-emerald-300">🎉 Anatomy Practice Finished!</h4>
-                  <p className="text-xs">Amazing job! You identified all 22 parts of the rabbit correctly. You earned 150 XP bonus points!</p>
-                  <button onClick={() => setAcademyMode('menu')} className="btn-interactive text-xs py-2 px-4 bg-emerald-600 border-none text-white font-bold mt-2">Back to Academy Menu</button>
+                  <p className="text-xs">Amazing job! You identified all {anatomySpecies === 'cavy' ? CAVY_ANATOMY_PARTS.length : ANATOMY_PARTS.length} parts of the {anatomySpecies === 'cavy' ? 'cavy' : 'rabbit'} correctly. You earned 150 XP bonus points!</p>
+                  <button onClick={() => setAcademyMode('menu')} className="btn-interactive text-xs py-2 px-4 bg-emerald-650 border-none text-white font-bold mt-2">Back to Academy Menu</button>
                 </div>
               )}
             </div>

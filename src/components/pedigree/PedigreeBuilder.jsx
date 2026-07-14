@@ -227,8 +227,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     ctx.lineJoin = 'round';
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const isTouch = e.touches && e.touches[0];
+    const x = (isTouch ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (isTouch ? e.touches[0].clientY : e.clientY) - rect.top;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -242,8 +243,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    const isTouch = e.touches && e.touches[0];
+    const x = (isTouch ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (isTouch ? e.touches[0].clientY : e.clientY) - rect.top;
 
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -330,7 +332,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     // 2. Age/DOB Logic Validation
     let childNode = activeRabbit;
     if (nodeKey !== 'sire' && nodeKey !== 'dam') {
-      const parentNodeKey = nodeKey.slice(0, -4);
+      const parentNodeKey = nodeKey.endsWith('Sire') ? nodeKey.slice(0, -4) : nodeKey.slice(0, -3);
       childNode = pedigreeNodes[parentNodeKey];
     }
 
@@ -376,7 +378,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       updatedRabbit.damId = rabbit.id;
     } else {
       // Indirect ancestors (slice nodeKey to find immediate child node)
-      const parentNodeKey = activeAssignNode.id.slice(0, -4);
+      const parentNodeKey = activeAssignNode.id.endsWith('Sire') ? activeAssignNode.id.slice(0, -4) : activeAssignNode.id.slice(0, -3);
       const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
@@ -462,7 +464,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     } else if (activeAssignNode.id === 'dam') {
       updatedRabbit.damId = newRabbitId;
     } else {
-      const parentNodeKey = activeAssignNode.id.slice(0, -4);
+      const parentNodeKey = activeAssignNode.id.endsWith('Sire') ? activeAssignNode.id.slice(0, -4) : activeAssignNode.id.slice(0, -3);
       const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
@@ -512,7 +514,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     } else if (nodeId === 'dam') {
       updatedRabbit.damId = '';
     } else {
-      const parentNodeKey = nodeId.slice(0, -4);
+      const parentNodeKey = nodeId.endsWith('Sire') ? nodeId.slice(0, -4) : nodeId.slice(0, -3);
       const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
@@ -664,7 +666,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   const availableOptions = useMemo(() => {
     if (!activeAssignNode) return [];
     
-    const isMale = ['sire', 'sireSire', 'damSire'].includes(activeAssignNode.id);
+    const isMale = activeAssignNode.id.toLowerCase().endsWith('sire');
     
     return rabbits.filter(r => {
       // Don't list the active rabbit itself to prevent loops
@@ -720,7 +722,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       isCompliant: !isOver && !isUnder,
       issue: isOver ? 'Overweight' : isUnder ? 'Underweight' : 'Compliant'
     };
-  }, [activeRabbit]);
+  }, [activeRabbit, weightUnit]);
   const nameSuggestions = useMemo(() => {
     if (!customForm.name || customForm.name.trim().length < 1) return [];
     const query = customForm.name.toLowerCase();
@@ -763,7 +765,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
 
   const renderGreatGrandparentCard = (nodeId, label, gender, genderColorClass) => {
     const node = pedigreeNodes[nodeId];
-    const parentNodeKey = nodeId.slice(0, -4);
+    const parentNodeKey = nodeId.endsWith('Sire') ? nodeId.slice(0, -4) : nodeId.slice(0, -3);
     const parentRabbit = pedigreeNodes[parentNodeKey];
     const field = nodeId.endsWith('Sire') ? 'sireId' : 'damId';
 

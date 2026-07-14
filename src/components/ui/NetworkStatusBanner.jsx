@@ -6,11 +6,12 @@ export default function NetworkStatusBanner() {
   const [showStatusChanged, setShowStatusChanged] = useState(false);
 
   useEffect(() => {
+    let timer;
     const handleOnline = () => {
       setIsOnline(true);
       setShowStatusChanged(true);
-      const timer = setTimeout(() => setShowStatusChanged(false), 3000);
-      return () => clearTimeout(timer);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setShowStatusChanged(false), 3000);
     };
 
     const handleOffline = () => {
@@ -24,6 +25,7 @@ export default function NetworkStatusBanner() {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 

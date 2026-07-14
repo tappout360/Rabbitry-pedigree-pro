@@ -92,12 +92,14 @@ export default function TimelineGallery({ rabbits = [], onUpdateRabbit }) {
       photosArray.unshift(photoPreview);
     }
 
+    const isLatestWeight = !timeline.some(entry => entry.weightOz && new Date(entry.date) > new Date(newEntry.date));
+
     const updatedRabbit = {
       ...activeRabbit,
       timeline: updatedTimeline,
       photos: photosArray,
       // Update primary weight if this entry is the latest date
-      weightOz: weightOz && (!activeRabbit.weightOz || new Date(newEntry.date) >= new Date(activeRabbit.dob)) ? parseFloat(weightOz) : activeRabbit.weightOz
+      weightOz: weightOz && (isLatestWeight || !activeRabbit.weightOz) ? parseFloat(weightOz) : activeRabbit.weightOz
     };
 
     setTimeout(() => {

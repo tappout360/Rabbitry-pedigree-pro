@@ -20,9 +20,9 @@ export default class ErrorBoundary extends React.Component {
       localStorage.removeItem('rp_theme');
       localStorage.removeItem('rp_logo');
       localStorage.removeItem('rp_dash_widgets');
+      this.setState({ hasError: false, error: null });
+      window.location.reload();
     }
-    this.setState({ hasError: false, error: null });
-    window.location.reload();
   };
 
   render() {

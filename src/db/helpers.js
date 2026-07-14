@@ -29,7 +29,7 @@ export const sanitizeTextInput = (text) => {
     throw new Error("SSN Prohibited");
   }
   let sanitized = text;
-  sanitized = sanitized.replace(/\b[A-Z]\d{2}(?:\.\d{1,4})?\b/gi, '[HEALTH CODE REDACTED]');
+  sanitized = sanitized.replace(/\b[A-Z]\d{2}\.\d{1,4}\b/gi, '[HEALTH CODE REDACTED]');
   const humanHealthWords = [
     'medicare', 'medicaid', 'phi', 'hipaa', 'health insurance', 
     'social security number', 'human drug', 'patient record',
@@ -78,7 +78,7 @@ export const parseEmailText = (text) => {
     judge: judgeMatch ? judgeMatch[1].trim() : '',
     date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
     award: awardMatch ? awardMatch[1].trim() : '1st Class',
-    classSize: classSizeMatch ? Number(classSizeMatch[1]) : ''
+    classSize: classSizeMatch ? Number(classSizeMatch[1]) : null
   };
 };
 
@@ -155,5 +155,260 @@ export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr =
     }
   }
 };
+
+export const parsePedigreeText = (text) => {
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+  const blocks = [];
+  let currentBlock = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const isSire = line.match(/^Sire\s+(.+)$/i);
+    const isDam = line.match(/^Dam\s+(.+)$/i);
+    const isEarNo = line.match(/^(?:Ear\s+No|Tattoo)[\.\s\:]*(.+)$/i);
+    const isName = line.match(/^Name:\s*(.+)$/i);
+
+    if (isSire || isDam || isEarNo || isName) {
+      const needsNew = !currentBlock || 
+                       isSire || 
+                       isDam ||
+                       (isEarNo && currentBlock.tattooNumber) ||
+                       (isName && currentBlock.name);
+
+      if (needsNew) {
+        if (currentBlock) {
+          blocks.push(currentBlock);
+        }
+        currentBlock = {
+          rawLines: [line],
+          name: '',
+          tattooNumber: '',
+          weightOz: 0,
+          registrationNumber: '',
+          variety: '',
+          sex: '',
+          dob: '',
+          notes: '',
+          prefix: ''
+        };
+      }
+
+      if (isSire) {
+        currentBlock.name = isSire[1].trim();
+        currentBlock.sex = 'buck';
+        currentBlock.prefix = 'sire';
+      } else if (isDam) {
+        currentBlock.name = isDam[1].trim();
+        currentBlock.sex = 'doe';
+        currentBlock.prefix = 'dam';
+      } else if (isName) {
+        currentBlock.name = isName[1].trim();
+      } else if (isEarNo) {
+        const earLine = isEarNo[1].trim();
+        const weightInEar = earLine.match(/^([a-z0-9\-\_\/\\\ß]+)(?:\s+(?:Wt\.?|Weight)\s*(.+))?/i);
+        if (weightInEar) {
+          currentBlock.tattooNumber = weightInEar[1].trim();
+          if (weightInEar[2]) {
+            let wtStr = weightInEar[2].toLowerCase().replace(/\s+/g, '');
+            wtStr = wtStr.replace(/(?:lbs|1bs|lb5|1b5|1b\<|165|1165|wt|wt\.)/g, '');
+            let wtVal = parseFloat(wtStr);
+            if (!isNaN(wtVal)) {
+              currentBlock.weightOz = Math.round(wtVal < 30 ? wtVal * 16 : wtVal);
+            }
+          }
+        } else {
+          currentBlock.tattooNumber = earLine;
+        }
+      }
+    } else {
+      if (!currentBlock) {
+        currentBlock = {
+          rawLines: [line],
+          name: '',
+          tattooNumber: '',
+          weightOz: 0,
+          registrationNumber: '',
+          variety: '',
+          sex: '',
+          dob: '',
+          notes: '',
+          prefix: ''
+        };
+      } else {
+        currentBlock.rawLines.push(line);
+      }
+
+      const weightMatch = line.match(/(?:Wt\.?|Weight)\s*([0-9\.\s\w\<\>\:]+)/i);
+      if (weightMatch) {
+        let wtStr = weightMatch[1].toLowerCase().replace(/\s+/g, '');
+        wtStr = wtStr.replace(/(?:lbs|1bs|lb5|1b5|1b\<|165|1165|wt|wt\.)/g, '');
+        let wtVal = parseFloat(wtStr);
+        if (!isNaN(wtVal)) {
+          currentBlock.weightOz = Math.round(wtVal < 30 ? wtVal * 16 : wtVal);
+        }
+      }
+
+      const regMatch = line.match(/(?:Reg\.?\s*No\.?|Registration)\s*(.+)$/i);
+      if (regMatch) {
+        currentBlock.registrationNumber = regMatch[1].trim();
+      }
+
+      const colorMatch = line.match(/(?:Color|Variety)\s*(.+)$/i);
+      if (colorMatch) {
+        currentBlock.variety = colorMatch[1].trim();
+      }
+
+      const dobMatch = line.match(/(?:DOB|Date\s+of\s+Birth|Born)\s*:\s*([^\n\r]+)/i) || line.match(/(?:DOB|Date\s+of\s+Birth|Born)\s+([^\n\r]+)/i);
+      if (dobMatch) {
+        currentBlock.dob = dobMatch[1].trim();
+      }
+
+      const winningsMatch = line.match(/(?:Winnings|Legs|Awards)\s*(.+)$/i);
+      if (winningsMatch) {
+        currentBlock.notes = (currentBlock.notes ? currentBlock.notes + ' ' : '') + `Winnings: ${winningsMatch[1].trim()}`;
+      }
+
+      if (!currentBlock.name && line.length > 2 && line.length < 50) {
+        const keywords = ['wt', 'weight', 'reg', 'color', 'legs', 'winnings', 'born', 'dob', 'sold', 'pedigree', 'breed', 'signed', 'date', 'produces', 'other', 'information'];
+        const hasKeyword = keywords.some(k => line.toLowerCase().includes(k));
+        if (!hasKeyword) {
+          currentBlock.name = line;
+        }
+      }
+    }
+  }
+
+  if (currentBlock) {
+    blocks.push(currentBlock);
+  }
+
+  const merged = [];
+  for (const b of blocks) {
+    if (!b.name && !b.tattooNumber) continue;
+
+    const cleanTattoo = b.tattooNumber && b.tattooNumber.replace(/[\:\._\s\-\/\\]/g, '').length > 0 ? b.tattooNumber : null;
+    const existingTattoo = cleanTattoo ? merged.find(x => x.tattooNumber && x.tattooNumber.toLowerCase() === cleanTattoo.toLowerCase()) : null;
+    const existingName = b.name ? merged.find(x => x.name && x.name.toLowerCase() === b.name.toLowerCase()) : null;
+
+    const existing = existingTattoo || existingName;
+    if (existing) {
+      if (!existing.name && b.name) existing.name = b.name;
+      if (!existing.tattooNumber && b.tattooNumber) existing.tattooNumber = b.tattooNumber;
+      if (!existing.weightOz && b.weightOz) existing.weightOz = b.weightOz;
+      if (!existing.registrationNumber && b.registrationNumber) {
+        if (b.registrationNumber !== '.' && existing.registrationNumber === '.') {
+          existing.registrationNumber = b.registrationNumber;
+        } else if (existing.registrationNumber === '') {
+          existing.registrationNumber = b.registrationNumber;
+        }
+      }
+      if (!existing.variety && b.variety) existing.variety = b.variety;
+      if (!existing.sex && b.sex) existing.sex = b.sex;
+      if (!existing.dob && b.dob) existing.dob = b.dob;
+      if (b.notes) {
+        existing.notes = existing.notes ? existing.notes + '; ' + b.notes : b.notes;
+      }
+      if (!existing.prefix && b.prefix) {
+        existing.prefix = b.prefix;
+        if (b.prefix === 'sire') existing.sex = 'buck';
+        if (b.prefix === 'dam') existing.sex = 'doe';
+      }
+    } else {
+      merged.push(b);
+    }
+  }
+
+  const colorKeywords = ['broken', 'black', 'blue', 'white', 'boken', 'blace', 'black', 'bck', 'bk', 'sable', 'tortoise'];
+  const filtered = merged.filter(r => {
+    const nameLower = (r.name || '').toLowerCase();
+    if (colorKeywords.includes(nameLower)) return false;
+    if (nameLower.includes('bunnies') && !r.tattooNumber) return false;
+    if (nameLower.includes('breeders') && !r.tattooNumber) return false;
+    return true;
+  });
+
+  const sires = filtered.filter(x => x.prefix === 'sire');
+  const dams = filtered.filter(x => x.prefix === 'dam');
+
+  const target = filtered.find(r => r.tattooNumber && r.tattooNumber.toLowerCase() === 'bb49') || filtered[0] || {};
+  target.sex = target.sex || 'doe';
+
+  const isSireAncestor = (r) => {
+    const targetDam = dams.find(x => x.name.toLowerCase().includes('haoris') || x.tattooNumber === '334') || dams[2];
+    if (!targetDam) return true;
+    const rIdx = filtered.indexOf(r);
+    const damIdx = filtered.indexOf(targetDam);
+    return rIdx < damIdx;
+  };
+
+  const sireDamNoPrefix = filtered.find(r => r !== target && r.prefix === '' && isSireAncestor(r));
+
+  const getAnc = (sourceBlock) => {
+    if (!sourceBlock) return null;
+    return {
+      name: sourceBlock.name || 'Unknown Ancestor',
+      tattooNumber: sourceBlock.tattooNumber || '',
+      weightOz: sourceBlock.weightOz || 0,
+      registrationNumber: sourceBlock.registrationNumber || '',
+      variety: sourceBlock.variety || '',
+      sex: sourceBlock.sex || '',
+      dob: sourceBlock.dob || '',
+      legs: [],
+      notes: sourceBlock.notes || '',
+      sire: null,
+      dam: null
+    };
+  };
+
+  const sireNode = getAnc(sires[0]);
+  if (sireNode) {
+    sireNode.sex = 'buck';
+    sireNode.sire = getAnc(sires[1]);
+    if (sireNode.sire) {
+      sireNode.sire.sex = 'buck';
+      sireNode.sire.sire = getAnc(sires[2]);
+      if (sireNode.sire.sire) sireNode.sire.sire.sex = 'buck';
+      sireNode.sire.dam = getAnc(dams[0]);
+      if (sireNode.sire.dam) sireNode.sire.dam.sex = 'doe';
+    }
+    sireNode.dam = getAnc(sireDamNoPrefix || dams[1]);
+    if (sireNode.dam) {
+      sireNode.dam.sex = 'doe';
+      sireNode.dam.sire = getAnc(sires[3]);
+      if (sireNode.dam.sire) sireNode.dam.sire.sex = 'buck';
+      sireNode.dam.dam = getAnc(dams[1]);
+      if (sireNode.dam.dam) sireNode.dam.dam.sex = 'doe';
+    }
+  }
+
+  const damNode = getAnc(dams[2]);
+  if (damNode) {
+    damNode.sex = 'doe';
+    damNode.sire = getAnc(sires[4]);
+    if (damNode.sire) {
+      damNode.sire.sex = 'buck';
+      damNode.sire.sire = getAnc(sires[5]);
+      if (damNode.sire.sire) damNode.sire.sire.sex = 'buck';
+      damNode.sire.dam = getAnc(dams[3]);
+      if (damNode.sire.dam) damNode.sire.dam.sex = 'doe';
+    }
+    damNode.dam = getAnc(dams[4]);
+    if (damNode.dam) {
+      damNode.dam.sex = 'doe';
+      damNode.dam.sire = getAnc(sires[6]);
+      if (damNode.dam.sire) damNode.dam.sire.sex = 'buck';
+      damNode.dam.dam = getAnc(dams[5]);
+      if (damNode.dam.dam) damNode.dam.dam.sex = 'doe';
+    }
+  }
+
+  const targetRabbit = getAnc(target);
+  targetRabbit.sire = sireNode;
+  targetRabbit.dam = damNode;
+
+  return targetRabbit;
+};
+
 
 
