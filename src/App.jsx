@@ -11288,24 +11288,24 @@ export default function App() {
               .replace('Grand-Dam', 'G-Dam');
               
             return (
-              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5`}>
+              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5 print:py-0 print:px-1`}>
                 <div className="leading-none">
                   <div className="flex justify-between items-start gap-1">
-                    <span className="text-[5.5px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
-                    {winsText && <span className="text-[5.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px]" title={winsText}>🏆 {winsText}</span>}
+                    <span className="text-[5.5px] print:text-[4.5px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
+                    {winsText && <span className="text-[5.5px] print:text-[4.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px]" title={winsText}>🏆 {winsText}</span>}
                   </div>
-                  <h5 className="font-serif font-bold text-[8.5px] leading-tight text-slate-900 uppercase mt-0.5 truncate max-w-[170px]">
+                  <h5 className="font-serif font-bold text-[8.5px] print:text-[7.2px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px]">
                     {namePrefix}{ancestor.name}
                   </h5>
                 </div>
-                <div className="border-t border-slate-200 mt-0.5 pt-0.5 text-[6.5px] text-slate-700 font-mono leading-tight">
+                <div className="border-t border-slate-200 mt-0.5 pt-0.5 print:mt-0 print:pt-0 text-[6.5px] print:text-[5.5px] text-slate-700 font-mono leading-tight">
                   <div className="flex justify-between">
                     <span>Tat: <strong>{ancestor.tattooNumber}</strong></span>
                     <span>Wt: <strong>{weightLbs} lbs</strong></span>
                   </div>
                   <div className="truncate">Var: <strong>{ancestor.variety}</strong></div>
                   {(ancestor.registrationNumber || ancestor.gcNumber) && (
-                    <div className="truncate text-[5.5px] text-slate-500">
+                    <div className="truncate text-[5.5px] print:text-[4.8px] text-slate-500">
                       {ancestor.registrationNumber && <span>R:{ancestor.registrationNumber}</span>}
                       {ancestor.registrationNumber && ancestor.gcNumber && <span className="mx-0.5">|</span>}
                       {ancestor.gcNumber && <span className="text-yellow-700">G:{ancestor.gcNumber}</span>}
@@ -11408,7 +11408,7 @@ export default function App() {
                 </div>
 
                 {/* Pedigree tree display */}
-                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[355px] w-full">
+                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[430px] w-full">
                   
                   {/* SVG Family Tree Branch Connectors */}
                   <svg className="absolute inset-0 pointer-events-none w-full h-full text-slate-300 print:text-slate-400 no-print-backdrop" stroke="currentColor" strokeWidth="1.5" fill="none" preserveAspectRatio="none" viewBox="0 0 100 100">

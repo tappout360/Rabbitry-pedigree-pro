@@ -657,16 +657,13 @@ select option {
     -webkit-backdrop-filter: none !important;
   }
   
-  /* Printable modal style overrides */
   .printable-modal {
     position: relative !important;
     width: 100% !important;
     max-width: 100% !important;
     max-height: none !important;
     overflow: visible !important;
-    border: none !important;
     box-shadow: none !important;
-    padding: 0 !important;
     margin: 0 !important;
     background: white !important;
     color: black !important;
