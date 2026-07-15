@@ -11252,11 +11252,11 @@ export default function App() {
         const renderPrintBox = (ancestor, roleLabel, gender, isGen3 = false) => {
           if (!ancestor) {
             return (
-              <div className={`p-1.5 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[38px] py-1' : 'min-h-[50px] py-2'} print:p-1`}>
-                <span className={`${isGen3 ? 'text-[6px] print:text-[7.5px]' : 'text-[7px] print:text-[8.5px]'} uppercase font-bold text-slate-400 block leading-none`}>
+              <div className={`p-1.5 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[38px] py-1' : 'min-h-[50px] py-2'} print:p-1.5`}>
+                <span className={`${isGen3 ? 'text-[6px] print:text-[9px]' : 'text-[7px] print:text-[11px]'} uppercase font-bold text-slate-400 block leading-none`}>
                   {isGen3 ? roleLabel.replace('Paternal', 'Pat.').replace('Maternal', 'Mat.').replace('Grand-Sire', 'G-Sire').replace('Grand-Dam', 'G-Dam') : roleLabel}
                 </span>
-                <span className={`${isGen3 ? 'text-[6.5px] print:text-[8px]' : 'text-[9px] print:text-[10px]'} italic text-slate-400 font-semibold mt-0.5`}>Unknown Ancestor</span>
+                <span className={`${isGen3 ? 'text-[6.5px] print:text-[10px]' : 'text-[9px] print:text-[12px]'} italic text-slate-400 font-semibold mt-0.5`}>Unknown Ancestor</span>
               </div>
             );
           }
@@ -11280,7 +11280,6 @@ export default function App() {
           }
 
           if (isGen3) {
-            // Highly compact representation for 3rd generation
             const shortRole = roleLabel
               .replace('Paternal', 'Pat.')
               .replace('Maternal', 'Mat.')
@@ -11288,52 +11287,52 @@ export default function App() {
               .replace('Grand-Dam', 'G-Dam');
               
             return (
-              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5 print:py-1 print:px-2`}>
+              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5 print:py-1.5 print:px-2.5`}>
                 <div className="leading-none">
                   <div className="flex justify-between items-start gap-1">
-                    <span className="text-[5.5px] print:text-[7.5px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
-                    {winsText && <span className="text-[5.5px] print:text-[7px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[80px]" title={winsText}>🏆 {winsText}</span>}
+                    <span className="text-[5.5px] print:text-[8px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
+                    {winsText && <span className="text-[5.5px] print:text-[8px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[100px]" title={winsText}>🏆 {winsText}</span>}
                   </div>
-                  <h5 className="font-serif font-bold text-[8.5px] print:text-[10px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px] print:max-w-[220px]">
+                  <h5 className="font-serif font-bold text-[8.5px] print:text-[11.5px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px] print:max-w-[220px]">
                     {namePrefix}{ancestor.name}
                   </h5>
                 </div>
-                <div className="border-t border-slate-200 mt-0.5 pt-0.5 print:mt-1 print:pt-1 text-[6.5px] print:text-[8px] text-slate-700 font-mono leading-tight">
-                  <div className="flex justify-between">
-                    <span>Tat: <strong>{ancestor.tattooNumber}</strong></span>
-                    <span>Wt: <strong>{weightLbs} lbs</strong></span>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-slate-200 mt-0.5 pt-0.5 print:mt-1 print:pt-1 text-[6.5px] print:text-[9.5px] text-slate-700 font-mono leading-tight">
+                  <div className="truncate">Tat: <strong>{ancestor.tattooNumber}</strong></div>
+                  <div className="truncate">Wt: <strong>{weightLbs} lbs</strong></div>
+                  <div className="truncate col-span-1">Var: <strong>{ancestor.variety}</strong></div>
+                  <div className="truncate col-span-1">
+                    {ancestor.registrationNumber ? (
+                      <span>Reg: <strong>{ancestor.registrationNumber}</strong></span>
+                    ) : ancestor.gcNumber ? (
+                      <span className="text-yellow-700">GC: <strong>{ancestor.gcNumber}</strong></span>
+                    ) : (
+                      <span className="opacity-40">Reg: —</span>
+                    )}
                   </div>
-                  <div className="truncate">Var: <strong>{ancestor.variety}</strong></div>
-                  {(ancestor.registrationNumber || ancestor.gcNumber) && (
-                    <div className="truncate text-[5.5px] print:text-[7px] text-slate-500">
-                      {ancestor.registrationNumber && <span>R:{ancestor.registrationNumber}</span>}
-                      {ancestor.registrationNumber && ancestor.gcNumber && <span className="mx-0.5">|</span>}
-                      {ancestor.gcNumber && <span className="text-yellow-700">G:{ancestor.gcNumber}</span>}
-                    </div>
-                  )}
                 </div>
               </div>
             );
           }
 
           return (
-            <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} print:p-2.5`}>
+            <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} print:p-3`}>
               <div>
                 <div className="flex justify-between items-start gap-1 leading-none">
-                  <span className="text-[7px] print:text-[9px] uppercase font-bold text-slate-500">{roleLabel}</span>
-                  {winsText && <span className="text-[7px] print:text-[8.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[120px]">🏆 {winsText}</span>}
+                  <span className="text-[7px] print:text-[10px] uppercase font-bold text-slate-500">{roleLabel}</span>
+                  {winsText && <span className="text-[7px] print:text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[140px]">🏆 {winsText}</span>}
                 </div>
-                <h5 className="font-serif font-bold text-[10px] print:text-[12px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px] print:max-w-[220px]">
+                <h5 className="font-serif font-bold text-[10px] print:text-[14px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px] print:max-w-[240px]">
                   {namePrefix}{ancestor.name}
                 </h5>
               </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[8px] print:text-[9.5px] border-t border-slate-200 pt-1 print:mt-1.5 print:pt-1.5 text-slate-700 font-mono">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[8px] print:text-[11px] border-t border-slate-200 pt-1 print:mt-2 print:pt-2 text-slate-700 font-mono">
                 <div>Tat: <strong>{ancestor.tattooNumber}</strong></div>
                 <div>Wt: <strong>{weightLbs} lbs</strong></div>
                 <div className="col-span-2">Breed/Var: <strong>{ancestor.breed} - {ancestor.variety}</strong></div>
                 {ancestor.registrationNumber && <div className="col-span-2">Reg #: <strong>{ancestor.registrationNumber}</strong></div>}
-                {ancestor.gcNumber && <div className="col-span-2 text-[7px] print:text-[8.5px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
-                {ancestor.colorCarrier && <div className="col-span-2 text-[7px] print:text-[8.5px] text-indigo-700 italic font-semibold truncate leading-tight">Carries: {ancestor.colorCarrier}</div>}
+                {ancestor.gcNumber && <div className="col-span-2 text-[7px] print:text-[10px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
+                {ancestor.colorCarrier && <div className="col-span-2 text-[7px] print:text-[10px] text-indigo-700 italic font-semibold truncate leading-tight">Carries: {ancestor.colorCarrier}</div>}
               </div>
             </div>
           );
@@ -11362,15 +11361,15 @@ export default function App() {
               </div>
 
               {/* Certificate layout */}
-              <div className="flex flex-col gap-5 print:gap-2.5 w-full mt-2">
+              <div className="flex flex-col gap-5 print:gap-2 w-full mt-2">
                 
                 {/* Header section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-b-2 border-black pb-4 print:pb-2 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:gap-x-4 print:gap-y-1 border-b-2 border-black pb-4 print:pb-1.5 items-center">
                   
                   {/* Left Side: Breeder Info */}
-                  <div className="flex flex-col text-left text-xs gap-0.5 text-slate-700 font-lora">
+                  <div className="flex flex-col text-left text-xs print:text-[10px] gap-0.5 text-slate-700 font-lora">
                     <span className="text-[8px] font-bold text-slate-400 block uppercase font-cinzel tracking-wider">Generated by</span>
-                    <strong className="text-sm font-bold text-slate-900 font-cinzel">{activeBreeder.rabbitryName || 'Grandview Rabbitry'}</strong>
+                    <strong className="text-sm print:text-[11px] font-bold text-slate-900 font-cinzel">{activeBreeder.rabbitryName || 'Grandview Rabbitry'}</strong>
                     <p>Owner: {activeBreeder.name}</p>
                     {activeBreeder.phone && <p>Phone: {activeBreeder.phone}</p>}
                     <p>Email: {activeBreeder.email}</p>
@@ -11378,21 +11377,21 @@ export default function App() {
                   </div>
 
                   {/* Center: Title */}
-                  <div className="text-center flex flex-col items-center gap-1.5">
-                    <span className="text-3xl filter drop-shadow">🐇</span>
-                    <h2 className="font-cinzel font-black text-2xl uppercase tracking-widest text-slate-900 leading-none">
+                  <div className="text-center flex flex-col items-center gap-1.5 print:gap-0.5">
+                    <span className="text-3xl filter drop-shadow print:hidden">🐇</span>
+                    <h2 className="font-cinzel font-black text-2xl print:text-lg uppercase tracking-widest text-slate-900 leading-none">
                       Pedigree Certificate
                     </h2>
-                    <span className="text-[8.5px] font-cinzel font-bold uppercase tracking-widest text-slate-500">
+                    <span className="text-[8.5px] print:text-[8px] font-cinzel font-bold uppercase tracking-widest text-slate-500">
                       Official 3-Generation Ancestor Lineage
                     </span>
                   </div>
 
                   {/* Right Side: Offspring Details */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-left grid grid-cols-2 gap-1 gap-x-3 text-slate-700 font-lora">
+                  <div className="bg-slate-50 p-3 print:p-1.5 rounded-xl print:rounded-lg border border-slate-200 text-xs print:text-[9.5px] text-left grid grid-cols-2 gap-1 print:gap-x-2 print:gap-y-0.5 text-slate-700 font-lora">
                     <div className="col-span-2 border-b border-slate-200 pb-1 mb-1 flex justify-between items-center">
-                      <strong className="font-cinzel font-black text-sm text-slate-900 uppercase leading-none">{rabbit.name}</strong>
-                      {rabbit.gcNumber && <span className="text-[8px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">🏆 CHAMP</span>}
+                      <strong className="font-cinzel font-black text-sm print:text-[11px] text-slate-900 uppercase leading-none">{rabbit.name}</strong>
+                      {rabbit.gcNumber && <span className="text-[8px] print:text-[7px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">🏆 CHAMP</span>}
                     </div>
                     <div>Tattoo: <strong className="font-sans">{rabbit.tattooNumber}</strong></div>
                     <div>Sex: <strong className="capitalize">{rabbit.sex}</strong></div>
@@ -11408,7 +11407,7 @@ export default function App() {
                 </div>
 
                 {/* Pedigree tree display */}
-                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[510px] w-full">
+                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[570px] w-full">
                   
                   {/* SVG Family Tree Branch Connectors */}
                   <svg className="absolute inset-0 pointer-events-none w-full h-full text-slate-300 print:text-slate-400 no-print-backdrop" stroke="currentColor" strokeWidth="1.5" fill="none" preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -11455,7 +11454,7 @@ export default function App() {
                 </div>
 
                 {/* Footer certifications / signatures */}
-                <div className="grid grid-cols-3 gap-4 border-t border-slate-300 pt-3 print:pt-1.5 text-xs print:text-[10px] text-slate-700 font-lora items-center">
+                <div className="grid grid-cols-3 gap-4 border-t border-slate-300 pt-3 print:pt-1 text-xs print:text-[10px] text-slate-700 font-lora items-center">
                   
                   {/* Left Column: Signature */}
                   <div className="flex flex-col gap-0.5 text-left col-span-1">
@@ -11474,7 +11473,7 @@ export default function App() {
 
                   {/* Center Column: Circular Gold Seal Stamp */}
                   <div className="flex justify-center items-center col-span-1">
-                    <svg width="70" height="70" viewBox="0 0 100 100" className="opacity-95 print:opacity-100 text-amber-700 drop-shadow-sm no-print-backdrop">
+                    <svg viewBox="0 0 100 100" className="w-[60px] h-[60px] print:w-[50px] print:h-[50px] opacity-95 print:opacity-100 text-amber-700 drop-shadow-sm no-print-backdrop">
                       <circle cx="50" cy="50" r="45" fill="#fffbeb" stroke="#d97706" strokeWidth="2" strokeDasharray="3,2" />
                       <circle cx="50" cy="50" r="41" fill="none" stroke="#d97706" strokeWidth="1" />
                       <circle cx="50" cy="50" r="38" fill="#fffbeb" stroke="#b45309" strokeWidth="1.5" />
