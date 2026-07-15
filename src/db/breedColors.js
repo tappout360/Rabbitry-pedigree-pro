@@ -144,6 +144,34 @@ export const BREED_VARIETY_GROUPS = {
       { name: 'Broken Blue', hex: 'repeating-linear-gradient(45deg, #FFFFFF, #FFFFFF 6px, #566573 6px, #566573 12px)', sop: 'White with blue patches.' }
     ]
   },
+  'Mini Rex': {
+    'Self': [
+      { name: 'Black', hex: '#1A1A1A', sop: 'Solid lustrous black. Eyes dark brown.' },
+      { name: 'Blue', hex: '#566573', sop: 'Rich dark blue. Eyes blue-gray.' },
+      { name: 'Chocolate', hex: '#5C3A21', sop: 'Rich chocolate brown. Eyes brown.' },
+      { name: 'Lilac', hex: '#D7BDE2', sop: 'Dove gray with pink tint. Eyes blue-gray.' },
+      { name: 'White', hex: '#FFFFFF', border: '#D0D3D4', sop: 'Pure snow white. Eyes ruby red.' }
+    ],
+    'Shaded': [
+      { name: 'Sable', hex: '#7D6608', sop: 'Rich sepia brown shading to lighter flanks.' },
+      { name: 'Seal', hex: '#2C3E50', sop: 'Dark sepia brown near black.' },
+      { name: 'Tortoise', hex: '#BA7A44', sop: 'Orange body shading to dark points.' }
+    ],
+    'Agouti': [
+      { name: 'Castor', hex: '#875A38', sop: 'Banded agouti: dark slate, rich orange-red, black ticking.' },
+      { name: 'Opal', hex: '#A6ACAF', sop: 'Banded agouti: slate, cream, blue ticking.' },
+      { name: 'Chinchilla', hex: '#BDC3C7', sop: 'Banded agouti: slate, pearl white, black ticking.' }
+    ],
+    'Broken': [
+      { name: 'Broken Castor', hex: 'repeating-linear-gradient(45deg, #FFFFFF, #FFFFFF 6px, #875A38 6px, #875A38 12px)', sop: 'White with castor patches.' },
+      { name: 'Broken Black', hex: 'repeating-linear-gradient(45deg, #FFFFFF, #FFFFFF 6px, #1A1A1A 6px, #1A1A1A 12px)', sop: 'White with black patches.' }
+    ]
+  },
+  'Californian': {
+    'Standard': [
+      { name: 'Standard (White w/ Points)', hex: '#FFFFFF', border: '#1A1A1A', sop: 'Pure white body with dark sepia/black points on nose, ears, feet, tail. Eyes pink.' }
+    ]
+  },
   'Abyssinian': {
     'Self': [
       { name: 'Black', hex: '#1A1A1A', sop: 'Uniform deep black.' },

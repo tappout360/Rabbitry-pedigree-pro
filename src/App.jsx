@@ -14,7 +14,9 @@ import HealthCheck from './components/ui/HealthCheck';
 import Academy from './views/Academy';
 import RegistrarPrep from './views/RegistrarPrep';
 import EvansMigrator from './views/EvansMigrator';
+import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
+import PhotoGallery from './components/gallery/PhotoGallery';
 import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
@@ -1016,6 +1018,10 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('rp_theme') || 'dark');
   // Navigation
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [mediaSubTab, setMediaSubTab] = useState('timeline');
+  const [kindlingBreedingId, setKindlingBreedingId] = useState(null);
+  const [kitsAliveInput, setKitsAliveInput] = useState(6);
+  const [kitsDeadInput, setKitsDeadInput] = useState(0);
   
   // Customization settings
   const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || '🐇');
@@ -1965,7 +1971,20 @@ export default function App() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLastChoresSavedTime(timeStr);
     
-    // 5. Toast feedback
+    // 5. Award XP if chore was assigned to a youth member
+    if (nextCompleted && chore.assignedTo) {
+      db.youthProgress.get(chore.assignedTo).then(member => {
+        if (member) {
+          const newXp = (member.xp || 0) + 15;
+          const newLevel = Math.floor(newXp / 100) + 1;
+          db.youthProgress.update(chore.assignedTo, { xp: newXp, currentLevel: newLevel }).then(() => {
+            showToast(`⭐ ${member.memberName} earned 15 XP! (New total: ${newXp} XP)`, 'info');
+          });
+        }
+      });
+    }
+
+    // 6. Toast feedback
     if (isOffline) {
       showToast(`Chore '${chore.taskName}' cached offline!`, 'info');
     } else {
@@ -1975,7 +1994,7 @@ export default function App() {
       }, 700);
     }
     
-    // 6. Confetti
+    // 7. Confetti
     if (nextCompleted) {
       confetti({
         particleCount: 30,
@@ -7249,6 +7268,196 @@ export default function App() {
                 </form>
               </div>
 
+              {/* Active Gestation Timeline Tracker */}
+              <div className="glass-container p-6 flex flex-col gap-5 border border-orange-500/25">
+                <div className="flex justify-between items-center flex-wrap gap-4 border-b border-white/5 pb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-orange-400" /> Active Pregnancy Gestation Timelines
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-0.5">Palpation checks, nest box placements, and kit kindling due dates.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if ('Notification' in window) {
+                        Notification.requestPermission().then(permission => {
+                          if (permission === 'granted') {
+                            showToast("Local push alerts registered successfully!", "success");
+                          } else {
+                            showToast("Notification permission was denied.", "error");
+                          }
+                        });
+                      } else {
+                        showToast("Notifications not supported in this browser.", "error");
+                      }
+                    }}
+                    className="btn-interactive py-1.5 px-3 bg-slate-800 text-xs border border-white/10 text-slate-200 font-bold"
+                  >
+                    🔔 Enable Push Alerts
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                  {allBreedings.filter(b => b.status === 'bred' || b.status === 'palpated_positive' || b.status === 'Active').length === 0 ? (
+                    <div className="text-center py-6 text-xs text-slate-500">No active breeding chains. Schedule a breeding pair above to track pregnancy.</div>
+                  ) : (
+                    allBreedings
+                      .filter(b => b.status === 'bred' || b.status === 'palpated_positive' || b.status === 'Active')
+                      .map(b => {
+                        const doe = rabbits.find(r => r.id === b.doeId);
+                        const buck = rabbits.find(r => r.id === b.buckId);
+                        
+                        const matingTime = new Date(b.breedDate).getTime();
+                        const timeDiff = Date.now() - matingTime;
+                        const daysElapsed = Math.max(0, Math.floor(timeDiff / (24 * 60 * 60 * 1000)));
+                        const progressPct = Math.min(100, Math.round((daysElapsed / 31) * 100));
+
+                        return (
+                          <div key={b.id} className="bg-slate-950/60 p-5 rounded-2xl border border-white/5 flex flex-col gap-4">
+                            <div className="flex justify-between items-start gap-4 flex-wrap text-xs">
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-orange-400">Gestation Tracker</span>
+                                <h4 className="font-extrabold text-sm text-white mt-0.5">
+                                  Doe: {doe ? doe.name : 'Unknown'} x Buck: {buck ? buck.name : 'Unknown'}
+                                </h4>
+                                <p className="text-[10px] text-slate-400 mt-1">Mated: <strong>{b.breedDate}</strong> | Pregnancy Stage: <strong>{daysElapsed} / 31 days</strong></p>
+                              </div>
+                              <div className="flex gap-2">
+                                {b.status === 'bred' && (
+                                  <>
+                                    <button
+                                      onClick={() => logPalpation(b.id, true)}
+                                      className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-650 text-white font-bold rounded-lg border-none text-[10px] transition-all"
+                                    >
+                                      🤰 Palpate Positive
+                                    </button>
+                                    <button
+                                      onClick={() => logPalpation(b.id, false)}
+                                      className="py-1.5 px-3 bg-red-650 hover:bg-red-700 text-white font-bold rounded-lg border-none text-[10px] transition-all"
+                                    >
+                                      💨 Palpate Failed
+                                    </button>
+                                  </>
+                                )}
+                                {b.status === 'palpated_positive' && (
+                                  <button
+                                    onClick={() => setKindlingBreedingId(b.id)}
+                                    className="py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-650 text-white font-bold rounded-lg border-none text-[10px] transition-all"
+                                  >
+                                    🐇 Record Kindled
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Gestation timeline bar */}
+                            <div className="relative pt-6 pb-2 px-1">
+                              {/* Horizontal track line */}
+                              <div className="absolute top-[28px] left-0 right-0 h-1.5 bg-slate-800 rounded-full">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+
+                              {/* Milestone nodes */}
+                              <div className="relative flex justify-between text-[10px]">
+                                {/* Milestone 0: Mating */}
+                                <div className="flex flex-col items-center text-center -translate-x-2">
+                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 0 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
+                                  <span className="font-bold text-slate-300 mt-1">Day 0</span>
+                                  <span className="text-[8.5px] opacity-60">Mating</span>
+                                </div>
+
+                                {/* Milestone 12: Palpation */}
+                                <div className="flex flex-col items-center text-center">
+                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 12 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
+                                  <span className="font-bold text-slate-300 mt-1">Day 12</span>
+                                  <span className="text-[8.5px] opacity-60">Palpate Check</span>
+                                </div>
+
+                                {/* Milestone 28: Nest Box */}
+                                <div className="flex flex-col items-center text-center">
+                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 28 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
+                                  <span className="font-bold text-slate-300 mt-1">Day 28</span>
+                                  <span className="text-[8.5px] opacity-60">Nest Box In</span>
+                                </div>
+
+                                {/* Milestone 31: Kindle */}
+                                <div className="flex flex-col items-center text-center translate-x-2">
+                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 31 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
+                                  <span className="font-bold text-slate-300 mt-1">Day 31</span>
+                                  <span className="text-[8.5px] opacity-60">Kindle Due</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+
+              {/* Record Mating Kindled Dialog Popover */}
+              {kindlingBreedingId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+                  <div className="w-full max-w-sm bg-slate-900 border-2 border-indigo-500/30 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl text-slate-100">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                      <h3 className="font-extrabold text-base text-indigo-400">
+                        🐇 Record Litter Kindled
+                      </h3>
+                      <button 
+                        onClick={() => setKindlingBreedingId(null)}
+                        className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-3 text-xs text-left">
+                      <div className="flex flex-col gap-1">
+                        <label className="font-bold text-slate-300">Kits Born Alive</label>
+                        <input
+                          type="number"
+                          value={kitsAliveInput}
+                          onChange={(e) => setKitsAliveInput(Number(e.target.value))}
+                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-bold text-slate-300">Kits Born Dead</label>
+                        <input
+                          type="number"
+                          value={kitsDeadInput}
+                          onChange={(e) => setKitsDeadInput(Number(e.target.value))}
+                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 border-t border-white/5 pt-3">
+                      <button
+                        onClick={() => setKindlingBreedingId(null)}
+                        className="btn-interactive text-xs py-2 px-4 bg-slate-800 text-slate-300 border border-white/5"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          logKindle(kindlingBreedingId, kitsAliveInput, kitsDeadInput);
+                          setKindlingBreedingId(null);
+                        }}
+                        className="btn-interactive text-xs py-2 px-5 bg-emerald-600 hover:bg-emerald-650 text-white font-bold"
+                      >
+                        Confirm Kindling
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Litters Logs */}
               <div className="glass-container p-6">
                 <h3 className="text-lg font-bold mb-4">Litter Production Logs</h3>
@@ -7825,17 +8034,50 @@ export default function App() {
 
           {/* TAB: MEDIA GALLERY */}
           {activeTab === 'media' && (
-            <ErrorBoundary>
-              <TimelineGallery 
-                rabbits={rabbits} 
-                onUpdateRabbit={(updatedRabbit) => {
-                  setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
-                  if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
-                    setSelectedRabbit(updatedRabbit);
-                  }
-                }}
-              />
-            </ErrorBoundary>
+            <div className="flex flex-col gap-4">
+              
+              {/* Media Sub-Tabs Menu */}
+              <div className="flex gap-2 border-b border-white/10 pb-1 flex-wrap">
+                <button
+                  onClick={() => setMediaSubTab('timeline')}
+                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${mediaSubTab === 'timeline' ? 'border-sky-400 text-white' : 'border-transparent text-slate-400 hover:text-white bg-transparent border-none'}`}
+                >
+                  📖 Growth Timelines
+                </button>
+                <button
+                  onClick={() => setMediaSubTab('photos')}
+                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${mediaSubTab === 'photos' ? 'border-sky-400 text-white' : 'border-transparent text-slate-400 hover:text-white bg-transparent border-none'}`}
+                >
+                  📸 Virtualized Photo Grid (WebP)
+                </button>
+              </div>
+
+              {mediaSubTab === 'timeline' ? (
+                <ErrorBoundary>
+                  <TimelineGallery 
+                    rabbits={rabbits} 
+                    onUpdateRabbit={(updatedRabbit) => {
+                      setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
+                      if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
+                        setSelectedRabbit(updatedRabbit);
+                      }
+                    }}
+                  />
+                </ErrorBoundary>
+              ) : (
+                <ErrorBoundary>
+                  <PhotoGallery
+                    rabbits={rabbits}
+                    onUpdateRabbit={(updatedRabbit) => {
+                      setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
+                      if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
+                        setSelectedRabbit(updatedRabbit);
+                      }
+                    }}
+                  />
+                </ErrorBoundary>
+              )}
+            </div>
           )}{/* TAB: SALES & TRANSFERS PANEL */}
           {activeTab === 'sales' && (
             <div className="flex flex-col gap-6">
@@ -11317,7 +11559,7 @@ export default function App() {
                   </h5>
                 </div>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-slate-200 mt-0.5 pt-0.5 print:mt-1 print:pt-1 text-[6.5px] print:text-[9.5px] text-slate-700 font-mono leading-tight">
-                  <div className="truncate">Tat: <strong>{ancestor.tattooNumber}</strong></div>
+                  <div className="truncate">{ancestor.species === 'cavy' ? 'Tag:' : 'Tat:'} <strong>{ancestor.tattooNumber}</strong></div>
                   <div className="truncate">Wt: <strong>{weightLbs} lbs</strong></div>
                   <div className="truncate col-span-1">Var: <strong>{ancestor.variety}</strong></div>
                   <div className="truncate col-span-1">
@@ -11417,7 +11659,7 @@ export default function App() {
                       <strong className="font-cinzel font-black text-sm print:text-[11.5px] text-slate-900 uppercase leading-none">{rabbit.name}</strong>
                       {rabbit.gcNumber && <span className="text-[8px] print:text-[7.5px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">🏆 CHAMP</span>}
                     </div>
-                    <div>Tattoo: <strong className="font-sans">{rabbit.tattooNumber}</strong></div>
+                    <div>{rabbit.species === 'cavy' ? 'Ear Tag:' : 'Tattoo:'} <strong className="font-sans">{rabbit.tattooNumber}</strong></div>
                     <div>Sex: <strong className="capitalize">{rabbit.sex}</strong></div>
                     <div>Breed: <strong>{rabbit.breed}</strong></div>
                     <div>Variety: <strong>{rabbit.variety}</strong></div>
@@ -12134,6 +12376,18 @@ export default function App() {
           breed={colorWizardConfig.breed}
           onClose={() => setColorWizardConfig(null)}
           onSelect={colorWizardConfig.onSelect}
+        />
+      )}
+
+      {/* Barn Mode Mobile Hutch Logger Overlay */}
+      {barnMode && (
+        <BarnMode
+          rabbits={rabbits}
+          allRabbits={allRabbits}
+          setAllRabbits={setAllRabbits}
+          onClose={() => setBarnMode(false)}
+          currentUser={currentUser}
+          triggerConfetti={triggerConfetti}
         />
       )}
 

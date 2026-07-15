@@ -1180,41 +1180,83 @@ export default function Academy({
 
             {/* Assign Lesson / Quiz Section */}
             {activeMember && (
-              <div className="p-3.5 bg-slate-950/40 border border-white/5 rounded-2xl flex flex-col gap-3">
-                <span className="text-[10px] uppercase font-bold text-amber-400">Assign Custom Quiz</span>
-                <div className="flex gap-2 items-center text-xs">
-                  <select
-                    value={assignedQuizLevel}
-                    onChange={(e) => setAssignedQuizLevel(e.target.value)}
-                    className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white shrink-0"
-                  >
-                    <option value="Beginner">Beginner Level</option>
-                    <option value="Junior">Junior Level</option>
-                    <option value="Senior">Senior Level</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      // Save assigned log
-                      const log = {
-                        id: 'log-' + Date.now(),
-                        progressId: activeMember.id,
-                        quizType: `${assignedQuizLevel} Quiz (Assigned)`,
-                        score: 0,
-                        passed: false,
-                        date: new Date().toISOString().split('T')[0],
-                        coachFeedback: 'Pending completion.'
-                      };
-                      await db.youthQuizLogs.add(log);
-                      alert(`Successfully assigned ${assignedQuizLevel} Quiz to ${activeMember.memberName}!`);
-                      loadMembers();
-                    }}
-                    className="btn-interactive text-[11px] py-2 bg-amber-600 border-none font-bold text-white w-full rounded-lg"
-                  >
-                    📝 Assign Lesson
-                  </button>
+              <>
+                <div className="p-3.5 bg-slate-950/40 border border-white/5 rounded-2xl flex flex-col gap-3">
+                  <span className="text-[10px] uppercase font-bold text-amber-400">Assign Custom Quiz</span>
+                  <div className="flex gap-2 items-center text-xs">
+                    <select
+                      value={assignedQuizLevel}
+                      onChange={(e) => setAssignedQuizLevel(e.target.value)}
+                      className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white shrink-0 text-xs"
+                    >
+                      <option value="Beginner">Beginner Level</option>
+                      <option value="Junior">Junior Level</option>
+                      <option value="Senior">Senior Level</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        // Save assigned log
+                        const log = {
+                          id: 'log-' + Date.now(),
+                          progressId: activeMember.id,
+                          quizType: `${assignedQuizLevel} Quiz (Assigned)`,
+                          score: 0,
+                          passed: false,
+                          date: new Date().toISOString().split('T')[0],
+                          coachFeedback: 'Pending completion.'
+                        };
+                        await db.youthQuizLogs.add(log);
+                        alert(`Successfully assigned ${assignedQuizLevel} Quiz to ${activeMember.memberName}!`);
+                        loadMembers();
+                      }}
+                      className="btn-interactive text-[11px] py-2 bg-amber-600 border-none font-bold text-white w-full rounded-lg text-xs cursor-pointer"
+                    >
+                      📝 Assign Lesson
+                    </button>
+                  </div>
                 </div>
-              </div>
+
+                {/* Assign daily hutch chores */}
+                <div className="p-3.5 bg-slate-950/40 border border-white/5 rounded-2xl flex flex-col gap-3 text-xs text-left">
+                  <span className="text-[10px] uppercase font-bold text-indigo-400">Assign Daily Hutch Chore</span>
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const taskName = e.target.taskName.value;
+                      if (!taskName) return;
+                      
+                      const newChore = {
+                        id: 'chore-' + Date.now(),
+                        breederId: currentUser?.id || 'ab-1',
+                        taskName: `${taskName} (Assigned to ${activeMember.memberName})`,
+                        completed: false,
+                        dueDate: new Date().toISOString().split('T')[0],
+                        assignedTo: activeMember.id
+                      };
+                      
+                      await db.chores.add(newChore);
+                      e.target.reset();
+                      alert(`Successfully assigned chore: "${taskName}" to ${activeMember.memberName}! Complete on main dashboard to earn XP!`);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      name="taskName"
+                      type="text"
+                      required
+                      placeholder="E.g., Clean Row A cages, check water"
+                      className="bg-slate-900 border border-white/10 rounded-lg p-2 text-white flex-1 text-xs"
+                    />
+                    <button
+                      type="submit"
+                      className="btn-interactive py-2 px-4 bg-indigo-600 border-none font-bold text-white rounded-lg shrink-0 text-xs cursor-pointer"
+                    >
+                      ➕ Assign
+                    </button>
+                  </form>
+                </div>
+              </>
             )}
           </div>
 
