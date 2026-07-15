@@ -219,6 +219,33 @@ export const DEFAULT_RABBITS = [
     id: 'r-42', breederId: 'ab-4', tattooNumber: 'NZ-L1', name: 'Blue Mist', breed: 'New Zealand', variety: 'Blue', sex: 'doe', dob: '2026-03-05', weightOz: 104, status: 'active', sireId: 'r-40', damId: 'r-41', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cage-NZ3', notes: 'Promising junior Blue doe.',
     photos: ['/assets/new_zealand_blue.png'],
     legs: []
+  },
+  {
+    id: 'c-1', breederId: 'ab-1', tattooNumber: 'TAG-C1', name: 'Ginger Snap', breed: 'Abyssinian', variety: 'Golden Agouti', sex: 'doe', dob: '2025-06-10', weightOz: 34, status: 'active', sireId: '', damId: 'c-4', inbreedingCoeff: 0.0, registrationNumber: 'REG-C101', gcNumber: '', location: 'Cage-C1', notes: 'Proven Abyssinian cavy doe. Very docile.',
+    species: 'cavy',
+    photos: ['https://images.unsplash.com/photo-1534840698914-99670ad49064?w=300'],
+    legs: [],
+    timeline: [
+      { id: 't-c1-1', date: '2025-06-10', photo: 'https://images.unsplash.com/photo-1534840698914-99670ad49064?w=300', weightOz: 12, notes: 'Seeded birth entry.' }
+    ]
+  },
+  {
+    id: 'c-2', breederId: 'ab-1', tattooNumber: 'TAG-C2', name: 'Pepper Corn', breed: 'Abyssinian', variety: 'Black', sex: 'buck', dob: '2025-05-15', weightOz: 36, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-C102', gcNumber: 'GC-C01', location: 'Cage-C2', notes: 'Excellent rosette placement golden agouti buck.',
+    species: 'cavy',
+    photos: ['https://images.unsplash.com/photo-1534840698914-99670ad49064?w=300'],
+    legs: [{ id: 'leg-c1', date: '2026-03-01', showName: 'Midwest Cavy Specialty', judge: 'Carla Devlin', award: 'Best of Variety', classSize: 10 }]
+  },
+  {
+    id: 'c-3', breederId: 'ab-2', tattooNumber: 'TAG-C3', name: 'Teddy Bear', breed: 'Teddy', variety: 'White', sex: 'buck', dob: '2025-07-22', weightOz: 35, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cage-C3', notes: 'Plush coat Teddy buck.',
+    species: 'cavy',
+    photos: ['https://images.unsplash.com/photo-1534840698914-99670ad49064?w=300'],
+    legs: []
+  },
+  {
+    id: 'c-4', breederId: 'ab-1', tattooNumber: 'TAG-C4', name: 'Cinnamon Roll', breed: 'Abyssinian', variety: 'Golden Agouti', sex: 'doe', dob: '2024-04-12', weightOz: 36, status: 'pedigree_only', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: '', notes: 'Ancestor reference profile only.',
+    species: 'cavy',
+    photos: ['https://images.unsplash.com/photo-1534840698914-99670ad49064?w=300'],
+    legs: []
   }
 ];
 

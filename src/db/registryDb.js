@@ -70,7 +70,7 @@ export async function performMigrationAndLoad() {
   }
 
   migrationPromise = (async () => {
-    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v3');
+    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v4');
     
     const migrateOrLoadTable = async (localStorageKey, dexieTable, defaultList = []) => {
       // If not migrated yet, we check localStorage first. If migrated, we check IndexedDB count.
@@ -137,7 +137,7 @@ export async function performMigrationAndLoad() {
 
     // Mark migration as done
     if (!isMigrated) {
-      localStorage.setItem('rp_migrated_to_dexie_v3', 'true');
+      localStorage.setItem('rp_migrated_to_dexie_v4', 'true');
     }
 
     return {
