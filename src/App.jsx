@@ -7233,7 +7233,7 @@ export default function App() {
                       required
                     >
                       <option value="">Select Buck</option>
-                      {rabbits.filter(r => r.sex === 'buck').map(r => (
+                      {rabbits.filter(r => r.sex === 'buck' && r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead').map(r => (
                         <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber})</option>
                       ))}
                     </select>
@@ -7247,7 +7247,7 @@ export default function App() {
                       required
                     >
                       <option value="">Select Doe</option>
-                      {rabbits.filter(r => r.sex === 'doe').map(r => (
+                      {rabbits.filter(r => r.sex === 'doe' && r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead').map(r => (
                         <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber})</option>
                       ))}
                     </select>

@@ -26,6 +26,7 @@ export default function BarnMode({
   const filteredRabbits = useMemo(() => {
     return rabbits
       .filter(r => 
+        r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead' &&
         (r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
          r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
          (r.location || '').toLowerCase().includes(searchQuery.toLowerCase()))
@@ -35,7 +36,7 @@ export default function BarnMode({
 
   // List of bucks for breeding selections
   const bucks = useMemo(() => {
-    return rabbits.filter(r => r.sex === 'buck');
+    return rabbits.filter(r => r.sex === 'buck' && r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead');
   }, [rabbits]);
 
   // Save actions locally
