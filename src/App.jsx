@@ -1656,7 +1656,8 @@ export default function App() {
       winningsBOSV: 0,
       winningsBIS: 0,
       winningsOther: 0,
-      showClass: 'Auto'
+      showClass: 'Auto',
+      status: 'active'
     };
   });
 
@@ -2577,7 +2578,8 @@ export default function App() {
       winningsBOSV: 0,
       winningsBIS: 0,
       winningsOther: 0,
-      showClass: 'Auto'
+      showClass: 'Auto',
+      status: 'active'
     });
     setShowAddRabbit(false);
     triggerConfetti();
@@ -6342,7 +6344,8 @@ export default function App() {
                         winningsBIS: 0,
                         winningsOther: 0,
                         showClass: 'Auto',
-                        species: initialSpecies
+                        species: initialSpecies,
+                        status: 'active'
                       });
                       setShowAddRabbit(true);
                     }}
@@ -6417,6 +6420,19 @@ export default function App() {
                             </option>
                           );
                         })}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-bold text-indigo-400">Ownership / Profile Status *</label>
+                      <select 
+                        value={newRabbit.status || 'active'}
+                        onChange={(e) => setNewRabbit({...newRabbit, status: e.target.value})}
+                      >
+                        <option value="active">Active (In Barn Stock)</option>
+                        <option value="pedigree_only">Pedigree Only (Ancestor / Reference Only)</option>
+                        <option value="stud_service">External Stud Service (Leased Buck)</option>
+                        <option value="sold">Sold / Transferred</option>
+                        <option value="dead">Dead / Retired</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -6752,6 +6768,9 @@ export default function App() {
                       })()}
                     </div>
                     <div className="flex gap-2">
+                      <span className="text-xs font-bold text-indigo-350 bg-indigo-500/15 border border-indigo-500/25 px-2.5 py-1 rounded-lg uppercase">
+                        Status: {selectedRabbit.status || 'active'}
+                      </span>
                       <span className="text-xs font-bold text-slate-400 capitalize bg-white/5 px-2.5 py-1 rounded-lg">
                         {selectedRabbit.sex}
                       </span>
@@ -6946,6 +6965,16 @@ export default function App() {
                           <select value={editProfileData.sex} onChange={(e) => setEditProfileData({...editProfileData, sex: e.target.value})} className="text-xs">
                             <option value="buck">Buck</option>
                             <option value="doe">Doe</option>
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold uppercase text-indigo-400 tracking-wider">Ownership Status</label>
+                          <select value={editProfileData.status || 'active'} onChange={(e) => setEditProfileData({...editProfileData, status: e.target.value})} className="text-xs">
+                            <option value="active">Active (In Barn)</option>
+                            <option value="pedigree_only">Pedigree Only (Reference)</option>
+                            <option value="stud_service">External Stud (Leased Buck)</option>
+                            <option value="sold">Sold</option>
+                            <option value="dead">Dead</option>
                           </select>
                         </div>
                         <div className="flex flex-col gap-1">
