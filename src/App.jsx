@@ -4103,6 +4103,7 @@ export default function App() {
   );
 
   const filteredPhotos = rabbits
+    .filter(r => r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead')
     .filter(r => mediaRabbitFilter === 'all' || r.id === mediaRabbitFilter)
     .flatMap(rabbit => (rabbit.photos || []).map((photo, photoIdx) => {
       const pObj = getPhotoObj(photo);
@@ -7818,47 +7819,75 @@ export default function App() {
 
                   {/* Quick-Add Templates */}
                   <div className="glass-container p-6 flex flex-col gap-3">
-                    <h3 className="text-base font-bold">Easy Import Local Shows</h3>
-                    <p className="text-xs opacity-70">Single-click import for regional ARBA-registered exhibitions.</p>
+                    <div className="flex justify-between items-center flex-wrap gap-2">
+                      <h3 className="text-base font-bold">Easy Import Local Shows</h3>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Area Code:</span>
+                        <input 
+                          type="text" 
+                          maxLength="3" 
+                          placeholder="e.g. 503" 
+                          value={showAreaCodeFilter} 
+                          onChange={(e) => setShowAreaCodeFilter(e.target.value.replace(/\D/g, ''))}
+                          className="w-16 text-center py-1 px-1 bg-slate-800 text-white rounded border border-white/10 text-xs font-bold font-mono"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] opacity-70">Single-click import for regional ARBA-registered exhibitions matching your area code.</p>
                     <div className="flex flex-col gap-2">
-                      {[
-                        { name: "Washington County Fair Rabbit Show", date: "2026-07-28", loc: "Hillsboro, OR", notes: "Annual county exhibition. Double show." },
-                        { name: "ARBA State Breeders Championship", date: "2026-08-22", loc: "Sacramento, CA", notes: "Triple-sanctioned ARBA show." },
-                        { name: "Golden State Autumn Classic", date: "2026-09-15", loc: "Fresno, CA", notes: "Pre-national warm-up. Standard cages supplied." }
-                      ].map((t, idx) => (
-                        <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-xl flex flex-col gap-1 text-xs">
-                          <div className="flex justify-between items-start gap-2">
-                            <span className="font-bold text-indigo-300">{t.name}</span>
-                            <span className="text-[10px] opacity-70 bg-indigo-500/20 px-1.5 py-0.5 rounded font-mono shrink-0">{t.date}</span>
+                      {(() => {
+                        const REGIONAL_SHOW_TEMPLATES = [
+                          { name: "Portland Breeders Winter Show", date: "2026-11-15", loc: "Portland, OR", areaCodes: ["503", "971"], notes: "Double youth/open show." },
+                          { name: "Washington County Fair Show", date: "2026-07-28", loc: "Hillsboro, OR", areaCodes: ["503", "971"], notes: "Annual county exhibition. Double show." },
+                          { name: "ARBA State Championship", date: "2026-08-22", loc: "Sacramento, CA", areaCodes: ["916", "530"], notes: "Triple-sanctioned ARBA show." },
+                          { name: "San Joaquin Valley Classic", date: "2026-07-20", loc: "Stockton, CA", areaCodes: ["209"], notes: "Sanctioned open/youth rabbit & cavy show." },
+                          { name: "Golden State Autumn Classic", date: "2026-09-15", loc: "Fresno, CA", areaCodes: ["559"], notes: "Pre-national warm-up." },
+                          { name: "Indiana State Fair Exhibition", date: "2026-08-10", loc: "Indianapolis, IN", areaCodes: ["317"], notes: "Large state exhibition with youth categories." },
+                          { name: "Midwest Mini Rex Specialty", date: "2026-07-12", loc: "Fort Wayne, IN", areaCodes: ["260"], notes: "Rex specialty double show." },
+                          { name: "Ohio State Rabbit Convention", date: "2026-09-18", loc: "Columbus, OH", areaCodes: ["614", "937"], notes: "Annual state convention." },
+                          { name: "Great Lakes Giant Fair", date: "2026-09-02", loc: "Grand Rapids, MI", areaCodes: ["616", "517"], notes: "All breeds welcome, specialty in Flemish Giants." }
+                        ];
+                        const filtered = showAreaCodeFilter 
+                          ? REGIONAL_SHOW_TEMPLATES.filter(t => t.areaCodes.includes(showAreaCodeFilter))
+                          : REGIONAL_SHOW_TEMPLATES;
+                        if (filtered.length === 0) {
+                          return <div className="text-[10px] text-center text-slate-500 py-2">No regional shows found for area code "{showAreaCodeFilter}". Showing all shows.</div>;
+                        }
+                        return filtered.map((t, idx) => (
+                          <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-xl flex flex-col gap-1 text-xs">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="font-bold text-indigo-300">{t.name}</span>
+                              <span className="text-[10px] opacity-70 bg-indigo-500/20 px-1.5 py-0.5 rounded font-mono shrink-0">{t.date}</span>
+                            </div>
+                            <span className="opacity-60">{t.loc}</span>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
+                                const newShow = {
+                                  id: `show-template-${Date.now()}-${idx}`,
+                                  breederId: activeBreederId,
+                                  name: t.name,
+                                  date: t.date,
+                                  location: t.loc,
+                                  status: 'interested',
+                                  notes: t.notes,
+                                  notifyDays: 14
+                                };
+                                setAllShows(prev => [newShow, ...prev]);
+                                setSuccessMascot({
+                                  title: "Show Imported!",
+                                  message: `"${t.name}" added as 'Interested'. You can change your status anytime.`,
+                                  type: 'kiba'
+                                });
+                              }}
+                              className="btn-interactive text-[11px] py-1 px-3 mt-1 bg-emerald-600/85 hover:bg-emerald-650 border-none self-start"
+                            >
+                              Import Show
+                            </button>
                           </div>
-                          <span className="opacity-60">{t.loc}</span>
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
-                              const newShow = {
-                                id: `show-template-${Date.now()}-${idx}`,
-                                breederId: activeBreederId,
-                                name: t.name,
-                                date: t.date,
-                                location: t.loc,
-                                status: 'interested',
-                                notes: t.notes,
-                                notifyDays: 14
-                              };
-                              setAllShows(prev => [newShow, ...prev]);
-                              setSuccessMascot({
-                                title: "Show Imported!",
-                                message: `"${t.name}" added as 'Interested'. You can change your status anytime.`,
-                                type: 'kiba'
-                              });
-                            }}
-                            className="btn-interactive text-[11px] py-1 px-3 mt-1 bg-emerald-600/85 hover:bg-emerald-650 border-none self-start"
-                          >
-                            Import Show
-                          </button>
-                        </div>
-                      ))}
+                        ));
+                      })()}
                     </div>
                   </div>
 
@@ -8227,7 +8256,7 @@ export default function App() {
 
                   <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1">
                     {rabbits
-                      .filter(r => r.status !== 'sold')
+                      .filter(r => r.status !== 'sold' && r.status !== 'pedigree_only' && r.status !== 'dead')
                       .map(r => (
                         <div key={r.id} className="p-3 bg-white/5 border border-white/5 hover:border-purple-500/30 rounded-xl flex items-center justify-between transition-all group">
                           <div>
@@ -8284,9 +8313,11 @@ export default function App() {
 
                   <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
                     {rabbits.filter(r => 
-                      r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                      r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                      r.breed.toLowerCase().includes(searchQuery.toLowerCase())
+                      r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead' && (
+                        r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        r.breed.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
                     ).map(r => {
                       const isSelected = healthSelectedRabbitId === r.id;
                       const lastWeight = allWeights
