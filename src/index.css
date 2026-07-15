@@ -625,7 +625,7 @@ select option {
 @media print {
   @page {
     size: landscape;
-    margin: 0.3in;
+    margin: 0.2in;
   }
   
   body {

@@ -11252,11 +11252,11 @@ export default function App() {
         const renderPrintBox = (ancestor, roleLabel, gender, isGen3 = false) => {
           if (!ancestor) {
             return (
-              <div className={`p-1.5 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[38px] py-1' : 'min-h-[50px] py-2'}`}>
-                <span className={`${isGen3 ? 'text-[6px]' : 'text-[7px]'} uppercase font-bold text-slate-400 block leading-none`}>
+              <div className={`p-1.5 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[38px] py-1' : 'min-h-[50px] py-2'} print:p-1`}>
+                <span className={`${isGen3 ? 'text-[6px] print:text-[7.5px]' : 'text-[7px] print:text-[8.5px]'} uppercase font-bold text-slate-400 block leading-none`}>
                   {isGen3 ? roleLabel.replace('Paternal', 'Pat.').replace('Maternal', 'Mat.').replace('Grand-Sire', 'G-Sire').replace('Grand-Dam', 'G-Dam') : roleLabel}
                 </span>
-                <span className={`${isGen3 ? 'text-[6.5px]' : 'text-[9px]'} italic text-slate-400 font-semibold mt-0.5`}>Unknown Ancestor</span>
+                <span className={`${isGen3 ? 'text-[6.5px] print:text-[8px]' : 'text-[9px] print:text-[10px]'} italic text-slate-400 font-semibold mt-0.5`}>Unknown Ancestor</span>
               </div>
             );
           }
@@ -11288,24 +11288,24 @@ export default function App() {
               .replace('Grand-Dam', 'G-Dam');
               
             return (
-              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5 print:py-0 print:px-1`}>
+              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5 print:py-1 print:px-2`}>
                 <div className="leading-none">
                   <div className="flex justify-between items-start gap-1">
-                    <span className="text-[5.5px] print:text-[4.5px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
-                    {winsText && <span className="text-[5.5px] print:text-[4.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px]" title={winsText}>🏆 {winsText}</span>}
+                    <span className="text-[5.5px] print:text-[7.5px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
+                    {winsText && <span className="text-[5.5px] print:text-[7px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[80px]" title={winsText}>🏆 {winsText}</span>}
                   </div>
-                  <h5 className="font-serif font-bold text-[8.5px] print:text-[7.2px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px]">
+                  <h5 className="font-serif font-bold text-[8.5px] print:text-[10px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px] print:max-w-[220px]">
                     {namePrefix}{ancestor.name}
                   </h5>
                 </div>
-                <div className="border-t border-slate-200 mt-0.5 pt-0.5 print:mt-0 print:pt-0 text-[6.5px] print:text-[5.5px] text-slate-700 font-mono leading-tight">
+                <div className="border-t border-slate-200 mt-0.5 pt-0.5 print:mt-1 print:pt-1 text-[6.5px] print:text-[8px] text-slate-700 font-mono leading-tight">
                   <div className="flex justify-between">
                     <span>Tat: <strong>{ancestor.tattooNumber}</strong></span>
                     <span>Wt: <strong>{weightLbs} lbs</strong></span>
                   </div>
                   <div className="truncate">Var: <strong>{ancestor.variety}</strong></div>
                   {(ancestor.registrationNumber || ancestor.gcNumber) && (
-                    <div className="truncate text-[5.5px] print:text-[4.8px] text-slate-500">
+                    <div className="truncate text-[5.5px] print:text-[7px] text-slate-500">
                       {ancestor.registrationNumber && <span>R:{ancestor.registrationNumber}</span>}
                       {ancestor.registrationNumber && ancestor.gcNumber && <span className="mx-0.5">|</span>}
                       {ancestor.gcNumber && <span className="text-yellow-700">G:{ancestor.gcNumber}</span>}
@@ -11317,23 +11317,23 @@ export default function App() {
           }
 
           return (
-            <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'}`}>
+            <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} print:p-2.5`}>
               <div>
                 <div className="flex justify-between items-start gap-1 leading-none">
-                  <span className="text-[7px] uppercase font-bold text-slate-500">{roleLabel}</span>
-                  {winsText && <span className="text-[7px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px]">🏆 {winsText}</span>}
+                  <span className="text-[7px] print:text-[9px] uppercase font-bold text-slate-500">{roleLabel}</span>
+                  {winsText && <span className="text-[7px] print:text-[8.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[120px]">🏆 {winsText}</span>}
                 </div>
-                <h5 className="font-serif font-bold text-[10px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px]">
+                <h5 className="font-serif font-bold text-[10px] print:text-[12px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px] print:max-w-[220px]">
                   {namePrefix}{ancestor.name}
                 </h5>
               </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[8px] border-t border-slate-200 pt-1 text-slate-700 font-mono">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[8px] print:text-[9.5px] border-t border-slate-200 pt-1 print:mt-1.5 print:pt-1.5 text-slate-700 font-mono">
                 <div>Tat: <strong>{ancestor.tattooNumber}</strong></div>
                 <div>Wt: <strong>{weightLbs} lbs</strong></div>
                 <div className="col-span-2">Breed/Var: <strong>{ancestor.breed} - {ancestor.variety}</strong></div>
                 {ancestor.registrationNumber && <div className="col-span-2">Reg #: <strong>{ancestor.registrationNumber}</strong></div>}
-                {ancestor.gcNumber && <div className="col-span-2 text-[7px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
-                {ancestor.colorCarrier && <div className="col-span-2 text-[7px] text-indigo-700 italic font-semibold truncate leading-tight">Carries: {ancestor.colorCarrier}</div>}
+                {ancestor.gcNumber && <div className="col-span-2 text-[7px] print:text-[8.5px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
+                {ancestor.colorCarrier && <div className="col-span-2 text-[7px] print:text-[8.5px] text-indigo-700 italic font-semibold truncate leading-tight">Carries: {ancestor.colorCarrier}</div>}
               </div>
             </div>
           );
@@ -11408,7 +11408,7 @@ export default function App() {
                 </div>
 
                 {/* Pedigree tree display */}
-                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[430px] w-full">
+                <div className="relative flex gap-[5%] items-stretch h-[390px] print:h-[510px] w-full">
                   
                   {/* SVG Family Tree Branch Connectors */}
                   <svg className="absolute inset-0 pointer-events-none w-full h-full text-slate-300 print:text-slate-400 no-print-backdrop" stroke="currentColor" strokeWidth="1.5" fill="none" preserveAspectRatio="none" viewBox="0 0 100 100">
