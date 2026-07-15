@@ -138,7 +138,8 @@ export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr =
   const isCavy = !!CAVY_BREED_STANDARDS[breedName];
   const finalSexLabel = isCavy ? (sex === 'buck' ? 'Boar' : 'Sow') : (sex === 'buck' ? 'Buck' : 'Doe');
 
-  if (breedInfo.classType === '6-class') {
+  if (isCavy) {
+    // Cavy age classification: Junior (< 4mo), Intermediate (4-6mo), Senior (> 6mo)
     if (diffMonths < 4) {
       return 'Junior ' + finalSexLabel;
     } else if (diffMonths >= 4 && diffMonths < 6) {
@@ -146,8 +147,17 @@ export const calculateRabbitShowClass = (dobStr, breedName, sex, targetDateStr =
     } else {
       return 'Senior ' + finalSexLabel;
     }
+  } else if (breedInfo.classType === '6-class') {
+    // Rabbit 6-class classification: Junior (< 6mo), Intermediate (6-8mo), Senior (> 8mo)
+    if (diffMonths < 6) {
+      return 'Junior ' + finalSexLabel;
+    } else if (diffMonths >= 6 && diffMonths < 8) {
+      return 'Intermediate ' + finalSexLabel;
+    } else {
+      return 'Senior ' + finalSexLabel;
+    }
   } else {
-    // 4-class breed
+    // Rabbit 4-class classification: Junior (< 6mo), Senior (> 6mo)
     if (diffMonths < 6) {
       return 'Junior ' + finalSexLabel;
     } else {
