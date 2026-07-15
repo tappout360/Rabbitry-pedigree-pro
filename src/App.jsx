@@ -13,6 +13,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import HealthCheck from './components/ui/HealthCheck';
 import Academy from './views/Academy';
 import RegistrarPrep from './views/RegistrarPrep';
+import EvansMigrator from './views/EvansMigrator';
 import TimelineGallery from './components/gallery/TimelineGallery';
 import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import { db, performMigrationAndLoad } from './db/registryDb';
@@ -5261,6 +5262,12 @@ export default function App() {
               <FileText className="w-5 h-5 text-indigo-400" /> 📜 Registrar Prep
             </button>
             <button 
+              onClick={() => setActiveTab('evansMigrator')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'evansMigrator' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
+            </button>
+            <button 
               onClick={() => setActiveTab('help')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'help' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
@@ -9200,6 +9207,18 @@ export default function App() {
                 allRabbits={allRabbits}
                 selectedRabbitId={prepRabbitId}
                 setSelectedRabbitId={setPrepRabbitId}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* TAB: EVANS SOFTWARE MIGRATOR */}
+          {activeTab === 'evansMigrator' && (
+            <ErrorBoundary>
+              <EvansMigrator
+                allRabbits={allRabbits}
+                setAllRabbits={setAllRabbits}
+                currentUser={currentUser}
+                triggerConfetti={triggerConfetti}
               />
             </ErrorBoundary>
           )}
