@@ -8278,15 +8278,78 @@ export default function App() {
                     <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
                       {(() => {
                         const REGIONAL_SHOW_TEMPLATES = [
-                          { name: "Portland Breeders Winter Show", date: "2026-11-15", loc: "Portland, OR", zip: "97201", notes: "Double youth/open show." },
-                          { name: "Washington County Fair Show", date: "2026-07-28", loc: "Hillsboro, OR", zip: "97124", notes: "Annual county exhibition. Double show." },
-                          { name: "ARBA California Championship", date: "2026-08-22", loc: "Sacramento, CA", zip: "95814", notes: "Triple-sanctioned ARBA show." },
-                          { name: "San Joaquin Valley Classic", date: "2026-07-20", loc: "Stockton, CA", zip: "95202", notes: "Sanctioned open/youth rabbit & cavy show." },
-                          { name: "Golden State Autumn Classic", date: "2026-09-15", loc: "Fresno, CA", zip: "93721", notes: "Pre-national warm-up." },
-                          { name: "Indiana State Fair Exhibition", date: "2026-08-10", loc: "Indianapolis, IN", zip: "46205", notes: "Large state exhibition with youth categories." },
-                          { name: "Midwest Mini Rex Specialty", date: "2026-07-12", loc: "Fort Wayne, IN", zip: "46802", notes: "Rex specialty double show." },
-                          { name: "Ohio State Rabbit Convention", date: "2026-09-18", loc: "Columbus, OH", zip: "43215", notes: "Annual state convention." },
-                          { name: "Great Lakes Giant Fair", date: "2026-09-02", loc: "Grand Rapids, MI", zip: "49503", notes: "All breeds welcome, specialty in Flemish Giants." }
+                          { 
+                            name: "Portland Breeders Winter Show", 
+                            date: "2026-11-15", 
+                            loc: "Portland, OR", 
+                            zip: "97201", 
+                            notes: "Double youth/open show.",
+                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Mini Rex Specialty"]
+                          },
+                          { 
+                            name: "Washington County Fair Show", 
+                            date: "2026-07-28", 
+                            loc: "Hillsboro, OR", 
+                            zip: "97124", 
+                            notes: "Annual county exhibition. Double show.",
+                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Holland Lop Specialty"]
+                          },
+                          { 
+                            name: "ARBA California Championship", 
+                            date: "2026-08-22", 
+                            loc: "Sacramento, CA", 
+                            zip: "95814", 
+                            notes: "Triple-sanctioned ARBA show.",
+                            showsList: ["Show A (Open)", "Show B (Open)", "Show C (Open)", "Youth Show A/B"]
+                          },
+                          { 
+                            name: "San Joaquin Valley Classic", 
+                            date: "2026-07-20", 
+                            loc: "Stockton, CA", 
+                            zip: "95202", 
+                            notes: "Sanctioned open/youth rabbit & cavy show.",
+                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Cavy Specialty"]
+                          },
+                          { 
+                            name: "Golden State Autumn Classic", 
+                            date: "2026-09-15", 
+                            loc: "Fresno, CA", 
+                            zip: "93721", 
+                            notes: "Pre-national warm-up.",
+                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Flemish Giant Specialty"]
+                          },
+                          { 
+                            name: "Indiana State Fair Exhibition", 
+                            date: "2026-08-10", 
+                            loc: "Indianapolis, IN", 
+                            zip: "46205", 
+                            notes: "Large state exhibition with youth categories.",
+                            showsList: ["Show A (Open)", "Show B (Open)", "4-H Youth Derby"]
+                          },
+                          { 
+                            name: "Midwest Mini Rex Specialty", 
+                            date: "2026-07-12", 
+                            loc: "Fort Wayne, IN", 
+                            zip: "46802", 
+                            notes: "Rex specialty double show.",
+                            showsList: ["Show A (Specialty Only)", "Show B (Specialty Only)"]
+                          },
+                          { 
+                            name: "Ohio State Rabbit Convention", 
+                            date: "2026-09-18", 
+                            loc: "Columbus, OH", 
+                            zip: "43215", 
+                            notes: "Annual state convention.",
+                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Show C (Open/Youth)", "Netherland Dwarf Specialty"]
+                          },
+                          { 
+                            name: "Great Lakes Giant Fair", 
+                            date: "2026-09-02", 
+                            loc: "Grand Rapids, MI", 
+                            zip: "49503", 
+                            notes: "All breeds welcome, specialty in Flemish Giants.",
+                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Flemish Giant Specialty"]
+                          }
                         ];
 
                         const radiusVal = parseInt(showRadiusFilter || '100', 10);
@@ -8307,15 +8370,25 @@ export default function App() {
                         }
 
                         return filtered.map((t, idx) => (
-                          <div key={idx} className="p-2 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between gap-3 text-xs text-left relative hover:bg-white/10 transition-all">
-                            <div className="flex flex-col gap-0.5 min-w-0">
+                          <div key={idx} className="p-2.5 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between gap-3 text-xs text-left relative hover:bg-white/10 transition-all">
+                            <div className="flex flex-col gap-1 min-w-0 flex-1">
                               <span className="font-bold text-indigo-300 truncate">{t.name}</span>
+                              
                               <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
                                 <span className="font-mono text-cyan-300 font-semibold">{t.date}</span>
                                 <span>•</span>
                                 <span>{t.loc}</span>
                                 <span>•</span>
                                 <span className="text-emerald-400 font-bold font-mono">{t.distance} mi</span>
+                              </div>
+
+                              {/* Sub-shows mini tags */}
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {t.showsList?.map((sName, sIdx) => (
+                                  <span key={sIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-slate-305 border border-white/5 font-semibold">
+                                    {sName}
+                                  </span>
+                                ))}
                               </div>
                             </div>
                             <button 
@@ -8329,7 +8402,7 @@ export default function App() {
                                   date: t.date,
                                   location: t.loc,
                                   status: 'interested',
-                                  notes: `${t.notes} (Distance: ${t.distance} mi)`,
+                                  notes: `${t.notes} | Shows: ${t.showsList?.join(', ')} (Distance: ${t.distance} mi)`,
                                   notifyDays: 14
                                 };
                                 setAllShows(prev => [newShow, ...prev]);
@@ -8339,7 +8412,7 @@ export default function App() {
                                   type: 'kiba'
                                 });
                               }}
-                              className="py-1 px-2.5 bg-emerald-650 hover:bg-emerald-700 border-none rounded-lg text-white font-bold text-[10px] cursor-pointer shrink-0 transition-all shadow"
+                              className="py-1 px-2.5 bg-emerald-650 hover:bg-emerald-700 border-none rounded-lg text-white font-bold text-[10px] cursor-pointer shrink-0 transition-all shadow self-center"
                             >
                               Import
                             </button>
