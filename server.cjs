@@ -165,6 +165,68 @@ db.serialize(() => {
     )
   `);
   db.run('CREATE INDEX IF NOT EXISTS idx_marketplace_breeder ON marketplace_listings(breeder_id)');
+
+  // Mock Data Seeding for the Marketplace
+  db.get("SELECT COUNT(*) as count FROM breeders WHERE id = 'ab-1'", (err, row) => {
+    if (row && row.count === 0) {
+      db.run(`
+        INSERT INTO breeders (id, name, email, role, status, password, account_number, parental_consent_verified)
+        VALUES ('ab-1', 'Jason Miller', 'jason@grandview.com', 'owner', 'active', 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', 'RAB-123456', 1)
+      `);
+    }
+  });
+
+  db.get("SELECT COUNT(*) as count FROM marketplace_listings", (err, row) => {
+    if (row && row.count === 0) {
+      const mockRabbit1 = {
+        id: 'r-seed-1',
+        breederId: 'ab-1',
+        name: 'Grandview Royal King',
+        breed: 'Holland Lop',
+        variety: 'Sable Point',
+        sex: 'buck',
+        dob: '2025-11-10',
+        tattooNumber: 'RY-K1',
+        status: 'available',
+        notes: 'Outstanding show potential junior buck with compact type and broad crown.',
+        weight: '3.2'
+      };
+
+      const mockRabbit2 = {
+        id: 'r-seed-2',
+        breederId: 'ab-1',
+        name: 'Grandview Velvet Queen',
+        breed: 'Mini Rex',
+        variety: 'Castor',
+        sex: 'doe',
+        dob: '2025-08-15',
+        tattooNumber: 'VV-Q2',
+        status: 'available',
+        notes: 'Beautiful plush rex coat, excellent shoulder width, ready for breeding.',
+        weight: '3.8'
+      };
+
+      db.run(`
+        INSERT INTO breeder_cloud_records (id, breeder_id, tbl, record_id, payload, timestamp, deleted)
+        VALUES ('bcr-seed-1', 'ab-1', 'rabbits', 'r-seed-1', ?, CURRENT_TIMESTAMP, 0)
+      `, [JSON.stringify(mockRabbit1)]);
+
+      db.run(`
+        INSERT INTO breeder_cloud_records (id, breeder_id, tbl, record_id, payload, timestamp, deleted)
+        VALUES ('bcr-seed-2', 'ab-1', 'rabbits', 'r-seed-2', ?, CURRENT_TIMESTAMP, 0)
+      `, [JSON.stringify(mockRabbit2)]);
+
+      db.run(`
+        INSERT INTO marketplace_listings (id, rabbit_id, breeder_id, category, price, contact_method, contact_info, description, health_certified, status, created_at)
+        VALUES ('ml-seed-1', 'r-seed-1', 'ab-1', 'show', 150.00, 'email', 'jason@grandview.com', 'Championship-lineage Sable Point junior buck. High crown, short bone.', 1, 'active', CURRENT_TIMESTAMP)
+      `);
+
+      db.run(`
+        INSERT INTO marketplace_listings (id, rabbit_id, breeder_id, category, price, contact_method, contact_info, description, health_certified, status, created_at)
+        VALUES ('ml-seed-2', 'r-seed-2', 'ab-1', 'utility_breeder', 120.00, 'phone', '555-0101', 'Castor Mini Rex junior doe. Extremely dense velvet fur and great temperament.', 1, 'active', CURRENT_TIMESTAMP)
+      `);
+    }
+  });
 });
 
 // Authentication middleware
