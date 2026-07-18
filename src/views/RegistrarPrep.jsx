@@ -214,7 +214,7 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
                 className="bg-slate-950 text-sm border-white/10"
               >
                 <option value="">-- Choose Stock --</option>
-                {rabbits.map(r => (
+                {rabbits.filter(r => r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead').map(r => (
                   <option key={r.id} value={r.id}>
                     {r.tattooNumber ? `[${r.tattooNumber}] ` : ''}{r.name} - {r.breed}
                   </option>

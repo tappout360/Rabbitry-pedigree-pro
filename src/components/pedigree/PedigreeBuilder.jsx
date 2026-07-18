@@ -1471,7 +1471,40 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                         <input
                           type="text"
                           value={customForm.tattooNumber}
-                          onChange={(e) => setCustomForm({ ...customForm, tattooNumber: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCustomForm(prev => ({ ...prev, tattooNumber: val }));
+                            
+                            if (val && val.trim().length > 0) {
+                              const exactMatch = rabbits.find(r => 
+                                r.tattooNumber && r.tattooNumber.toLowerCase() === val.trim().toLowerCase() && r.id !== selectedRabbitId
+                              );
+                              if (exactMatch) {
+                                // Auto populate registered rabbit metadata
+                                setCustomForm({
+                                  name: exactMatch.name || '',
+                                  tattooNumber: exactMatch.tattooNumber || '',
+                                  breed: exactMatch.breed || '',
+                                  variety: exactMatch.variety || '',
+                                  dob: exactMatch.dob || '',
+                                  weightOz: weightUnit === 'lbs' && exactMatch.weightOz ? (exactMatch.weightOz / 16).toFixed(2) : (exactMatch.weightOz || ''),
+                                  registrationNumber: exactMatch.registrationNumber || '',
+                                  gcNumber: exactMatch.gcNumber || '',
+                                  breederName: exactMatch.breederName || '',
+                                  breederPrefix: exactMatch.breederPrefix || '',
+                                  legsCount: exactMatch.legs?.length || '',
+                                  colorCarrier: exactMatch.colorCarrier || '',
+                                  winningsBOB: exactMatch.winningsBOB || 0,
+                                  winningsBOV: exactMatch.winningsBOV || 0,
+                                  winningsBOS: exactMatch.winningsBOS || 0,
+                                  winningsBOSV: exactMatch.winningsBOSV || 0,
+                                  winningsBIS: exactMatch.winningsBIS || 0,
+                                  winningsOther: exactMatch.winningsOther || 0,
+                                  showClass: exactMatch.showClass || 'Auto'
+                                });
+                              }
+                            }
+                          }}
                           className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-lg p-1.5 focus:border-indigo-500"
                         />
                         {tattooSuggestions.length > 0 && (
