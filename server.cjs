@@ -640,7 +640,7 @@ app.get('/api/billing/status', authenticateToken, (req, res) => {
       if (err) return res.status(500).json({ error: 'Failed to fetch billing history' });
       
       res.json({
-        subscription: sub || { tier: 'free', status: 'active', current_period_end: '' },
+        subscription: sub || { tier: 'basic', status: 'trialing', current_period_end: '' },
         invoices: invoices || []
       });
     });
@@ -649,20 +649,18 @@ app.get('/api/billing/status', authenticateToken, (req, res) => {
 
 // 2. Create Stripe Checkout Session
 app.post('/api/billing/create-checkout-session', authenticateToken, billingLimiter, async (req, res) => {
-  const { tier, billingCycle } = req.body; // tier: 'family', 'pro', 'lifetime'; billingCycle: 'monthly', 'annual', 'one_time'
+  const { tier, billingCycle } = req.body; 
   
-  if (!['family', 'pro', 'lifetime'].includes(tier)) {
+  if (!['basic', 'pro', 'youth_academy', 'evans_lifetime'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier specified' });
   }
 
   try {
-    // Check if Stripe configuration is live or we are simulating checkout
     const isMockStripe = STRIPE_SECRET_KEY.startsWith('sk_test_mockKey');
     const successUrl = `${req.headers.origin || 'http://localhost:3000'}?checkout=success&tier=${tier}`;
     const cancelUrl = `${req.headers.origin || 'http://localhost:3000'}?checkout=cancel`;
 
     if (isMockStripe) {
-      // Return a simulated checkout session redirecting to local client success callback
       const mockSessionId = `mock_cs_${Date.now()}_${Math.random().toString(36).substring(5)}`;
       return res.json({
         id: mockSessionId,
@@ -670,22 +668,23 @@ app.post('/api/billing/create-checkout-session', authenticateToken, billingLimit
       });
     }
 
-    // Determine prices based on requested tier & billingCycle
     let priceId = '';
-    if (tier === 'family') {
-      priceId = billingCycle === 'annual' ? 'price_family_annual_seed' : 'price_family_monthly_seed';
+    if (tier === 'basic') {
+      priceId = billingCycle === 'annual' ? 'price_basic_annual_seed' : 'price_basic_monthly_seed';
     } else if (tier === 'pro') {
       priceId = billingCycle === 'annual' ? 'price_pro_annual_seed' : 'price_pro_monthly_seed';
-    } else if (tier === 'lifetime') {
-      priceId = 'price_lifetime_one_time_seed';
+    } else if (tier === 'youth_academy') {
+      priceId = 'price_youth_academy_monthly_seed';
+    } else if (tier === 'evans_lifetime') {
+      priceId = 'price_evans_lifetime_one_time_seed';
     }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      mode: tier === 'lifetime' ? 'payment' : 'subscription',
-      subscription_data: tier === 'lifetime' ? undefined : {
-        trial_period_days: 14 // 14-day free trial on active paid subscriptions
+      mode: tier === 'evans_lifetime' ? 'payment' : 'subscription',
+      subscription_data: tier === 'evans_lifetime' ? undefined : {
+        trial_period_days: 14 
       },
       success_url: successUrl,
       cancel_url: cancelUrl,
@@ -747,7 +746,7 @@ app.post('/api/billing/evans-verify', authenticateToken, (req, res) => {
       `INSERT INTO subscriptions (id, breeder_id, tier, status, evans_verified, evans_redemption_date, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(breeder_id) DO UPDATE SET evans_verified=1, evans_redemption_date=?`,
-      [`sub-${req.user.id}`, req.user.id, 'free', 'active', 1, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
+      [`sub-${req.user.id}`, req.user.id, 'basic', 'trialing', 1, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
       function(err) {
         if (err) return res.status(500).json({ error: 'Failed to record verification status' });
         res.json({ verified: true, discountUnlocked: true, message: 'Evans CSV fingerprint verified. $169 Lifetime discount unlocked!' });
@@ -1041,9 +1040,9 @@ app.post('/api/photos/upload', authenticateToken, (req, res) => {
   db.get('SELECT tier FROM subscriptions WHERE breeder_id = ?', [req.user.id], (err, sub) => {
     if (err) return res.status(500).json({ error: 'Failed to fetch subscription tier' });
     
-    const userTier = sub ? sub.tier : 'free';
-    const tierLimits = { free: 20, family: 9999, pro: 9999, lifetime: 9999, evans_lifetime: 9999 };
-    const maxPhotos = tierLimits[userTier] || 20;
+    const userTier = sub ? sub.tier : 'basic';
+    const tierLimits = { basic: 500, pro: 9999, youth_academy: 2000, evans_lifetime: 9999 };
+    const maxPhotos = tierLimits[userTier] || 500;
 
     fs.readdir(uploadsDir, (readdirErr, files) => {
       if (readdirErr) return res.status(500).json({ error: 'Failed to read upload storage' });
@@ -1143,7 +1142,7 @@ async function handleWebhookEvent(event) {
   let updatedTrialEnd = null;
   if (type === 'customer.subscription.updated') {
     updatedStatus = data.status;
-    updatedTier = data.metadata?.tier || 'free';
+    updatedTier = data.metadata?.tier || 'basic';
     updatedPeriodEnd = new Date(data.current_period_end * 1000).toISOString();
     updatedTrialEnd = data.trial_end ? new Date(data.trial_end * 1000).toISOString() : null;
   }
@@ -1157,7 +1156,7 @@ async function handleWebhookEvent(event) {
           const breederId = data.client_reference_id;
           const stripeCustomerId = data.customer;
           const stripeSubscriptionId = data.subscription || '';
-          const tier = data.metadata?.tier || 'free';
+          const tier = data.metadata?.tier || 'basic';
 
           db.run(
             `INSERT INTO subscriptions (id, breeder_id, tier, status, stripe_customer_id, stripe_subscription_id, current_period_end, trial_end, created_at)
@@ -1207,7 +1206,7 @@ async function handleWebhookEvent(event) {
         if (type === 'customer.subscription.deleted') {
           const stripeSubscriptionId = data.id;
           db.run(
-            "UPDATE subscriptions SET tier = 'free', status = 'active', stripe_subscription_id = NULL WHERE stripe_subscription_id = ?",
+            "UPDATE subscriptions SET tier = 'basic', status = 'cancelled', stripe_subscription_id = NULL WHERE stripe_subscription_id = ?",
             [stripeSubscriptionId]
           );
         }

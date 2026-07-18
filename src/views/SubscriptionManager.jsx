@@ -38,7 +38,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
     }
   }, [currentUser?.id]);
 
-  const handleCheckout = async (targetTier) => {
+  const handleCheckout = async (targetTier, evansOption = 'one_time') => {
     try {
       setCheckoutLoading(true);
       const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
@@ -51,7 +51,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
         },
         body: JSON.stringify({
           tier: targetTier,
-          billingCycle: targetTier === 'lifetime' ? 'one_time' : billingCycle
+          billingCycle: targetTier === 'evans_lifetime' ? evansOption : billingCycle
         })
       });
       const data = await res.json();
@@ -91,25 +91,23 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
   };
 
   const handleCancelSubscription = async () => {
-    // Perform downgrade locally and sync
     if (currentUser?.id) {
       await updateSubscription(currentUser.id, {
-        tier: 'free',
-        status: 'active',
+        tier: 'basic',
+        status: 'cancelled',
         cancelledAt: new Date().toISOString()
       });
       setCancelModalOpen(false);
       triggerConfetti();
-      alert("Your subscription has been cancelled. You have been placed back onto the Starter / Free tier.");
+      alert("Your subscription has been cancelled. Your active hutch billing is now stopped.");
     }
   };
 
-  // Evans manual review submission
   const handleManualReviewSubmit = (e) => {
     e.preventDefault();
     setEvansVerificationResult({
       status: 'pending',
-      message: 'Thank you! Your manual review has been queued. Our customer support team will audit your request within 24-48 hours.'
+      message: 'Thank you! Your manual verification request has been queued. Our customer support team will audit your license key and db format within 24-48 hours.'
     });
   };
 
@@ -119,9 +117,9 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
   };
 
   const getTierGradient = (tId) => {
-    if (tId === 'free') return 'from-slate-800 to-slate-900 border-slate-700';
-    if (tId === 'family') return 'from-indigo-900/60 to-blue-900/60 border-indigo-500/30';
-    if (tId === 'pro') return 'from-purple-900/60 to-fuchsia-900/60 border-purple-500/30';
+    if (tId === 'basic') return 'from-slate-800 to-indigo-950/70 border-slate-700/60';
+    if (tId === 'pro') return 'from-purple-950/45 to-fuchsia-950/50 border-purple-500/25';
+    if (tId === 'youth_academy') return 'from-indigo-950/50 to-cyan-950/50 border-indigo-500/25';
     return 'from-amber-950/60 to-yellow-950/60 border-amber-500/30';
   };
 
@@ -134,7 +132,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
             <Sparkles className="w-5 h-5 text-amber-400" /> Subscription & Hutch Upgrade Center
           </h3>
           <p className="text-xs opacity-75 mt-0.5">
-            Support WarrenWise Pro, manage billing cycles, and unlock advanced showmanship, mapping, and cavy capabilities.
+            Manage billing cycles, unlock advanced showmanship analytics, cavy templates, and gamified study tools.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -150,19 +148,19 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
           <div className="flex flex-col md:flex-row justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-2xl">
-                {tier === 'free' ? ' Starter 🐇' : tier === 'family' ? 'Family 🏡' : 'Pro 👑'}
+                {tier === 'basic' ? '🏡' : tier === 'pro' ? '👑' : tier === 'youth_academy' ? '🎓' : '🧬'}
               </div>
               <div>
                 <h4 className="font-black text-lg text-white">
-                  {SUBSCRIPTION_TIERS[tier]?.name || 'Starter (Free)'}
+                  {SUBSCRIPTION_TIERS[tier]?.name || 'Basic Plan'}
                 </h4>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${status === 'active' ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${status === 'active' || status === 'trialing' ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
                     {status}
                   </span>
-                  {trialEnd && new Date(trialEnd) > new Date() && (
-                    <span className="text-[10px] text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                      Trial ends {formatPeriodEnd(trialEnd)}
+                  {trialEnd && status === 'trialing' && (
+                    <span className="text-[10px] text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 animate-pulse">
+                      14-Day Trial ends {formatPeriodEnd(trialEnd)}
                     </span>
                   )}
                 </div>
@@ -172,16 +170,16 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
             <div className="flex flex-col gap-1 text-xs text-left md:text-right border-t md:border-t-0 border-white/5 pt-2 md:pt-0">
               <span className="opacity-70">Next Renewal / Expiration</span>
               <span className="font-bold text-white flex items-center md:justify-end gap-1.5 font-mono">
-                <Calendar className="w-3.5 h-3.5 opacity-80" /> {formatPeriodEnd(currentPeriodEnd)}
+                <Calendar className="w-3.5 h-3.5 opacity-80" /> {formatPeriodEnd(currentPeriodEnd || trialEnd)}
               </span>
               {cancelledAt && (
-                <span className="text-[10px] text-amber-400 font-bold">Auto-renewals turned off</span>
+                <span className="text-[10px] text-amber-400 font-bold">Auto-renewals stopped</span>
               )}
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2.5 mt-4 pt-3 border-t border-white/5">
-            {tier !== 'free' && (
+            {status !== 'trialing' && (
               <button
                 type="button"
                 onClick={handlePortalRedirect}
@@ -192,7 +190,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
               </button>
             )}
 
-            {tier !== 'free' && (
+            {(status === 'active' || status === 'trialing') && (
               <button
                 type="button"
                 onClick={() => setCancelModalOpen(true)}
@@ -200,12 +198,6 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
               >
                 Cancel Subscription
               </button>
-            )}
-
-            {tier === 'free' && (
-              <span className="text-[10px] text-slate-400 leading-relaxed">
-                Enjoying the app? Upgrade below to unlock offline cloud sync backups, full cavy templates, and unlimited photos.
-              </span>
             )}
           </div>
         </div>
@@ -248,7 +240,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
         </div>
 
         {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           {Object.keys(SUBSCRIPTION_TIERS).filter(k => k !== 'evans_lifetime').map(key => {
             const plan = SUBSCRIPTION_TIERS[key];
             const isCurrent = tier === key;
@@ -256,34 +248,36 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
 
             // Price resolution
             let priceText = plan.priceLabel;
-            if (key === 'family') {
+            if (key === 'basic') {
               priceText = billingCycle === 'annual' ? '$59.00 / year' : '$5.99 / month';
             } else if (key === 'pro') {
               priceText = billingCycle === 'annual' ? '$129.00 / year' : '$12.99 / month';
+            } else if (key === 'youth_academy') {
+              priceText = '$15.99 / month'; // Monthly only
             }
 
             return (
-              <div key={key} className={`rounded-3xl border p-6 flex flex-col justify-between gap-5 bg-gradient-to-b ${cardGrad} transition-all relative ${plan.id === 'family' ? 'shadow-[0_0_20px_rgba(99,102,241,0.15)] ring-2 ring-indigo-500/25' : ''}`}>
-                {plan.id === 'family' && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
-                    Most Popular
+              <div key={key} className={`rounded-3xl border p-6 flex flex-col justify-between gap-5 bg-gradient-to-b ${cardGrad} transition-all relative ${plan.id === 'basic' ? 'shadow-[0_0_20px_rgba(99,102,241,0.15)] ring-2 ring-indigo-500/25' : ''}`}>
+                {plan.id === 'basic' && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow animate-pulse">
+                    14-Day Trial Options
                   </span>
                 )}
                 <div className="flex flex-col gap-3">
                   <div>
                     <h5 className="font-black text-white text-base">{plan.name}</h5>
-                    <span className="text-xl font-black text-indigo-300 font-mono mt-1 block">
+                    <span className="text-xl font-black text-indigo-350 font-mono mt-1 block">
                       {priceText}
                     </span>
                   </div>
 
                   <p className="text-[10px] text-slate-400 font-medium">
-                    Hutch capacity limits: <strong className="text-slate-300 font-bold">{plan.limit}</strong> active animals
+                    Hutch capacity limits: <strong className="text-slate-300 font-bold">{plan.limit}</strong> active profiles
                   </p>
 
-                  <ul className="flex flex-col gap-2 mt-2">
+                  <ul className="flex flex-col gap-2 mt-2 text-left">
                     {plan.features.map((feat, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5 text-[11px] opacity-90 leading-relaxed text-slate-300">
+                      <li key={idx} className="flex items-start gap-1.5 text-[11px] opacity-90 leading-relaxed text-slate-350">
                         <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <span>{feat}</span>
                       </li>
@@ -294,10 +288,10 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
                 <button
                   type="button"
                   onClick={() => handleCheckout(key)}
-                  disabled={checkoutLoading || isCurrent || key === 'free'}
-                  className={`btn-interactive w-full text-xs font-bold py-2 ${isCurrent ? 'bg-white/10 text-white cursor-default border-none' : key === 'free' ? 'bg-slate-800 text-slate-400 border border-white/5 cursor-not-allowed' : 'bg-indigo-650 hover:bg-indigo-700 text-white border-none shadow'}`}
+                  disabled={checkoutLoading || isCurrent}
+                  className={`btn-interactive w-full text-xs font-bold py-2 ${isCurrent ? 'bg-white/10 text-white cursor-default border-none shadow-inner' : 'bg-indigo-650 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-650/15 cursor-pointer'}`}
                 >
-                  {isCurrent ? 'Current Tier Active' : key === 'free' ? 'Starter Free Tier' : 'Upgrade & Start Trial'}
+                  {isCurrent ? 'Current Plan Active' : 'Upgrade & Start Trial'}
                 </button>
               </div>
             );
@@ -306,34 +300,56 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
       </div>
 
       {/* 3. EVANS AUTOMATED & MANUAL DISCOUNTS */}
-      <div className="glass-container p-6 bg-gradient-to-br from-slate-900 to-indigo-950/40 border-indigo-500/10 flex flex-col gap-4 mt-4">
+      <div className="glass-container p-6 bg-gradient-to-br from-slate-900 to-indigo-950/40 border-indigo-500/10 flex flex-col gap-4 mt-4 text-left">
         <div className="flex justify-between items-center flex-wrap gap-2">
           <h4 className="text-sm font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
             <Sparkles className="w-4 h-4" /> Evans Migrant Discount Verification
           </h4>
           <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold px-2 py-0.5 rounded">
-            Special Special Lifetime Perk
+            Evans Client Coupon Only
           </span>
         </div>
 
         <p className="text-xs opacity-85 leading-relaxed text-slate-300">
-          Already using Evans Software? Upload your Evans CSV export to automatically check for headers validation, unlock a special **$169.00 Lifetime Master** account, and skip recurring monthly fees!
+          Transitioning from Evans Software? Upload your Evans database file to verify your formatting. Once successfully analyzed, you will unlock a transition purchase option to get Evans Migrant Special Lifetime with zero recurring monthly hutch dues.
         </p>
 
         {evansVerified ? (
-          <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center gap-3 text-xs text-emerald-300 max-w-lg">
-            <ShieldCheck className="w-6 h-6 shrink-0 text-emerald-400" />
-            <div>
-              <span className="font-bold block">Evans Software Verified Breeder Account!</span>
-              <span className="opacity-80">Discount pricing unlocked. You can claim the Evans Migrant Lifetime discount anytime.</span>
+          <div className="p-5 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex flex-col gap-4 max-w-3xl animate-fade-in text-left">
+            <div className="flex items-center gap-3 text-xs text-emerald-300">
+              <ShieldCheck className="w-6 h-6 shrink-0 text-emerald-400" />
+              <div>
+                <span className="font-bold block text-sm">Evans Database File Verified Successfully!</span>
+                <span className="opacity-80 font-medium">Discount pricing unlocked. Select your transition payment choice below to claim Evans Migrant Lifetime.</span>
+              </div>
             </div>
+            {tier !== 'evans_lifetime' ? (
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => handleCheckout('evans_lifetime', 'one_time')}
+                  disabled={checkoutLoading}
+                  className="py-2.5 px-5 bg-amber-600 hover:bg-amber-700 border-none rounded-xl text-white font-extrabold cursor-pointer text-xs shadow-md uppercase tracking-wider transition-all"
+                >
+                  Pay One-Time ($249)
+                </button>
+                <button
+                  onClick={() => handleCheckout('evans_lifetime', 'installments')}
+                  disabled={checkoutLoading}
+                  className="py-2.5 px-5 bg-indigo-650 hover:bg-indigo-700 border-none rounded-xl text-white font-extrabold cursor-pointer text-xs shadow-md uppercase tracking-wider transition-all"
+                >
+                  3 Monthly Installments ($85/mo)
+                </button>
+              </div>
+            ) : (
+              <span className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-black px-2.5 py-1 rounded-full uppercase self-start">Evans Lifetime Active</span>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
             <div className="p-4 bg-white/5 border border-white/5 rounded-2xl flex flex-col gap-2 justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Automated Checker</span>
-                <p className="text-[11px] opacity-75 mt-1 leading-relaxed">
+                <p className="text-[11px] opacity-75 mt-1 leading-relaxed text-slate-350">
                   Go to the **Evans Migrator** tab in the sidebar and import your Evans export file. The checker scans columns automatically and unlocks the perk.
                 </p>
               </div>
@@ -349,7 +365,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
                   required
                   placeholder="e.g. Registered email on Evans, approx license key number, or purchase receipt..."
                   rows={2}
-                  className="bg-slate-900 border border-white/10 p-2 text-white rounded-lg"
+                  className="bg-slate-900 border border-white/10 p-2 text-white rounded-lg focus:outline-none"
                 />
               </div>
               <button
@@ -370,7 +386,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
 
       {/* 4. BILLING HISTORY / INVOICES LIST */}
       <div className="glass-container p-6">
-        <h4 className="text-sm font-bold uppercase tracking-wider text-indigo-300 mb-4 flex items-center gap-1.5">
+        <h4 className="text-sm font-bold uppercase tracking-wider text-indigo-300 mb-4 flex items-center gap-1.5 text-left">
           <History className="w-4 h-4" /> Billing History & Invoices
         </h4>
         <div className="overflow-x-auto text-xs">
@@ -384,7 +400,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
                 <th className="pb-3 text-right">Receipt</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/5 text-left">
               {invoices.map(inv => (
                 <tr key={inv.id} className="hover:bg-white/5 transition-all">
                   <td className="py-3 font-mono font-bold text-indigo-300">{inv.stripeInvoiceId || inv.id}</td>
@@ -409,8 +425,8 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
               ))}
               {invoices.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="text-center py-6 opacity-60 text-slate-400">
-                    No payment invoices logged. You are currently on a Starter free tier.
+                  <td colSpan="5" className="text-center py-6 opacity-60 text-slate-455 text-xs italic">
+                    No active transaction receipts logged.
                   </td>
                 </tr>
               )}
@@ -421,13 +437,13 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
 
       {/* CANCELLATION DIALOG MODAL */}
       {cancelModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-left">
           <div className="glass-container p-6 max-w-md w-full flex flex-col gap-4 border border-red-500/20">
             <h4 className="text-base font-bold text-white flex items-center gap-1.5">
               <AlertTriangle className="w-5 h-5 text-red-400" /> Cancel Subscription?
             </h4>
-            <p className="text-xs opacity-80 leading-relaxed">
-              We will miss you! If you cancel your hutch upgrade, your account will downgrade back to the **Starter / Free Plan**. Your capacity limit will revert to **15 active profiles**. 
+            <p className="text-xs opacity-80 leading-relaxed text-slate-350">
+              We will miss you! Cancelling your upgrade will freeze active synchronization and set your hutch account status to cancelled.
             </p>
 
             <div className="flex flex-col gap-2 text-xs">

@@ -3,8 +3,8 @@ import { db } from '../db/registryDb';
 import { canAccessFeature, getTierLimits } from '../db/subscriptionConfig';
 
 export const useSubscription = create((set, get) => ({
-  tier: 'free',
-  status: 'active',
+  tier: 'basic',
+  status: 'trialing',
   stripeCustomerId: '',
   stripeSubscriptionId: '',
   currentPeriodEnd: '',
@@ -22,8 +22,8 @@ export const useSubscription = create((set, get) => ({
       
       if (localSub) {
         set({
-          tier: localSub.tier || 'free',
-          status: localSub.status || 'active',
+          tier: localSub.tier || 'basic',
+          status: localSub.status || 'trialing',
           stripeCustomerId: localSub.stripeCustomerId || '',
           stripeSubscriptionId: localSub.stripeSubscriptionId || '',
           currentPeriodEnd: localSub.currentPeriodEnd || '',
@@ -33,28 +33,28 @@ export const useSubscription = create((set, get) => ({
           isLoading: false
         });
       } else {
-        // Fallback or seed default subscription
-        const freeSub = {
+        // Fallback or seed default 14-day trialing subscription
+        const defaultSub = {
           id: `sub-${breederId}`,
           breederId,
-          tier: 'free',
-          status: 'active',
+          tier: 'basic',
+          status: 'trialing',
           stripeCustomerId: '',
           stripeSubscriptionId: '',
           currentPeriodEnd: '',
-          trialEnd: null,
+          trialEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           cancelledAt: null,
           evansVerified: false,
           createdAt: new Date().toISOString()
         };
-        await db.subscriptions.add(freeSub);
+        await db.subscriptions.add(defaultSub);
         set({
-          tier: 'free',
-          status: 'active',
+          tier: 'basic',
+          status: 'trialing',
           stripeCustomerId: '',
           stripeSubscriptionId: '',
           currentPeriodEnd: '',
-          trialEnd: '',
+          trialEnd: defaultSub.trialEnd,
           cancelledAt: '',
           evansVerified: false,
           isLoading: false
@@ -77,7 +77,7 @@ export const useSubscription = create((set, get) => ({
       const updatedRecord = {
         id: existing?.id || `sub-${Date.now()}`,
         breederId,
-        tier: subData.tier || 'free',
+        tier: subData.tier || 'basic',
         status: subData.status || 'active',
         stripeCustomerId: subData.stripeCustomerId || '',
         stripeSubscriptionId: subData.stripeSubscriptionId || '',
@@ -128,8 +128,8 @@ export const useSubscription = create((set, get) => ({
 
   clearSubscription: () => {
     set({
-      tier: 'free',
-      status: 'active',
+      tier: 'basic',
+      status: 'trialing',
       stripeCustomerId: '',
       stripeSubscriptionId: '',
       currentPeriodEnd: '',
@@ -143,8 +143,10 @@ export const useSubscription = create((set, get) => ({
   // Helper check methods
   hasPremiumAccess: () => {
     const { tier, status } = get();
-    if (status !== 'active' && status !== 'trialing') return false;
-    return tier !== 'free';
+    const isActive = status === 'active' || status === 'trialing';
+    if (!isActive) return false;
+    // Premium includes Pro and 4-H Academy plans
+    return tier === 'pro' || tier === 'youth_academy' || tier === 'evans_lifetime';
   },
 
   isFeatureAllowed: (featureName) => {
@@ -159,7 +161,7 @@ export const useSubscription = create((set, get) => ({
     const isTrial = status === 'trialing';
 
     if (isTrial) {
-      if (tier === 'family') {
+      if (tier === 'basic') {
         return {
           animalLimit: 40,
           photoLimit: 100,
@@ -170,6 +172,13 @@ export const useSubscription = create((set, get) => ({
         return {
           animalLimit: 100,
           photoLimit: 250,
+          isTrial: true
+        };
+      }
+      if (tier === 'youth_academy') {
+        return {
+          animalLimit: 50,
+          photoLimit: 150,
           isTrial: true
         };
       }

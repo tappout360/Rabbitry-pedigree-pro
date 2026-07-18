@@ -1,113 +1,100 @@
 // Subscription tiers and gating configurations for WarrenWise Pro (RabbitryPedigree Pro)
 
 export const SUBSCRIPTION_TIERS = {
-  free: {
-    id: 'free',
-    name: 'Starter (Free)',
-    priceLabel: '$0.00',
-    limit: 15,
-    maxPhotos: 20,
-    features: [
-      'Basic rabbitry registry (max 15 active animals)',
-      'Basic 3-generation pedigree printing (with watermark)',
-      'Health & growth tracking',
-      'Media photo gallery (max 20 uploads)',
-      'Basic breeding scheduler',
-      '4-H Academy access'
-    ]
-  },
-  family: {
-    id: 'family',
-    name: 'Family / Hobby',
+  basic: {
+    id: 'basic',
+    name: 'Basic Hutch Plan',
     priceLabel: '$5.99 / month or $59.00 / year',
     limit: 75,
-    maxPhotos: 9999,
+    maxPhotos: 500,
     features: [
-      'Medium rabbitry registry (max 75 active animals)',
+      '14-Day Free Trial (Age Verify CC required)',
+      'Hutch inventory registry (max 75 active animals)',
       'Full 4-generation pedigree tree generation',
-      'No PDF watermarks',
-      'Unlimited photo gallery space',
+      'No PDF watermarks on certificates',
+      'Media photo logs (max 500 uploads)',
       'Gestation milestones & notification alerts',
       'Genetics inbreeding calculator',
-      'Basic financial ledger log',
-      'Offline auto-sync with cloud backups',
-      '4-H parent chore dashboards'
+      'Basic hutch financial ledger',
+      'Offline auto-sync with secure SQLite cloud'
     ]
   },
   pro: {
     id: 'pro',
-    name: 'Pro / Commercial',
+    name: 'Pro / Commercial Plan',
     priceLabel: '$12.99 / month or $129.00 / year',
     limit: 500,
     maxPhotos: 9999,
     features: [
+      '14-Day Free Trial (Age Verify CC required)',
       'Large herd inventory (max 500 active profiles)',
-      'All Family/Hobby features included',
+      'All Basic Plan hutch registry features',
       'Evans Software one-click import engine',
-      'Multi-breeder/assistant admin permissions',
+      'Multi-breeder/assistant hutch permissions',
       'Advanced financial profit/loss analytics',
       'Exhibitor registry bulk prep reports'
     ]
   },
-  lifetime: {
-    id: 'lifetime',
-    name: 'Lifetime Master',
-    priceLabel: '$249.00 one-time',
-    limit: 500,
-    maxPhotos: 9999,
+  youth_academy: {
+    id: 'youth_academy',
+    name: '4-H Academy & Family Plan',
+    priceLabel: '$15.99 / month',
+    limit: 100,
+    maxPhotos: 2000,
     features: [
-      'Unlimited lifetime updates for 5 years',
-      'All Pro tier capabilities unlocked',
-      'Priority customer support channels',
-      'Beta feature access'
+      '14-Day Free Trial (Age Verify CC required)',
+      'Medium hutch registry (max 100 active profiles)',
+      'All Basic Plan hutch registry features',
+      '4-H Learning gamified challenges and quizzes',
+      '4-H parent chore checklists & controls',
+      '4-H Leader / Coach learning progress sharing',
+      'Free linked student accounts for children/students'
     ]
   },
   evans_lifetime: {
     id: 'evans_lifetime',
-    name: 'Evans Migrant Special',
-    priceLabel: '$169.00 one-time',
+    name: 'Evans Migrant Lifetime',
+    priceLabel: '$249.00 one-time, or 3 monthly payments of $85.00',
     limit: 500,
     maxPhotos: 9999,
     features: [
       'Verified Evans Migrant Lifetime account',
-      'All Pro features & 5 years major updates',
-      'No recurring subscriptions ever'
+      'All Pro tier features & 5 years major updates',
+      'No standard recurring hutch subscription bills',
+      'Installment payment plans available'
     ]
   }
 };
 
-// Map features to minimum required tier levels for validation
-export const FEATURE_MIN_TIERS = {
-  basic_registry: 'free',
-  academy: 'free',
-  health_growth: 'free',
-  pedigree_watermark: 'free',
-  pedigree_full: 'family',
-  genetics_calc: 'family',
-  financial_ledger: 'family',
-  cloud_sync: 'family',
-  chore_assignment: 'family',
-  evans_import: 'pro',
-  multi_breeder: 'pro',
-  commercial_analytics: 'pro',
-  registrar_bulk_prep: 'pro'
+// Map features to eligible tier lists
+export const FEATURE_TIER_ELIGIBILITY = {
+  basic_registry: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
+  pedigree_full: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
+  financial_ledger: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
+  cloud_sync: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
+  genetics_calc: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
+  
+  evans_import: ['pro', 'evans_lifetime'],
+  multi_breeder: ['pro', 'evans_lifetime'],
+  commercial_analytics: ['pro', 'evans_lifetime'],
+  registrar_bulk_prep: ['pro', 'evans_lifetime'],
+  
+  academy: ['youth_academy'],
+  chore_assignment: ['youth_academy'],
+  learning_share: ['youth_academy'],
+  student_link: ['youth_academy']
 };
 
 // Check if a tier has access to a specific feature
-export const canAccessFeature = (userTier = 'free', featureName) => {
-  const minTier = FEATURE_MIN_TIERS[featureName];
-  if (!minTier) return true; // Unregulated features
-
-  const tierRank = { free: 0, family: 1, pro: 2, lifetime: 3, evans_lifetime: 3 };
-  const userRank = tierRank[userTier] || 0;
-  const requiredRank = tierRank[minTier] || 0;
-
-  return userRank >= requiredRank;
+export const canAccessFeature = (userTier = 'basic', featureName) => {
+  const allowedTiers = FEATURE_TIER_ELIGIBILITY[featureName];
+  if (!allowedTiers) return true; // Unregulated
+  return allowedTiers.includes(userTier);
 };
 
 // Get inventory size limits
-export const getTierLimits = (userTier = 'free') => {
-  const config = SUBSCRIPTION_TIERS[userTier] || SUBSCRIPTION_TIERS.free;
+export const getTierLimits = (userTier = 'basic') => {
+  const config = SUBSCRIPTION_TIERS[userTier] || SUBSCRIPTION_TIERS.basic;
   return {
     animalLimit: config.limit,
     photoLimit: config.maxPhotos

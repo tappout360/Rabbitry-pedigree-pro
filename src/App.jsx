@@ -221,19 +221,21 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Subscription Tier</label>
             <select
-              value={b.subscriptionTier || 'free'}
+              value={b.subscriptionTier || 'basic'}
               onChange={(e) => {
                 const val = e.target.value;
-                let lim = 25;
-                if (val === 'pro') lim = 1000;
+                let lim = 75;
+                if (val === 'pro') lim = 500;
+                if (val === 'youth_academy') lim = 100;
                 setAdminBreeders(prev => prev.map(item => 
                   item.id === b.id ? { ...item, subscriptionTier: val, subscriptionLimit: lim } : item
                 ));
               }}
               className="text-xs py-1.5 px-3"
             >
-              <option value="free">Basic / Free Plan (Limit 25)</option>
-              <option value="pro">Pro Plan (Limit 1000)</option>
+              <option value="basic">Basic Hutch Plan (Limit 75)</option>
+              <option value="pro">Pro Plan (Limit 500)</option>
+              <option value="youth_academy">4-H Academy & Family (Limit 100)</option>
               <option value="custom">Custom Plan (Set Limit)</option>
             </select>
           </div>

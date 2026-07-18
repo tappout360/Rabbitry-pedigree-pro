@@ -346,19 +346,21 @@ export default function HealthCheck() {
     // Test 10: Subscription & Trial Cap Verification Check
     try {
       // 1. Verify standard limits
-      const freeLimits = getTierLimits('free');
-      const familyLimits = getTierLimits('family');
+      const basicLimits = getTierLimits('basic');
+      const youthLimits = getTierLimits('youth_academy');
       const proLimits = getTierLimits('pro');
 
-      if (freeLimits.animalLimit !== 15 || familyLimits.animalLimit !== 75 || proLimits.animalLimit !== 500) {
+      if (basicLimits.animalLimit !== 75 || youthLimits.animalLimit !== 100 || proLimits.animalLimit !== 500) {
         throw new Error("Standard limits configuration values are incorrect");
       }
 
       // 2. Verify feature permissions
-      const freeHasEvans = canAccessFeature('free', 'evans_import');
+      const basicHasEvans = canAccessFeature('basic', 'evans_import');
       const proHasEvans = canAccessFeature('pro', 'evans_import');
+      const basicHasAcademy = canAccessFeature('basic', 'academy');
+      const youthHasAcademy = canAccessFeature('youth_academy', 'academy');
 
-      if (freeHasEvans || !proHasEvans) {
+      if (basicHasEvans || !proHasEvans || basicHasAcademy || !youthHasAcademy) {
         throw new Error("Feature access control lists failed verification checks");
       }
 
@@ -366,25 +368,26 @@ export default function HealthCheck() {
       const mockGetLimits = (userTier, userStatus) => {
         const isTrial = userStatus === 'trialing';
         if (isTrial) {
-          if (userTier === 'family') return { animalLimit: 40, photoLimit: 100, isTrial: true };
+          if (userTier === 'basic') return { animalLimit: 40, photoLimit: 100, isTrial: true };
           if (userTier === 'pro') return { animalLimit: 100, photoLimit: 250, isTrial: true };
+          if (userTier === 'youth_academy') return { animalLimit: 50, photoLimit: 150, isTrial: true };
         }
         const limits = getTierLimits(userTier);
         return { animalLimit: limits.animalLimit, photoLimit: limits.photoLimit, isTrial: false };
       };
 
-      const trialFamily = mockGetLimits('family', 'trialing');
+      const trialBasic = mockGetLimits('basic', 'trialing');
       const trialPro = mockGetLimits('pro', 'trialing');
       const activePro = mockGetLimits('pro', 'active');
 
-      if (trialFamily.animalLimit !== 40 || trialPro.animalLimit !== 100 || activePro.animalLimit !== 500) {
-        throw new Error(`Trial limit overrides failed verification. Family trial: ${trialFamily.animalLimit}, Pro trial: ${trialPro.animalLimit}, Pro active: ${activePro.animalLimit}`);
+      if (trialBasic.animalLimit !== 40 || trialPro.animalLimit !== 100 || activePro.animalLimit !== 500) {
+        throw new Error(`Trial limit overrides failed verification. Basic trial: ${trialBasic.animalLimit}, Pro trial: ${trialPro.animalLimit}, Pro active: ${activePro.animalLimit}`);
       }
 
       results.push({
         name: "Subscription Trial Bounds Validation",
         status: "pass",
-        message: "Paid subscription tier limits, feature gating, and trial overrides (Family trial cap of 40 active animals, Pro trial cap of 100) are fully validated."
+        message: "Paid subscription tier limits, feature eligibility gating, and trial overrides (Basic trial cap of 40 active animals, Pro trial cap of 100) are fully validated."
       });
     } catch (e) {
       results.push({
