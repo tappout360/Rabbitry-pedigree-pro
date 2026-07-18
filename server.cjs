@@ -329,8 +329,10 @@ app.post('/api/auth/signup', (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
+  const crypto = require('crypto');
+  const hashed = crypto.createHash('sha256').update(password).digest('hex');
   db.get('SELECT * FROM breeders WHERE email = ? OR account_number = ?', [email, email], (err, user) => {
-    if (err || !user || user.password !== password) {
+    if (err || !user || (user.password !== password && user.password !== hashed)) {
       return res.status(401).json({ error: 'Invalid email, account number, or password credentials' });
     }
     
