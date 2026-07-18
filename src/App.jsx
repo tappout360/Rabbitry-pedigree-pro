@@ -10437,6 +10437,33 @@ export default function App() {
               <ErrorBoundary>
                 <HealthCheck />
               </ErrorBoundary>
+
+              {/* Force Re-seed Clean Mock Database Card */}
+              <div className="glass-container p-6 border border-emerald-500/20 bg-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="text-left">
+                  <h3 className="text-sm font-black text-white">🌾 Agricultural Demonstration & Mock Data Seeding</h3>
+                  <p className="text-xs opacity-75 mt-0.5 max-w-xl leading-relaxed">
+                    Force re-seed all local tables with comprehensive test data (20+ purebred rabbits, historical growth logs, financial ledger entries, breeder profiles, active breeding schedules, and 4-H Academy streaks) to audit end-to-end workflows.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to reset and re-seed all database tables? Any custom local data will be replaced with clean defaults.")) {
+                      localStorage.removeItem('rp_migrated_to_dexie_v9');
+                      localStorage.removeItem('rp_current_user');
+                      db.delete().then(() => {
+                        window.location.reload();
+                      }).catch(err => {
+                        console.error("Failed to delete database:", err);
+                        window.location.reload();
+                      });
+                    }
+                  }}
+                  className="btn-interactive shrink-0 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl border-none shadow-md shadow-emerald-900/20"
+                >
+                  ⚡ Seed Full Test Data
+                </button>
+              </div>
             </div>
           )}
 
