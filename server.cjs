@@ -148,6 +148,23 @@ db.serialize(() => {
     )
   `);
   db.run('CREATE INDEX IF NOT EXISTS idx_conflicts_breeder ON conflicts(breeder_id)');
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketplace_listings (
+      id TEXT PRIMARY KEY,
+      rabbit_id TEXT NOT NULL,
+      breeder_id TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'show',
+      price REAL NOT NULL,
+      contact_method TEXT NOT NULL,
+      contact_info TEXT NOT NULL,
+      description TEXT,
+      health_certified INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'active',
+      created_at TEXT
+    )
+  `);
+  db.run('CREATE INDEX IF NOT EXISTS idx_marketplace_breeder ON marketplace_listings(breeder_id)');
 });
 
 // Authentication middleware
@@ -767,6 +784,250 @@ app.post('/api/billing/admin/override', authenticateToken, (req, res) => {
       );
     }
   );
+});
+
+// ========================================================
+// PUBLIC MARKETPLACE & ARBA COMPLIANCE ROUTING (WAVE 6)
+// ========================================================
+
+function fetchRabbitPedigreeTree(breederId, rabbitId, callback) {
+  db.all(
+    "SELECT payload FROM breeder_cloud_records WHERE breeder_id = ? AND tbl = 'rabbits' AND deleted = 0",
+    [breederId],
+    (err, rows) => {
+      if (err || !rows) return callback({});
+      
+      const rabbitsMap = {};
+      rows.forEach(row => {
+        try {
+          const r = JSON.parse(row.payload);
+          rabbitsMap[r.id] = r;
+        } catch(e) {}
+      });
+
+      const buildNode = (rId) => {
+        const r = rabbitsMap[rId];
+        if (!r) return null;
+        return {
+          id: r.id,
+          name: r.name,
+          tattooNumber: r.tattooNumber,
+          breed: r.breed,
+          variety: r.variety,
+          dob: r.dob,
+          weightOz: r.weightOz,
+          registrationNumber: r.registrationNumber,
+          gcNumber: r.gcNumber,
+          sex: r.sex,
+          sire: buildNode(r.sireId),
+          dam: buildNode(r.damId)
+        };
+      };
+
+      callback(buildNode(rabbitId) || {});
+    }
+  );
+}
+
+// 1. Get all active marketplace listings (Anonymous)
+app.get('/api/public/listings', (req, res) => {
+  db.all(
+    `SELECT l.*, b.name as breeder_name 
+     FROM marketplace_listings l
+     JOIN breeders b ON l.breeder_id = b.id
+     WHERE l.status = 'active'
+     ORDER BY l.created_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Failed to retrieve listings' });
+      if (rows.length === 0) return res.json([]);
+
+      const results = [];
+      let processed = 0;
+
+      rows.forEach(row => {
+        db.get(
+          "SELECT payload FROM breeder_cloud_records WHERE record_id = ? AND tbl = 'rabbits' AND deleted = 0",
+          [row.rabbit_id],
+          (rErr, rRow) => {
+            let rabbitInfo = null;
+            if (rRow) {
+              try { rabbitInfo = JSON.parse(rRow.payload); } catch(e) {}
+            }
+            
+            results.push({
+              id: row.id,
+              rabbitId: row.rabbit_id,
+              breederId: row.breeder_id,
+              breederName: row.breeder_name,
+              category: row.category,
+              price: row.price,
+              contactMethod: row.contact_method,
+              contactInfo: row.contact_info,
+              description: row.description,
+              healthCertified: !!row.health_certified,
+              createdAt: row.created_at,
+              rabbit: rabbitInfo
+            });
+
+            processed++;
+            if (processed === rows.length) {
+              res.json(results);
+            }
+          }
+        );
+      });
+    }
+  );
+});
+
+// 2. Fetch listed rabbit's ancestry tree (Anonymous)
+app.get('/api/public/listings/:listingId/pedigree', (req, res) => {
+  const { listingId } = req.params;
+  db.get("SELECT rabbit_id, breeder_id FROM marketplace_listings WHERE id = ?", [listingId], (err, row) => {
+    if (err || !row) return res.status(404).json({ error: 'Listing not found' });
+    
+    fetchRabbitPedigreeTree(row.breeder_id, row.rabbit_id, (tree) => {
+      res.json(tree);
+    });
+  });
+});
+
+// 3. List a rabbit for sale (Authenticated)
+app.post('/api/billing/list-for-sale', authenticateToken, (req, res) => {
+  const { rabbitId, category, price, contactMethod, contactInfo, description, healthCertified } = req.body;
+  const breederId = req.user.id;
+
+  if (!rabbitId || !price || !contactMethod || !contactInfo) {
+    return res.status(400).json({ error: 'Missing mandatory fields' });
+  }
+
+  db.get(
+    "SELECT payload FROM breeder_cloud_records WHERE record_id = ? AND tbl = 'rabbits' AND deleted = 0",
+    [rabbitId],
+    (err, row) => {
+      if (err || !row) return res.status(404).json({ error: 'Rabbit profile not found' });
+      
+      let rabbit = null;
+      try { rabbit = JSON.parse(row.payload); } catch(e) {}
+      
+      if (category === 'show') {
+        if (!rabbit?.tattooNumber || rabbit.tattooNumber.trim().length === 0) {
+          return res.status(400).json({ error: 'ARBA Show Quality listings require a left-ear tattoo number.' });
+        }
+      }
+
+      const listingId = `list-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      db.run(
+        `INSERT INTO marketplace_listings (id, rabbit_id, breeder_id, category, price, contact_method, contact_info, description, health_certified, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
+        [listingId, rabbitId, breederId, category, parseFloat(price), contactMethod, contactInfo, description, healthCertified ? 1 : 0, new Date().toISOString()],
+        (insErr) => {
+          if (insErr) {
+            console.error("Failed to list rabbit:", insErr);
+            return res.status(500).json({ error: 'Failed to create marketplace listing' });
+          }
+
+          if (rabbit) {
+            rabbit.ownershipStatus = 'for_sale';
+            db.run(
+              "UPDATE breeder_cloud_records SET payload = ? WHERE record_id = ? AND tbl = 'rabbits'",
+              [JSON.stringify(rabbit), rabbitId]
+            );
+          }
+
+          res.json({ success: true, listingId });
+        }
+      );
+    }
+  );
+});
+
+// 4. Reserve / Purchase Listed Rabbit (Anonymous/Stripe)
+app.post('/api/public/buy', async (req, res) => {
+  const { listingId } = req.body;
+  if (!listingId) return res.status(400).json({ error: 'Listing ID required' });
+
+  db.get("SELECT * FROM marketplace_listings WHERE id = ? AND status = 'active'", [listingId], async (err, row) => {
+    if (err || !row) return res.status(404).json({ error: 'Listing not active or found' });
+
+    const isMockStripe = STRIPE_SECRET_KEY.startsWith('sk_test_mockKey');
+    
+    if (isMockStripe) {
+      db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        try {
+          db.run("UPDATE marketplace_listings SET status = 'sold' WHERE id = ?", [listingId]);
+
+          db.get(
+            "SELECT payload FROM breeder_cloud_records WHERE record_id = ? AND tbl = 'rabbits'",
+            [row.rabbit_id],
+            (rErr, rRow) => {
+              if (rRow) {
+                try {
+                  const rabbitObj = JSON.parse(rRow.payload);
+                  rabbitObj.ownershipStatus = 'sold';
+                  db.run(
+                    "UPDATE breeder_cloud_records SET payload = ? WHERE record_id = ? AND tbl = 'rabbits'",
+                    [JSON.stringify(rabbitObj), row.rabbit_id]
+                  );
+                } catch(e) {}
+              }
+            }
+          );
+
+          const ledgerId = `ledger-${Date.now()}`;
+          const saleLedgerEntry = {
+            id: ledgerId,
+            breederId: row.breeder_id,
+            type: 'income',
+            category: 'Sale',
+            amount: row.price,
+            date: new Date().toISOString().split('T')[0],
+            notes: `Sold listed rabbit ${row.rabbit_id} via public marketplace.`
+          };
+          
+          db.run(
+            `INSERT INTO breeder_cloud_records (id, breeder_id, tbl, record_id, payload, timestamp)
+             VALUES (?, ?, 'ledger', ?, ?, ?)`,
+            [`cloud-${ledgerId}`, row.breeder_id, ledgerId, JSON.stringify(saleLedgerEntry), new Date().toISOString()]
+          );
+
+          db.run("COMMIT");
+          res.json({ success: true, message: "Purchase completed successfully (Mock Stripe Mode). Rabbit marked as sold." });
+        } catch(e) {
+          db.run("ROLLBACK");
+          res.status(500).json({ error: "Failed to complete purchase" });
+        }
+      });
+    } else {
+      try {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [{
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Rabbit Purchase (ID: ${row.rabbit_id})`,
+                description: `Category: ${row.category}. Direct reserve via WarrenWise Pro marketplace.`,
+              },
+              unit_amount: Math.round(row.price * 100),
+            },
+            quantity: 1,
+          }],
+          mode: 'payment',
+          success_url: `${req.headers.origin || 'http://localhost:3000'}/#/marketplace?checkout=success&listing=${listingId}`,
+          cancel_url: `${req.headers.origin || 'http://localhost:3000'}/#/marketplace?checkout=cancel`,
+          metadata: { listingId, type: 'marketplace_purchase' }
+        });
+
+        res.json({ url: session.url });
+      } catch(stripeErr) {
+        console.error("Stripe marketplace error:", stripeErr);
+        res.status(500).json({ error: "Stripe marketplace session failure" });
+      }
+    }
+  });
 });
 
 // 6. Photo upload with subscription tier limit enforcement

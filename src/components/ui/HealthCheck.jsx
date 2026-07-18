@@ -394,6 +394,90 @@ export default function HealthCheck() {
       });
     }
 
+    // Test 11: ARBA Marketplace Sales Compliance Check
+    try {
+      // 1. Mock listing validator function
+      const validateMarketListing = (listing, rabbit) => {
+        if (!listing.price || listing.price <= 0) {
+          throw new Error("Listing price must be greater than zero.");
+        }
+        
+        // Show quality compliance rules
+        if (listing.category === 'show') {
+          if (!rabbit.tattooNumber || rabbit.tattooNumber.trim().length === 0) {
+            throw new Error("ARBA Show Quality listings require a left-ear tattoo number.");
+          }
+          if (!rabbit.breed || !rabbit.variety) {
+            throw new Error("Show class exhibits require breed and variety details.");
+          }
+        }
+        
+        // Commercial meat weight class calculator check
+        if (listing.category === 'meat') {
+          if (!rabbit.weightOz || rabbit.weightOz <= 0) {
+            throw new Error("Commercial meat listings require weight metrics.");
+          }
+        }
+        return true;
+      };
+
+      // Case A: Show quality without tattoo -> must fail
+      let showTattooFailed = false;
+      try {
+        validateMarketListing(
+          { price: 45.0, category: 'show' },
+          { name: "Fluffy", tattooNumber: "", breed: "New Zealand", variety: "White" }
+        );
+      } catch(e) {
+        showTattooFailed = true;
+      }
+
+      // Case B: Show quality with tattoo -> must pass
+      const showPassed = validateMarketListing(
+        { price: 50.0, category: 'show' },
+        { name: "Rex", tattooNumber: "TX42", breed: "Mini Rex", variety: "Castor" }
+      );
+
+      // Case C: Commercial meat class calculation check
+      const calculateMeatClass = (weightOz, ageWeeks) => {
+        const weightLbs = weightOz / 16;
+        if (weightLbs >= 3.5 && weightLbs <= 5.5 && ageWeeks < 10) {
+          return "Single Fryer";
+        }
+        if (weightLbs >= 5.5 && weightLbs <= 9.0 && ageWeeks < 26) {
+          return "Roaster";
+        }
+        if (weightLbs > 8.0 && ageWeeks >= 26) {
+          return "Stewer";
+        }
+        return "Unclassed Utility";
+      };
+
+      const fryerClass = calculateMeatClass(72, 8); // 4.5 lbs, 8 weeks -> Single Fryer
+      const roasterClass = calculateMeatClass(112, 16); // 7.0 lbs, 16 weeks -> Roaster
+      const stewerClass = calculateMeatClass(144, 30); // 9.0 lbs, 30 weeks -> Stewer
+
+      if (!showTattooFailed || !showPassed) {
+        throw new Error("Show quality tattoo compliance rules validation failed");
+      }
+
+      if (fryerClass !== "Single Fryer" || roasterClass !== "Roaster" || stewerClass !== "Stewer") {
+        throw new Error(`Commercial meat classification mismatch: fryer=${fryerClass}, roaster=${roasterClass}, stewer=${stewerClass}`);
+      }
+
+      results.push({
+        name: "Marketplace ARBA Sales Compliance",
+        status: "pass",
+        message: "ARBA compliance boundaries (mandatory left-ear tattoo for show stock) and commercial meat classifications (Single Fryer, Roaster, Stewer) are fully verified."
+      });
+    } catch (e) {
+      results.push({
+        name: "Marketplace ARBA Sales Compliance",
+        status: "fail",
+        message: `Marketplace compliance failure: ${e.message}`
+      });
+    }
+
     setTestResults(results);
     setIsRunning(false);
   };

@@ -23,6 +23,7 @@ const Academy = React.lazy(() => import('./views/Academy'));
 const RegistrarPrep = React.lazy(() => import('./views/RegistrarPrep'));
 const EvansMigrator = React.lazy(() => import('./views/EvansMigrator'));
 const SubscriptionManager = React.lazy(() => import('./views/SubscriptionManager'));
+const Marketplace = React.lazy(() => import('./views/Marketplace'));
 import { useSubscription } from './hooks/useSubscription';
 import ParentConsentGate from './views/ParentConsentGate';
 import PrivacyPolicy from './views/PrivacyPolicy';
@@ -1450,6 +1451,15 @@ export default function App() {
   const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
   const [editProfileMode, setEditProfileMode] = useState(false);
   const [editProfileData, setEditProfileData] = useState({});
+  const [showListForSaleModal, setShowListForSaleModal] = useState(false);
+  const [listForSaleForm, setListForSaleForm] = useState({
+    price: '',
+    category: 'show',
+    contactMethod: 'email',
+    contactInfo: '',
+    description: '',
+    healthCertified: true
+  });
   const [cageMoveRabbitId, setCageMoveRabbitId] = useState(null); // rabbit id being moved on cage map
   
   // Health & Growth Form States
@@ -2744,6 +2754,48 @@ export default function App() {
     setEditProfileMode(false);
     addSyncAction('UPDATE', 'rabbits', updated);
     showToast(`Profile for "${updated.name}" updated successfully!`, 'success');
+  };
+
+  const handleListRabbitForSale = async (e) => {
+    e.preventDefault();
+    if (!selectedRabbit) return;
+
+    try {
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+      const token = localStorage.getItem('rp_auth_token');
+      
+      const res = await fetch(`${API_ROOT}/billing/list-for-sale`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rabbitId: selectedRabbit.id,
+          category: listForSaleForm.category,
+          price: parseFloat(listForSaleForm.price),
+          contactMethod: listForSaleForm.contactMethod,
+          contactInfo: listForSaleForm.contactInfo,
+          description: listForSaleForm.description,
+          healthCertified: listForSaleForm.healthCertified
+        })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        const updated = { ...selectedRabbit, ownershipStatus: 'for_sale' };
+        setAllRabbits(prev => prev.map(r => r.id === updated.id ? updated : r));
+        setSelectedRabbit(updated);
+        
+        setShowListForSaleModal(false);
+        showToast("Success! Rabbit listed on the public marketplace.", "success");
+      } else {
+        alert(data.error || "Failed to list rabbit.");
+      }
+    } catch(err) {
+      console.error("List for sale error:", err);
+      alert("Network error listing rabbit.");
+    }
   };
 
   // Move Rabbit to Different Cage Location
@@ -4305,6 +4357,35 @@ export default function App() {
   }
 
   if (!hasProfile) {
+    if (authView === 'marketplace') {
+      return (
+        <div className="theme-dark min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+          <header className="w-full p-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl animate-bounce">🐇👑</span>
+              <div>
+                <h1 className="text-lg font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
+                  WarrenWise Marketplace
+                </h1>
+                <span className="text-[8px] uppercase tracking-widest text-indigo-300 font-mono font-bold">Public Show & Meat Stock Directory</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setAuthView('login')}
+              className="text-xs bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl border-none cursor-pointer"
+            >
+              Sign In to Your Hutch
+            </button>
+          </header>
+          <div className="flex-1 overflow-y-auto">
+            <React.Suspense fallback={<div className="p-12 text-center text-xs opacity-50 font-bold">Loading Marketplace...</div>}>
+              <Marketplace />
+            </React.Suspense>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="theme-dark min-h-screen relative overflow-y-auto bg-slate-950 text-slate-100">
         {/* Neon Cyber Glow Effects behind the card */}
@@ -4464,18 +4545,29 @@ export default function App() {
                       Sign In
                     </button>
 
-                    <div className="text-center text-xs opacity-75 border-t border-white/5 pt-4">
-                      <span>Don't have an account? </span>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          setAuthView('signup');
-                          setLoginError('');
-                        }}
-                        className="text-pink-400 hover:text-pink-300 font-bold"
-                      >
-                        Register New Account
-                      </button>
+                    <div className="text-center text-xs opacity-75 border-t border-white/5 pt-4 flex flex-col gap-3">
+                      <div>
+                        <span>Don't have an account? </span>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setAuthView('signup');
+                            setLoginError('');
+                          }}
+                          className="text-pink-400 hover:text-pink-300 font-bold"
+                        >
+                          Register New Account
+                        </button>
+                      </div>
+                      <div>
+                        <button 
+                          type="button" 
+                          onClick={() => setAuthView('marketplace')}
+                          className="text-indigo-450 hover:text-indigo-350 font-black uppercase text-[10px] tracking-wider flex items-center justify-center gap-1.5 mx-auto border border-indigo-500/30 px-4.5 py-2 rounded-xl hover:bg-indigo-500/5 transition-all cursor-pointer"
+                        >
+                          🛒 Browse Public Marketplace
+                        </button>
+                      </div>
                     </div>
 
                     {/* Quick Demo Login Help */}
@@ -5478,6 +5570,12 @@ export default function App() {
                 <ShieldCheck className="w-5 h-5 text-cyan-400 font-bold" /> Parent Controls
               </button>
             )}
+            <button 
+              onClick={() => setActiveTab('marketplace')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'marketplace' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <ShoppingBag className="w-5 h-5 text-orange-450 font-bold" /> 🛒 Marketplace
+            </button>
             <button 
               onClick={() => setActiveTab('help')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'help' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
@@ -7063,14 +7161,40 @@ export default function App() {
                         }
                       })()}
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-xs font-bold text-indigo-350 bg-indigo-500/15 border border-indigo-500/25 px-2.5 py-1 rounded-lg uppercase">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedRabbit.ownershipStatus === 'for_sale' ? (
+                        <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1.5 rounded-lg uppercase animate-pulse">
+                          🛒 Active Sale Listing
+                        </span>
+                      ) : selectedRabbit.status === 'sold' ? (
+                        <span className="text-xs font-bold text-emerald-450 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg uppercase">
+                          🤝 Sold
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setListForSaleForm({
+                              price: '',
+                              category: 'show',
+                              contactMethod: 'email',
+                              contactInfo: currentUser?.email || '',
+                              description: '',
+                              healthCertified: true
+                            });
+                            setShowListForSaleModal(true);
+                          }}
+                          className="btn-interactive text-xs py-1.5 px-3 bg-orange-650 hover:bg-orange-700 text-white font-bold rounded-lg border-none cursor-pointer flex items-center gap-1"
+                        >
+                          🛒 List for Sale
+                        </button>
+                      )}
+                      <span className="text-xs font-bold text-indigo-350 bg-indigo-500/15 border border-indigo-500/25 px-2.5 py-1.5 rounded-lg uppercase">
                         Status: {selectedRabbit.status || 'active'}
                       </span>
-                      <span className="text-xs font-bold text-slate-400 capitalize bg-white/5 px-2.5 py-1 rounded-lg">
+                      <span className="text-xs font-bold text-slate-400 capitalize bg-white/5 px-2.5 py-1.5 rounded-lg">
                         {selectedRabbit.sex}
                       </span>
-                      <span className="text-xs font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg">
+                      <span className="text-xs font-bold text-slate-400 bg-white/5 px-2.5 py-1.5 rounded-lg">
                         {selectedRabbit.breed}
                       </span>
                     </div>
@@ -9103,6 +9227,117 @@ export default function App() {
                 })()}
               </div>
 
+              {/* List for Sale Modal Dialog */}
+              {showListForSaleModal && (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+                  <div className="glass-container p-6 max-w-lg w-full border border-orange-500/25 shadow-2xl relative text-left">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        🛒 Publish Rabbit to Marketplace
+                      </h3>
+                      <button 
+                        onClick={() => setShowListForSaleModal(false)}
+                        type="button"
+                        className="opacity-70 hover:opacity-100 text-white cursor-pointer border-none bg-transparent"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleListRabbitForSale} className="flex flex-col gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-indigo-300">Listing Price ($ USD) *</label>
+                          <input 
+                            type="number" step="0.01" required min="0" placeholder="e.g. 45.00"
+                            value={listForSaleForm.price}
+                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, price: e.target.value })}
+                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-indigo-300">Listing Category *</label>
+                          <select
+                            value={listForSaleForm.category}
+                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, category: e.target.value })}
+                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                          >
+                            <option value="show">🏆 ARBA Show Quality</option>
+                            <option value="utility_breeder">🧬 Utility Breeder</option>
+                            <option value="meat">🥩 Commercial Meat</option>
+                            <option value="pet">🐰 Pet / Companion</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-indigo-300">Preferred Contact Method *</label>
+                          <select
+                            value={listForSaleForm.contactMethod}
+                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, contactMethod: e.target.value })}
+                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                          >
+                            <option value="email">📧 Email</option>
+                            <option value="phone">📞 Phone / Text</option>
+                          </select>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-indigo-300">Contact Details *</label>
+                          <input 
+                            type="text" required placeholder="e.g. breeder@gmail.com"
+                            value={listForSaleForm.contactInfo}
+                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, contactInfo: e.target.value })}
+                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-indigo-300">Public Sales Notes & Description</label>
+                        <textarea
+                          placeholder="Provide details about temperament, genetics standard, show wins history, or weight class..."
+                          value={listForSaleForm.description}
+                          onChange={(e) => setListForSaleForm({ ...listForSaleForm, description: e.target.value })}
+                          className="bg-slate-900 border-white/10 text-xs py-2 text-white min-h-[80px]"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-2 bg-slate-950/40 p-3.5 border border-white/5 rounded-xl">
+                        <input
+                          type="checkbox"
+                          id="healthCheckMarket"
+                          checked={listForSaleForm.healthCertified}
+                          onChange={(e) => setListForSaleForm({ ...listForSaleForm, healthCertified: e.target.checked })}
+                          className="w-4 h-4 cursor-pointer accent-indigo-650"
+                        />
+                        <label htmlFor="healthCheckMarket" className="text-[10px] text-slate-350 cursor-pointer select-none leading-relaxed text-left">
+                          🌿 <strong>ARBA Compliant Health Attestation:</strong> I certify that this rabbit is active, healthy, and exhibits no symptoms of contagious hutch diseases.
+                        </label>
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowListForSaleModal(false)}
+                          className="btn-interactive text-xs py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn-interactive text-xs py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold cursor-pointer"
+                        >
+                          Publish Listing
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
               {/* Log Medical Record Modal Dialog */}
               {showMedicalFormModal && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
@@ -9911,6 +10146,15 @@ export default function App() {
               </div>
             );
           })()}
+
+          {/* TAB: PUBLIC & AUTHENTICATED MARKETPLACE */}
+          {activeTab === 'marketplace' && (
+            <ErrorBoundary>
+              <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Marketplace...</div>}>
+                <Marketplace />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
 
           {/* TAB: HELP CENTER, MANUAL & TERMS */}
           {activeTab === 'help' && (
