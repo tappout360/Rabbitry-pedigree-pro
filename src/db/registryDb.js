@@ -185,6 +185,34 @@ db.version(8).stores({
   marketplaceListings: 'id, rabbitId, breederId, category, status'
 });
 
+// Version 9: Public Social Sharing Feed and Clocks Tracking
+db.version(9).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized, vectorClock',
+  conflicts: 'id, recordId, tbl, fieldName, resolved',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex], vectorClock',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status, vectorClock',
+  litters: 'id, breederId, breedingId, kindleDate, vectorClock',
+  ledger: 'id, breederId, rabbitId, date, vectorClock',
+  shows: 'id, breederId, date, vectorClock',
+  showEntries: 'id, breederId, showId, rabbitId, vectorClock',
+  chores: 'id, breederId, dueDate, vectorClock',
+  transfers: 'id, breederId, rabbitId, date, vectorClock',
+  signatures: 'id, breederId, vectorClock',
+  medical: 'id, breederId, rabbitId, date, vectorClock',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date], vectorClock',
+  syncQueue: '++id, recordId, tbl, timestamp, action',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd, trialEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status',
+  photoThumbnails: 'id, rabbitId, date',
+  offlinePhotos: 'id, rabbitId, status',
+  marketplaceListings: 'id, rabbitId, breederId, category, status',
+  socialPosts: 'id, breederId, title, status, timestamp, parentApproved'
+});
+
 let migrationPromise = null;
 
 export async function performMigrationAndLoad() {
@@ -193,7 +221,7 @@ export async function performMigrationAndLoad() {
   }
 
   migrationPromise = (async () => {
-    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v8');
+    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v9');
     
     const migrateOrLoadTable = async (localStorageKey, dexieTable, defaultList = []) => {
       if (isMigrated) {
@@ -268,10 +296,11 @@ export async function performMigrationAndLoad() {
     const photoThumbnails = await migrateOrLoadTable('rp_photo_thumbnails', db.photoThumbnails, []);
     const offlinePhotos = await migrateOrLoadTable('rp_offline_photos', db.offlinePhotos, []);
     const marketplaceListings = await migrateOrLoadTable('rp_marketplace_listings', db.marketplaceListings, []);
+    const socialPosts = await migrateOrLoadTable('rp_social_posts', db.socialPosts, []);
 
     // Mark migration as done
     if (!isMigrated) {
-      localStorage.setItem('rp_migrated_to_dexie_v8', 'true');
+      localStorage.setItem('rp_migrated_to_dexie_v9', 'true');
     }
 
     return {
@@ -297,7 +326,8 @@ export async function performMigrationAndLoad() {
       conflicts,
       photoThumbnails,
       offlinePhotos,
-      marketplaceListings
+      marketplaceListings,
+      socialPosts
     };
   })().catch(err => {
     migrationPromise = null;

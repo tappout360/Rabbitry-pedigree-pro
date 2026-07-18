@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Upload, FileText, ChevronRight, AlertTriangle, CheckCircle, HelpCircle, BarChart2, ShieldCheck, Sparkles, RefreshCw, Trash2, Download } from 'lucide-react';
 import { db } from '../db/registryDb';
+import { parseDbf } from '../utils/dbfParser';
 
 // RFC 4180-compliant CSV Parser
 function parseCSV(text) {
@@ -128,23 +129,37 @@ export default function EvansMigrator({ allRabbits, setAllRabbits, currentUser, 
     { key: 'gcNumber', label: 'Grand Champion #', required: false, synonyms: ['gc', 'grand', 'champion', 'gc_no'] }
   ];
 
-  // Handle File upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setFileName(file.name);
     setErrorText('');
 
+    const isDbf = file.name.toLowerCase().endsWith('.dbf');
     const reader = new FileReader();
+
     reader.onload = (event) => {
       try {
-        const text = event.target.result;
-        const parsed = parseCSV(text);
-        if (parsed.length < 2) {
-          throw new Error("CSV file does not contain enough rows.");
+        let headers = [];
+        let rows = [];
+
+        if (isDbf) {
+          const buffer = event.target.result;
+          const parsedRecords = parseDbf(buffer);
+          if (parsedRecords.length === 0) {
+            throw new Error("DBF file contains no active records.");
+          }
+          headers = Object.keys(parsedRecords[0]);
+          rows = parsedRecords.map(rec => headers.map(h => String(rec[h] ?? '')));
+        } else {
+          const text = event.target.result;
+          const parsed = parseCSV(text);
+          if (parsed.length < 2) {
+            throw new Error("CSV file does not contain enough rows.");
+          }
+          headers = parsed[0].map(h => h.trim());
+          rows = parsed.slice(1).filter(r => r.length === headers.length && r.some(cell => cell.trim() !== ''));
         }
-        const headers = parsed[0].map(h => h.trim());
-        const rows = parsed.slice(1).filter(r => r.length === headers.length && r.some(cell => cell.trim() !== ''));
 
         setCsvHeaders(headers);
         setCsvRows(rows);
@@ -198,11 +213,17 @@ export default function EvansMigrator({ allRabbits, setAllRabbits, currentUser, 
           });
         }
       } catch (err) {
-        setErrorText("Failed to parse CSV file: " + err.message);
+        setErrorText("Failed to parse file: " + err.message);
       }
     };
-    reader.readAsText(file);
+    
+    if (isDbf) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
+
 
   // Mapped rabbits previews
   const mappedRabbits = useMemo(() => {
@@ -473,16 +494,16 @@ No errors reported. Data stored locally in IndexedDB.
       {step === 1 && (
         <div className="glass-container p-8 flex flex-col items-center justify-center text-center gap-6 max-w-2xl mx-auto">
           <Upload className="w-16 h-16 text-indigo-400 animate-bounce" />
-          <h4 className="text-lg font-bold text-white">Upload your Evans Software CSV Export</h4>
+          <h4 className="text-lg font-bold text-white">Upload your Evans Software Export</h4>
           <p className="text-sm opacity-70 leading-relaxed max-w-md text-slate-300">
-            To migrate, open Evans Software, export your rabbit inventory as a **CSV file**, and upload it here. 
+            To migrate, upload your Evans Software inventory export (**ANIMAL.DBF** or **inventory CSV file**). 
             All data parsing is processed **locally on your device** for absolute privacy.
           </p>
           
           <div className="flex flex-col gap-2 w-full max-w-sm">
             <input 
               type="file" 
-              accept=".csv" 
+              accept=".csv,.dbf" 
               onChange={handleFileUpload} 
               className="hidden" 
               ref={fileInputRef} 
@@ -491,9 +512,9 @@ No errors reported. Data stored locally in IndexedDB.
               onClick={() => fileInputRef.current?.click()}
               className="btn-interactive py-3 bg-indigo-600 hover:bg-indigo-650 text-white font-bold rounded-2xl flex items-center justify-center gap-2"
             >
-              📥 Select CSV Export File
+              📥 Select Evans Export File
             </button>
-            <span className="text-[10px] text-slate-400">Supported file type: .csv</span>
+            <span className="text-[10px] text-slate-400">Supported file formats: .dbf, .csv</span>
           </div>
 
           {errorText && (

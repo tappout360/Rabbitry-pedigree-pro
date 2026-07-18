@@ -4,7 +4,7 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check, Lock
+  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
@@ -24,6 +24,7 @@ const RegistrarPrep = React.lazy(() => import('./views/RegistrarPrep'));
 const EvansMigrator = React.lazy(() => import('./views/EvansMigrator'));
 const SubscriptionManager = React.lazy(() => import('./views/SubscriptionManager'));
 const Marketplace = React.lazy(() => import('./views/Marketplace'));
+const SocialFeed = React.lazy(() => import('./views/SocialFeed'));
 import { useSubscription } from './hooks/useSubscription';
 import ParentConsentGate from './views/ParentConsentGate';
 import PrivacyPolicy from './views/PrivacyPolicy';
@@ -5067,92 +5068,162 @@ export default function App() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Palpation recommendation (Bred 12-22 days ago, not palpated)
+    // 1. Palpation recommendation (Bred 12-22 days for rabbits, 15-20 days for cavies)
     allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext).forEach(b => {
       if (b.status === 'bred') {
         const breedDate = new Date(b.breedDate);
         breedDate.setHours(0, 0, 0, 0);
         const diffDays = Math.ceil((today - breedDate) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 12 && diffDays <= 22) {
-          const sire = rabbits.find(r => r.id === b.buckId)?.name || 'Sire';
-          const dam = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
-          actions.push({
-            id: `action-palpate-${b.id}`,
-            title: `Palpation Recommended`,
-            description: `Pregnancy check due for "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
-            type: 'palpate',
-            icon: '🩺',
-            badge: '12-22 Days Gestation',
-            execute: (result) => {
-              logPalpation(b.id, result);
-              showToast(`Logged palpation result as ${result ? 'Positive' : 'Negative'}!`, "success");
-            }
-          });
+        
+        const damObj = rabbits.find(r => r.id === b.doeId);
+        const isCavy = damObj?.species === 'cavy' || (damObj?.breed && !!CAVY_BREED_STANDARDS[damObj.breed]);
+        const sire = rabbits.find(r => r.id === b.buckId)?.name || 'Sire';
+        const dam = damObj?.name || 'Dam';
+
+        if (isCavy) {
+          if (diffDays >= 15 && diffDays <= 20) {
+            actions.push({
+              id: `action-palpate-${b.id}`,
+              title: `Cavy Palpation & Weight Check`,
+              description: `Pregnancy check & weight check due for cavy sow "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
+              type: 'palpate',
+              icon: '🩺',
+              badge: '15-20 Days Gestation',
+              execute: (result) => {
+                logPalpation(b.id, result);
+                showToast(`Logged farrowing palpation result as ${result ? 'Positive' : 'Negative'}!`, "success");
+              }
+            });
+          }
+        } else {
+          if (diffDays >= 12 && diffDays <= 22) {
+            actions.push({
+              id: `action-palpate-${b.id}`,
+              title: `Palpation Recommended`,
+              description: `Pregnancy check due for "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
+              type: 'palpate',
+              icon: '🩺',
+              badge: '12-22 Days Gestation',
+              execute: (result) => {
+                logPalpation(b.id, result);
+                showToast(`Logged palpation result as ${result ? 'Positive' : 'Negative'}!`, "success");
+              }
+            });
+          }
         }
       }
     });
 
-    // 2. Nest Box Insertion (Gestating positive, Day 28 gestation)
+    // 2. Nest Box / Isolated Farrowing Pen (Gestating positive: Day 28 for rabbits, Day 60 for cavies)
     allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext).forEach(b => {
       if (b.status === 'palpated_positive') {
         const breedDate = new Date(b.breedDate);
         breedDate.setHours(0, 0, 0, 0);
         const diffDays = Math.ceil((today - breedDate) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 27 && diffDays <= 29) {
-          const dam = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
-          actions.push({
-            id: `action-nestbox-${b.id}`,
-            title: `Nest Box Insertion`,
-            description: `Place the nest box in "${dam}"'s cage (Day ${diffDays} of gestation). Kindle expected in ~3 days.`,
-            type: 'nestbox',
-            icon: '📦',
-            badge: 'Day 28 Gestation',
-            execute: () => {
-              setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Nest Box Confirmed Placed]' } : item));
-              showToast(`Confirmed nest box placed for ${dam}!`, "success");
-            }
-          });
+        
+        const damObj = rabbits.find(r => r.id === b.doeId);
+        const isCavy = damObj?.species === 'cavy' || (damObj?.breed && !!CAVY_BREED_STANDARDS[damObj.breed]);
+        const dam = damObj?.name || 'Dam';
+
+        if (isCavy) {
+          if (diffDays >= 58 && diffDays <= 62) {
+            actions.push({
+              id: `action-nestbox-${b.id}`,
+              title: `Isolate Cavy Sow`,
+              description: `Move cavy sow "${dam}" to an isolated farrowing pen (Day ${diffDays} of gestation). Farrowing expected in ~8 days.`,
+              type: 'nestbox',
+              icon: '🏠',
+              badge: 'Day 60 Gestation',
+              execute: () => {
+                setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Farrowing Pen Isolation Confirmed]' } : item));
+                showToast(`Confirmed isolation for ${dam}!`, "success");
+              }
+            });
+          }
+        } else {
+          if (diffDays >= 27 && diffDays <= 29) {
+            actions.push({
+              id: `action-nestbox-${b.id}`,
+              title: `Nest Box Insertion`,
+              description: `Place the nest box in "${dam}"'s cage (Day ${diffDays} of gestation). Kindle expected in ~3 days.`,
+              type: 'nestbox',
+              icon: '📦',
+              badge: 'Day 28 Gestation',
+              execute: () => {
+                setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Nest Box Confirmed Placed]' } : item));
+                showToast(`Confirmed nest box placed for ${dam}!`, "success");
+              }
+            });
+          }
         }
       }
     });
 
-    // 3. Kindle Event (Gestating positive, Day 31 gestation)
+    // 3. Kindle / Farrow Event (Gestating positive: Day 31 for rabbits, Day 68 for cavies)
     allBreedings.filter(b => selectedBreederContext === 'all' || b.breederId === selectedBreederContext).forEach(b => {
       if (b.status === 'palpated_positive') {
         const breedDate = new Date(b.breedDate);
         breedDate.setHours(0, 0, 0, 0);
         const diffDays = Math.ceil((today - breedDate) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 30) {
-          const dam = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
-          actions.push({
-            id: `action-kindle-${b.id}`,
-            title: `Kindle Event Pending`,
-            description: `Check "${dam}" for new litter (Day ${diffDays} of gestation). Kindle is expected today!`,
-            type: 'kindle',
-            breedingId: b.id,
-            damName: dam,
-            badge: 'Day 31 Due Date',
-            execute: (alive, dead) => {
-              logKindle(b.id, alive, dead);
-            }
-          });
+        
+        const damObj = rabbits.find(r => r.id === b.doeId);
+        const isCavy = damObj?.species === 'cavy' || (damObj?.breed && !!CAVY_BREED_STANDARDS[damObj.breed]);
+        const dam = damObj?.name || 'Dam';
+
+        if (isCavy) {
+          if (diffDays >= 67) {
+            actions.push({
+              id: `action-kindle-${b.id}`,
+              title: `Farrow Event Pending`,
+              description: `Check cavy sow "${dam}" for new pups (Day ${diffDays} of gestation). Farrowing is expected today!`,
+              type: 'kindle',
+              breedingId: b.id,
+              damName: dam,
+              badge: 'Day 68 Due Date',
+              execute: (alive, dead) => {
+                logKindle(b.id, alive, dead);
+              }
+            });
+          }
+        } else {
+          if (diffDays >= 30) {
+            actions.push({
+              id: `action-kindle-${b.id}`,
+              title: `Kindle Event Pending`,
+              description: `Check "${dam}" for new litter (Day ${diffDays} of gestation). Kindle is expected today!`,
+              type: 'kindle',
+              breedingId: b.id,
+              damName: dam,
+              badge: 'Day 31 Due Date',
+              execute: (alive, dead) => {
+                logKindle(b.id, alive, dead);
+              }
+            });
+          }
         }
       }
     });
 
-    // 4. Litter Weaning (Age > 8 weeks, kitsWeaned === 0)
+    // 4. Litter / Pup Weaning (Age > 8 weeks for rabbits, > 4 weeks for cavies)
     allLitters.filter(l => selectedBreederContext === 'all' || l.breederId === selectedBreederContext).forEach(l => {
       const b = allBreedings.find(breed => breed.id === l.breedingId);
       if (b && b.kindleDate && Number(l.kitsWeaned) === 0) {
         const birthDate = new Date(b.kindleDate);
         birthDate.setHours(0, 0, 0, 0);
         const diffWeeks = Math.ceil((today - birthDate) / (1000 * 60 * 60 * 24 * 7));
-        if (diffWeeks >= 8) {
-          const damName = rabbits.find(r => r.id === b.doeId)?.name || 'Dam';
+        
+        const damObj = rabbits.find(r => r.id === b.doeId);
+        const isCavy = damObj?.species === 'cavy' || (damObj?.breed && !!CAVY_BREED_STANDARDS[damObj.breed]);
+        const damName = damObj?.name || 'Dam';
+        
+        const targetWeeks = isCavy ? 4 : 8;
+        if (diffWeeks >= targetWeeks) {
           actions.push({
             id: `action-wean-${l.id}`,
-            title: `Wean Litter`,
-            description: `Wean "${damName}"'s litter (Litter is ${diffWeeks} weeks old). Weaning is critical for kit growth.`,
+            title: isCavy ? `Wean Pups` : `Wean Litter`,
+            description: isCavy 
+              ? `Wean cavy sow "${damName}"'s pups (Litter is ${diffWeeks} weeks old). Weaning is critical for pup development.`
+              : `Wean "${damName}"'s litter (Litter is ${diffWeeks} weeks old). Weaning is critical for kit growth.`,
             type: 'wean',
             icon: '🥛',
             litterId: l.id,
@@ -5160,7 +5231,7 @@ export default function App() {
             badge: `${diffWeeks} Weeks Old`,
             execute: (count) => {
               setAllLitters(prev => prev.map(item => item.id === l.id ? { ...item, kitsWeaned: Number(count) } : item));
-              showToast(`Litter weaned successfully with ${count} kits!`, "success");
+              showToast(isCavy ? `Pups weaned successfully with ${count} pups!` : `Litter weaned successfully with ${count} kits!`, "success");
             }
           });
         }
@@ -5607,6 +5678,12 @@ export default function App() {
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'marketplace' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
               <ShoppingBag className="w-5 h-5 text-orange-450 font-bold" /> 🛒 Marketplace
+            </button>
+            <button 
+              onClick={() => setActiveTab('social')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'social' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <Share2 className="w-5 h-5 text-indigo-400 font-bold" /> 🌐 Community Feed
             </button>
             <button 
               onClick={() => setActiveTab('help')}
@@ -10321,6 +10398,18 @@ export default function App() {
             <ErrorBoundary>
               <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Marketplace...</div>}>
                 <Marketplace />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+
+          {/* TAB: COMMUNITY SOCIAL FEED & SHARING */}
+          {activeTab === 'social' && (
+            <ErrorBoundary>
+              <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Community Feed...</div>}>
+                <SocialFeed 
+                  currentUser={currentUser}
+                  showToast={showToast}
+                />
               </React.Suspense>
             </ErrorBoundary>
           )}

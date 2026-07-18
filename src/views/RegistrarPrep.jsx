@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ShieldAlert, Printer, CheckCircle, XCircle, Search, ExternalLink, Calendar, Info } from 'lucide-react';
 import { scanPedigree } from '../db/helpers';
+import { CAVY_BREED_STANDARDS } from '../db/breedStandards';
 
 export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: propSelectedRabbitId, setSelectedRabbitId: propSetSelectedRabbitId }) {
   const [localSelectedRabbitId, setLocalSelectedRabbitId] = useState('');
@@ -26,6 +27,7 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
   const readiness = useMemo(() => {
     if (!activeRabbit) return null;
 
+    const isCavy = activeRabbit.species === 'cavy' || !!CAVY_BREED_STANDARDS[activeRabbit.breed];
     const ageMonths = getAgeMonths(activeRabbit.dob);
     const hasTattoo = !!activeRabbit.tattooNumber && activeRabbit.tattooNumber.trim().length > 0;
     const hasWeight = Number(activeRabbit.weightOz) > 0;
@@ -36,11 +38,16 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
     const pedigreeComplete = missingAncestors.length === 0;
 
     const items = [
-      {
+      isCavy ? {
+        key: 'age',
+        label: 'Cavy Minimum Weight Class (12+ Ounces)',
+        passed: Number(activeRabbit.weightOz) >= 12,
+        description: `Your cavy sow/boar weighs ${activeRabbit.weightOz || 0} oz. ARBA registration requires cavies to weigh at least 12 oz (be in Junior, Intermediate, or Senior weight classes).`
+      } : {
         key: 'age',
         label: 'Adult Age Limit (6+ Months)',
         passed: ageMonths >= 6,
-        description: `Your animal is ${ageMonths.toFixed(1)} months old. ARBA registration requires animals to be at least 6 months of age.`
+        description: `Your animal is ${ageMonths.toFixed(1)} months old. ARBA registration requires rabbits to be at least 6 months of age.`
       },
       {
         key: 'pedigree',
@@ -50,9 +57,16 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
           ? 'All 3 generations (sire, dam, grandparents, great-grandparents) are fully recorded.' 
           : `Missing ${missingAncestors.length} ancestral records in pedigree lineage (e.g. ${missingAncestors.slice(0, 2).map(m => m.name || m.field).join(', ')}). A complete 3-generation pedigree is required.`
       },
-      {
+      isCavy ? {
         key: 'tattoo',
-        label: 'Legible Left Ear Identification',
+        label: 'Legible Left Ear Identification Tag',
+        passed: hasTattoo,
+        description: hasTattoo 
+          ? `Ear Tag "${activeRabbit.tattooNumber}" recorded. Cavies must have a metal ear tag clamped in the left ear at inspection.` 
+          : 'No ear tag number recorded. Cavy must have a legible ID ear tag in the left ear.'
+      } : {
+        key: 'tattoo',
+        label: 'Legible Left Ear Identification Tattoo',
         passed: hasTattoo,
         description: hasTattoo 
           ? `Tattoo/Ear Tag "${activeRabbit.tattooNumber}" recorded. Must be legibly tattooed in the left ear at inspection.` 
@@ -90,6 +104,10 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
       return;
     }
 
+    const isCavy = activeRabbit.species === 'cavy' || !!CAVY_BREED_STANDARDS[activeRabbit.breed];
+    const sexLabel = isCavy ? (activeRabbit.sex === 'buck' ? 'Boar' : 'Sow') : (activeRabbit.sex === 'buck' ? 'Buck' : 'Doe');
+    const idLabel = isCavy ? 'Left Ear Tag' : 'Left Ear Tattoo';
+
     const ageMonths = getAgeMonths(activeRabbit.dob);
     const missing = scanPedigree(activeRabbit, allRabbits);
 
@@ -118,7 +136,7 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
         <body>
           <div class="header">
             <div class="title">ARBA Registrar Inspection Prep Packet</div>
-            <div class="subtitle">RabbitryPedigree Pro Registration Prep Summary</div>
+            <div class="subtitle">WarrenWise Pro Registration Prep Summary</div>
           </div>
 
           <div class="grid">
@@ -127,8 +145,8 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
               <div><strong>Name:</strong> <span class="value">${activeRabbit.name}</span></div>
               <div><strong>Breed:</strong> <span class="value">${activeRabbit.breed}</span></div>
               <div><strong>Variety:</strong> <span class="value">${activeRabbit.variety || 'Unassigned'}</span></div>
-              <div><strong>Sex:</strong> <span class="value">${activeRabbit.sex === 'buck' ? 'Buck / Boar' : 'Doe / Sow'}</span></div>
-              <div><strong>Left Ear Tattoo:</strong> <span class="value">${activeRabbit.tattooNumber || 'Missing'}</span></div>
+              <div><strong>Sex:</strong> <span class="value">${sexLabel}</span></div>
+              <div><strong>${idLabel}:</strong> <span class="value">${activeRabbit.tattooNumber || 'Missing'}</span></div>
               <div><strong>Date of Birth:</strong> <span class="value">${activeRabbit.dob || 'Unknown'} (${ageMonths.toFixed(1)} months)</span></div>
               <div><strong>Registered Weight:</strong> <span class="value">${(activeRabbit.weightOz / 16).toFixed(2)} lbs (${activeRabbit.weightOz} oz)</span></div>
             </div>
@@ -136,8 +154,8 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
             <div>
               <div class="section-title">Pre-Inspection Verification Checklist</div>
               <div class="checklist-item">
-                <div class="box ${ageMonths >= 6 ? 'checked' : ''}"></div>
-                <span>Exhibitor animal is at least 6 months of age</span>
+                <div class="box ${isCavy ? (Number(activeRabbit.weightOz) >= 12 ? 'checked' : '') : (ageMonths >= 6 ? 'checked' : '')}"></div>
+                <span>${isCavy ? 'Cavy weighs at least 12 ounces (Minimum Registration Limit)' : 'Exhibitor rabbit is at least 6 months of age'}</span>
               </div>
               <div class="checklist-item">
                 <div class="box ${missing.length === 0 ? 'checked' : ''}"></div>
@@ -145,7 +163,7 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
               </div>
               <div class="checklist-item">
                 <div class="box ${activeRabbit.tattooNumber ? 'checked' : ''}"></div>
-                <span>Tattoo marked and readable in left ear</span>
+                <span>${isCavy ? 'Metal identification tag clamped in left ear' : 'Legible tattoo in left ear'}</span>
               </div>
               <div class="checklist-item">
                 <div class="box ${activeRabbit.weightOz > 0 ? 'checked' : ''}"></div>
@@ -159,7 +177,7 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
 
           <div class="disclaimer">
             <strong>⚠️ IMPORTANT REGISTRATION NOTICE:</strong><br/>
-            This preparation summary package is for organization and checklist purposes only. In accordance with the American Rabbit Breeders Association (ARBA) rules, official registration requires an in-person physical inspection of the animal by a licensed ARBA Registrar. The animal must match its pedigree details, be free of all show disqualifications, and be at least 6 months old. For official registration application procedures, fee tables, and local show lookups, visit the official ARBA website at <strong>arba.net</strong>.
+            This preparation summary package is for organization and checklist purposes only. In accordance with the American Rabbit Breeders Association (ARBA) rules, official registration requires an in-person physical inspection of the animal by a licensed ARBA Registrar. The animal must match its pedigree details, be free of all show disqualifications, and be at least 6 months old (or meet class weight standards for cavies). For official registration application procedures, fee tables, and local show lookups, visit the official ARBA website at <strong>arba.net</strong>.
           </div>
 
           <script>
