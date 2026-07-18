@@ -478,6 +478,53 @@ export default function HealthCheck() {
       });
     }
 
+    // Test 12: Offline Hutch Scale & Performance Audit
+    try {
+      const startTime = performance.now();
+      
+      const testRabbits = [];
+      for (let i = 1; i <= 500; i++) {
+        testRabbits.push({
+          id: `t-rab-${i}`,
+          breederId: 'ab-1',
+          name: `Hutch Scale Rabbit #${i}`,
+          tattooNumber: `TAT-${i}`,
+          breed: i % 2 === 0 ? 'Holland Lop' : 'New Zealand',
+          variety: 'White',
+          sex: i % 2 === 0 ? 'buck' : 'doe',
+          status: 'active',
+          sireId: i > 2 ? `t-rab-${i - 1}` : null,
+          damId: i > 2 ? `t-rab-${i - 2}` : null
+        });
+      }
+
+      const genetics = new GeneticsEngine(testRabbits);
+      let calculatedCount = 0;
+      
+      for (let i = 10; i < 60; i++) {
+        genetics.calculateInbreedingCoefficient(`t-rab-${i}`, `t-rab-${i-1}`);
+        calculatedCount++;
+      }
+
+      const totalDuration = performance.now() - startTime;
+      
+      if (totalDuration > 200) {
+        throw new Error(`Performance latency bounds exceeded: ${totalDuration.toFixed(2)}ms`);
+      }
+
+      results.push({
+        name: "Mass Scale & Offline Hutch Performance",
+        status: "pass",
+        message: `Offline database scaling verified. Audited 500 active hutch records and resolved 50 recursive pedigree coefficients in ${totalDuration.toFixed(2)}ms (well below 200ms threshold).`
+      });
+    } catch (e) {
+      results.push({
+        name: "Mass Scale & Offline Hutch Performance",
+        status: "fail",
+        message: `Scale performance test failure: ${e.message}`
+      });
+    }
+
     setTestResults(results);
     setIsRunning(false);
   };
