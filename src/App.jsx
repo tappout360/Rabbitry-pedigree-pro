@@ -40,7 +40,7 @@ import { uuidv7 } from './db/uuid';
 import { BREED_COLORS, BREED_VARIETY_GROUPS } from './db/breedColors';
 
 import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from './db/breedStandards';
-import { calculateRabbitShowClass } from './db/helpers';
+import { calculateRabbitShowClass, calculateArbaDivision } from './db/helpers';
 import ColorSelector from './components/ColorSelector';
 
 const LOGO_OPTIONS = [
@@ -1597,6 +1597,7 @@ export default function App() {
   // Breeder Profile Editable States
   const [breederName, setBreederName] = useState(() => currentUser?.name || '');
   const [breederPhone, setBreederPhone] = useState(() => currentUser?.phone || '');
+  const [breederBirthdate, setBreederBirthdate] = useState(() => currentUser?.birthdate || '');
 
   useEffect(() => {
     if (pedigreeEditNode) {
@@ -1663,6 +1664,7 @@ export default function App() {
       setArbaMemberNumber(currentUser.arbaMemberNumber || '');
       if (currentUser.zip) setBreederZip(currentUser.zip);
       if (currentUser.state) setBreederState(currentUser.state);
+      setBreederBirthdate(currentUser.birthdate || '');
     }
   }, [currentUser?.id]);
 
@@ -2358,6 +2360,7 @@ export default function App() {
       theme: profileForm.theme,
       ageGroup: profileForm.ageGroup || 'adult',
       isYouth: profileForm.isYouth,
+      birthdate: profileForm.birthdate || '',
       parentalConsentVerified: !profileForm.isYouth,
       parentName: profileForm.parentName || '',
       parentEmail: profileForm.parentEmail || '',
@@ -4781,32 +4784,86 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Age Verification Category */}
-                    <div className="flex flex-col gap-1.5 border-t border-white/5 pt-2">
-                      <label className="text-[11px] font-bold text-indigo-300">Age Verification Category</label>
-                      <select 
-                        value={profileForm.ageGroup}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setProfileForm({
-                            ...profileForm, 
-                            ageGroup: val,
-                            isYouth: val !== 'adult',
-                            role: val === 'junior' ? 'assistant' : profileForm.role
-                          });
-                        }}
-                        className="bg-slate-900 border border-white/10 text-xs py-2 px-3 text-white rounded-xl focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="adult">Adult Breeder (18+ Years Old)</option>
-                        <option value="teen">Teen Breeder (15 - 18 Years Old)</option>
-                        <option value="junior">Junior Helper (Under 15 Years Old)</option>
-                      </select>
+                    {/* Date of Birth & ARBA Division Assignment */}
+                    <div className="flex flex-col gap-2.5 border-t border-white/5 pt-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[11px] font-bold text-indigo-300">Date of Birth *</label>
+                        <input 
+                          type="date" 
+                          required
+                          value={profileForm.birthdate || ''}
+                          onChange={(e) => {
+                            const bDate = e.target.value;
+                            const divisionInfo = calculateArbaDivision(bDate);
+                            const age = divisionInfo.age;
+                            
+                            let calculatedAgeGroup = 'adult';
+                            let isY = false;
+                            
+                            if (age !== null) {
+                              if (age < 5) {
+                                calculatedAgeGroup = 'too-young';
+                                isY = true;
+                              } else if (age >= 5 && age <= 11) {
+                                calculatedAgeGroup = 'junior';
+                                isY = true;
+                              } else if (age >= 12 && age <= 14) {
+                                calculatedAgeGroup = 'intermediate';
+                                isY = true;
+                              } else if (age >= 15 && age <= 18) {
+                                calculatedAgeGroup = 'senior';
+                                isY = true;
+                              } else {
+                                calculatedAgeGroup = 'adult';
+                                isY = false;
+                              }
+                            }
+                            
+                            setProfileForm({
+                              ...profileForm,
+                              birthdate: bDate,
+                              ageGroup: calculatedAgeGroup,
+                              isYouth: isY,
+                              role: (calculatedAgeGroup === 'junior' || calculatedAgeGroup === 'too-young') ? 'assistant' : profileForm.role
+                            });
+                          }}
+                          className="bg-white/5 border-white/10 text-xs py-2 px-3 text-white rounded-xl focus:outline-none"
+                        />
+                      </div>
 
-                      {profileForm.ageGroup !== 'adult' && (
+                      {profileForm.birthdate && (() => {
+                        const divisionInfo = calculateArbaDivision(profileForm.birthdate);
+                        const isTooYoung = divisionInfo.division.includes('Too Young');
+                        return (
+                          <div className="p-2.5 bg-white/5 rounded-xl border border-white/5 flex flex-col gap-1 text-[11px]">
+                            <div className="flex justify-between items-center">
+                              <span className="opacity-80">Calculated ARBA Age Division:</span>
+                              <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                                isTooYoung ? 'bg-red-500/20 text-red-400' :
+                                profileForm.isYouth ? 'bg-pink-500/20 text-pink-400 animate-pulse' : 'bg-emerald-500/20 text-emerald-400'
+                              }`}>
+                                {divisionInfo.division}
+                              </span>
+                            </div>
+                            {isTooYoung && (
+                              <p className="text-red-400 text-[10px] leading-snug mt-1">
+                                ⚠️ Under ARBA rules, youth must be at least 5 years old to show and register animals. You may still use the app under supervision!
+                              </p>
+                            )}
+                            {profileForm.isYouth && !isTooYoung && (
+                              <p className="text-pink-300 text-[10px] leading-snug mt-1">
+                                🎓 <strong>ARBA Youth Rule:</strong> Youth members must present and handle their own animals in youth classes. Long-sleeved show shirts or coats are required at the table!
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {profileForm.isYouth && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-white/5 rounded-xl border border-white/5 mt-0.5">
                           <div className="flex flex-col gap-1">
                             <label className="text-[9px] uppercase font-bold text-pink-400">
-                              {profileForm.ageGroup === 'teen' ? 'Guardian Name *' : 'Parent Name *'}
+                              Parent / Guardian Name *
                             </label>
                             <input 
                               type="text" placeholder="Guardian Name" required
@@ -4817,7 +4874,7 @@ export default function App() {
                           </div>
                           <div className="flex flex-col gap-1">
                             <label className="text-[9px] uppercase font-bold text-pink-400">
-                              {profileForm.ageGroup === 'teen' ? 'Guardian Email *' : 'Parent Email *'}
+                              Parent / Guardian Email *
                             </label>
                             <input 
                               type="email" placeholder="guardian@domain.com" required
@@ -5366,6 +5423,14 @@ export default function App() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">{activeBreederContext?.rabbitryName || 'Configure Rabbitry'}</h1>
               <span className="text-xs bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded">Pro</span>
+              {activeBreederContext?.isYouth && (() => {
+                const divisionInfo = calculateArbaDivision(activeBreederContext.birthdate);
+                return (
+                  <span className="text-xs bg-pink-500/20 text-pink-400 font-extrabold px-2 py-0.5 rounded animate-pulse" title={`Youth Exhibitor - ${divisionInfo.division}`}>
+                    🎓 {divisionInfo.division.split(' ')[0]}
+                  </span>
+                );
+              })()}
               <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-white/10" id="header-breeder-id">ID: {activeBreederContext?.id}</span>
             </div>
             <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Rabbitry Registry & Pedigree Sync</p>
@@ -5751,6 +5816,24 @@ export default function App() {
               />
             </div>
 
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold">Date of Birth</label>
+              <input 
+                type="date" 
+                value={breederBirthdate}
+                onChange={(e) => setBreederBirthdate(e.target.value)}
+                className="text-sm py-1.5 px-3 focus:outline-none"
+              />
+              {breederBirthdate && (() => {
+                const divisionInfo = calculateArbaDivision(breederBirthdate);
+                return (
+                  <div className="text-[10px] text-pink-300 font-semibold mt-0.5">
+                    Computed Division: <span className="underline">{divisionInfo.division}</span>
+                  </div>
+                );
+              })()}
+            </div>
+
             <div className="grid grid-cols-2 gap-3 text-left">
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold">State</label>
@@ -5911,6 +5994,12 @@ export default function App() {
                 localStorage.setItem('rp_custom_accent', customAccent);
                 
                 if (currentUser) {
+                  const divisionInfo = calculateArbaDivision(breederBirthdate);
+                  const isY = divisionInfo.age !== null && divisionInfo.age <= 18;
+                  const calculatedAgeGroup = divisionInfo.division.includes('Adult') ? 'adult' : 
+                                             divisionInfo.division.includes('Senior') ? 'senior' : 
+                                             divisionInfo.division.includes('Intermediate') ? 'intermediate' : 'junior';
+                  
                   const updatedUser = { 
                     ...currentUser, 
                     name: breederName, 
@@ -5919,7 +6008,10 @@ export default function App() {
                     arbaMemberNumber, 
                     logo: rabbitryLogo, 
                     theme,
-                    customAccent 
+                    customAccent,
+                    birthdate: breederBirthdate,
+                    ageGroup: calculatedAgeGroup,
+                    isYouth: isY
                   };
                   setCurrentUser(updatedUser);
                   
@@ -8305,6 +8397,14 @@ export default function App() {
                 <p className="text-sm opacity-75">
                   Coordinate upcoming ARBA events, manage entries, track preparation requirements, and set notifications for barn days.
                 </p>
+                {activeBreederContext?.isYouth && (
+                  <div className="mt-2.5 p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl flex items-start gap-2.5 text-xs text-pink-300">
+                    <span className="text-base shrink-0 mt-0.5">⚠️</span>
+                    <p className="leading-relaxed font-sans">
+                      <strong>ARBA Youth Rules Notice:</strong> As a registered youth exhibitor, please remember that youth must carry, handle, and present their own animals on the show table without adult assistance in youth breed and showmanship classes. Refer to the official ARBA rules at <a href="https://arba.net" target="_blank" rel="noopener noreferrer" className="underline font-bold text-pink-400 hover:text-pink-300">arba.net</a> for complete guidelines.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
