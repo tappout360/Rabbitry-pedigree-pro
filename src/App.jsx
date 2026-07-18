@@ -1055,6 +1055,8 @@ export default function App() {
   // Customization settings
   const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || '🐇');
   const [rabbitryName, setRabbitryName] = useState(() => localStorage.getItem('rp_rabbitry_name') || 'Grandview Rabbitry');
+  const [breederZip, setBreederZip] = useState(() => localStorage.getItem('rp_breeder_zip') || '97201');
+  const [breederState, setBreederState] = useState(() => localStorage.getItem('rp_breeder_state') || 'OR');
   
   // Customizable Dashboard Widgets
   const [dashboardWidgets, setDashboardWidgets] = useState(() => {
@@ -1160,8 +1162,12 @@ export default function App() {
   }, [allShows, selectedBreederContext]);
 
   const [allShowEntries, setAllShowEntries] = useState([]);
-  const [showZipFilter, setShowZipFilter] = useState('');
+  const [showZipFilter, setShowZipFilter] = useState(() => localStorage.getItem('rp_breeder_zip') || '97201');
   const [showRadiusFilter, setShowRadiusFilter] = useState('100');
+
+  useEffect(() => {
+    setShowZipFilter(breederZip);
+  }, [breederZip]);
 
   const [allChores, setAllChores] = useState([]);
   const chores = React.useMemo(() => {
@@ -1654,6 +1660,8 @@ export default function App() {
       setRabbitryLogo(currentUser.logo || '🐇');
       setTheme(currentUser.theme || 'dark');
       setArbaMemberNumber(currentUser.arbaMemberNumber || '');
+      if (currentUser.zip) setBreederZip(currentUser.zip);
+      if (currentUser.state) setBreederState(currentUser.state);
     }
   }, [currentUser?.id]);
 
@@ -1662,6 +1670,14 @@ export default function App() {
       setCurrentUser(prev => prev ? { ...prev, arbaMemberNumber } : null);
     }
   }, [arbaMemberNumber]);
+
+  useEffect(() => {
+    localStorage.setItem('rp_breeder_zip', breederZip);
+  }, [breederZip]);
+
+  useEffect(() => {
+    localStorage.setItem('rp_breeder_state', breederState);
+  }, [breederState]);
 
   useEffect(() => {
     // Prevent non-admin users from accessing ab-admin context or the admin tab
@@ -1739,6 +1755,18 @@ export default function App() {
       setCurrentUser(prev => prev ? { ...prev, theme } : null);
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (currentUser && currentUser.zip !== breederZip) {
+      setCurrentUser(prev => prev ? { ...prev, zip: breederZip } : null);
+    }
+  }, [breederZip]);
+
+  useEffect(() => {
+    if (currentUser && currentUser.state !== breederState) {
+      setCurrentUser(prev => prev ? { ...prev, state: breederState } : null);
+    }
+  }, [breederState]);
 
   // Save changes from currentUser to the master adminBreeders state list
   useEffect(() => {
@@ -5646,6 +5674,31 @@ export default function App() {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3 text-left">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold">State</label>
+                <input 
+                  type="text" 
+                  maxLength="2" 
+                  value={breederState}
+                  onChange={(e) => setBreederState(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+                  className="text-sm py-1.5 px-3 uppercase text-center font-mono focus:outline-none"
+                  placeholder="e.g. OR"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold">Zip Code</label>
+                <input 
+                  type="text" 
+                  maxLength="5" 
+                  value={breederZip}
+                  onChange={(e) => setBreederZip(e.target.value.replace(/\D/g, ''))}
+                  className="text-sm py-1.5 px-3 text-center font-mono focus:outline-none"
+                  placeholder="e.g. 97201"
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold">Select Emblem Logo</label>
               <div className="grid grid-cols-4 gap-2">
@@ -8361,9 +8414,13 @@ export default function App() {
                           return { ...t, distance };
                         });
 
-                        const filtered = showZipFilter
+                        let filtered = showZipFilter
                           ? calculatedShows.filter(t => t.distance <= radiusVal)
-                          : calculatedShows;
+                          : calculatedShows.filter(t => t.loc.toUpperCase().includes(breederState.toUpperCase()));
+
+                        if (filtered.length === 0 && !showZipFilter) {
+                          filtered = calculatedShows;
+                        }
 
                         if (filtered.length === 0) {
                           return <div className="text-[10px] text-center text-slate-500 py-4">No ARBA shows found within {radiusVal} miles of "{showZipFilter}". Try broadening your radius.</div>;
