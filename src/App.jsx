@@ -2204,7 +2204,7 @@ export default function App() {
       }
 
       const hashedTyped = CryptoJS.SHA256(loginPassword).toString();
-      if (user.password !== hashedTyped) {
+      if (user.password !== hashedTyped && user.password !== loginPassword) {
         setLoginError('Incorrect password. Please try again.');
         return;
       }
