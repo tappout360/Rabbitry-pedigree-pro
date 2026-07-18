@@ -3,6 +3,7 @@ import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, Al
 import { uuidv7 } from '../../db/uuid';
 import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from '../../db/breedStandards';
 import { BREED_COLORS } from '../../db/breedColors';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const parsePedigreeText = (text) => {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -142,6 +143,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       : `${oz} oz`;
   };
 
+  const { isFeatureAllowed } = useSubscription();
   const [selectedRabbitId, setSelectedRabbitId] = useState(propSelectedRabbitId || rabbits[0]?.id || '');
   
   React.useEffect(() => {
@@ -183,6 +185,9 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState('');
+  const [generations, setGenerations] = useState(3);
+  const [sidebarSearch, setSidebarSearch] = useState('');
+  const [dragOverNodeId, setDragOverNodeId] = useState(null);
 
   // Active rabbit instance
   const activeRabbit = useMemo(() => {
@@ -360,10 +365,10 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   };
 
   // Perform Node Assignment
-  const handleAssignRabbit = (rabbit) => {
-    if (!activeRabbit || !activeAssignNode) return;
+  const handleAssignRabbitToNode = (nodeId, nodeLabel, rabbit) => {
+    if (!activeRabbit || !rabbit) return;
 
-    const validation = validateAssignment(activeAssignNode.id, rabbit);
+    const validation = validateAssignment(nodeId, rabbit);
     if (!validation.isValid) {
       alert(validation.message);
       return;
@@ -378,31 +383,36 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     let updatedRabbit = { ...activeRabbit };
 
     // Direct parents
-    if (activeAssignNode.id === 'sire') {
+    if (nodeId === 'sire') {
       updatedRabbit.sireId = rabbit.id;
-    } else if (activeAssignNode.id === 'dam') {
+    } else if (nodeId === 'dam') {
       updatedRabbit.damId = rabbit.id;
     } else {
       // Indirect ancestors (slice nodeKey to find immediate child node)
-      const parentNodeKey = activeAssignNode.id.endsWith('Sire') ? activeAssignNode.id.slice(0, -4) : activeAssignNode.id.slice(0, -3);
+      const parentNodeKey = nodeId.endsWith('Sire') ? nodeId.slice(0, -4) : nodeId.slice(0, -3);
       const parentRabbit = pedigreeNodes[parentNodeKey];
 
       if (parentRabbit) {
         const updatedParent = { ...parentRabbit };
-        if (activeAssignNode.id.endsWith('Sire')) {
+        if (nodeId.endsWith('Sire')) {
           updatedParent.sireId = rabbit.id;
         } else {
           updatedParent.damId = rabbit.id;
         }
         onUpdateRabbit(updatedParent);
       } else {
-        const friendlyParent = activeAssignNode.label.replace(/'s\s+(Sire|Dam)$/, '').replace(/s\s+P\.\s+Grand-Sire/g, "s Sire");
+        const friendlyParent = nodeLabel.replace(/'s\s+(Sire|Dam)$/, '').replace(/s\s+P\.\s+Grand-Sire/g, "s Sire");
         alert(`Please assign the direct parent (${friendlyParent}) first before assigning this ancestor.`);
         return;
       }
     }
 
     onUpdateRabbit(updatedRabbit);
+  };
+
+  const handleAssignRabbit = (rabbit) => {
+    if (!activeAssignNode) return;
+    handleAssignRabbitToNode(activeAssignNode.id, activeAssignNode.label, rabbit);
     setActiveAssignNode(null);
     setSearchQuery('');
   };  const handleCreatePedigreeOnly = (e) => {
@@ -668,6 +678,34 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     setParsedPreview(null);
   };
 
+  const draggableRabbits = useMemo(() => {
+    // Exclude the active rabbit itself
+    const filtered = rabbits.filter(r => r.id !== selectedRabbitId && r.status !== 'pedigree_only');
+    if (!sidebarSearch) return filtered.slice(0, 15);
+    const q = sidebarSearch.toLowerCase();
+    return filtered.filter(r => 
+      r.name.toLowerCase().includes(q) || 
+      (r.tattooNumber && r.tattooNumber.toLowerCase().includes(q)) ||
+      r.breed.toLowerCase().includes(q)
+    );
+  }, [rabbits, selectedRabbitId, sidebarSearch]);
+
+  const handleDropOnNode = (e, nodeId, nodeLabel) => {
+    e.preventDefault();
+    setDragOverNodeId(null);
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain');
+      if (dataStr) {
+        const rabbit = JSON.parse(dataStr);
+        if (rabbit && rabbit.id) {
+          handleAssignRabbitToNode(nodeId, nodeLabel, rabbit);
+        }
+      }
+    } catch (err) {
+      console.error("Drop event error:", err);
+    }
+  };
+
   // Search results for assigning nodes
   const availableOptions = useMemo(() => {
     if (!activeAssignNode) return [];
@@ -776,7 +814,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     const field = nodeId.endsWith('Sire') ? 'sireId' : 'damId';
 
     return (
-      <div className="w-full max-w-[140px] p-1.5 bg-slate-900/60 border border-white/5 rounded-lg shadow-sm">
+      <div 
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOverNodeId(nodeId);
+        }}
+        onDragLeave={() => setDragOverNodeId(null)}
+        onDrop={(e) => handleDropOnNode(e, nodeId, label)}
+        className={`w-full max-w-[140px] p-1.5 bg-slate-900/60 border rounded-lg shadow-sm transition-all ${
+          dragOverNodeId === nodeId 
+            ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+            : 'border-white/5'
+        }`}
+      >
         <p className={`text-[7px] font-extrabold uppercase ${genderColorClass}`}>{label}</p>
         {node ? (
           <div>
@@ -824,11 +874,26 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       {/* Header and selector */}
       <div className="glass-container p-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white mb-1">📜 3-Generation Interactive Pedigree</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white mb-1">📜 {generations}-Generation Interactive Pedigree</h2>
           <p className="text-xs text-slate-300">Design lineages, verify ARBA weight limits, and append authorization signatures.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex bg-slate-950/80 p-0.5 rounded-xl border border-white/10 shrink-0">
+            <button
+              onClick={() => setGenerations(3)}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${generations === 3 ? 'bg-indigo-650 text-white shadow' : 'text-slate-400 bg-transparent'}`}
+            >
+              3 Gen
+            </button>
+            <button
+              onClick={() => setGenerations(4)}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${generations === 4 ? 'bg-indigo-650 text-white shadow' : 'text-slate-400 bg-transparent'}`}
+            >
+              4 Gen
+            </button>
+          </div>
+
           <button
             onClick={() => setShowImportWizard(true)}
             className="py-2 px-3 bg-indigo-650/40 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
@@ -836,7 +901,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
             <Wand2 className="w-4 h-4 text-indigo-400" /> Auto-Digest Written Pedigree
           </button>
           
-          <label className="text-xs font-bold text-slate-400">Select Rabbit:</label>
+          <label className="text-xs font-bold text-slate-400">Select:</label>
           <select
             value={selectedRabbitId}
             onChange={(e) => setSelectedRabbitId(e.target.value)}
@@ -853,11 +918,53 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
 
       {activeRabbit ? (
         <div className="flex flex-col gap-6">
-          {/* Visual 3-Gen Tree Layout (Full Width) */}
           <div className="w-full flex flex-col gap-6">
-            <div className="glass-container p-6 overflow-x-auto">
+            {/* Split Lineage Designer View */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start w-full">
+            {/* Draggable Registry Sidebar */}
+            <div className="glass-container p-4 flex flex-col gap-3 xl:col-span-1 xl:max-h-[650px] overflow-y-auto">
+              <div className="flex flex-col">
+                <h4 className="text-xs font-black uppercase tracking-wider text-indigo-400">Draggable Registry</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">Drag any rabbit from this list and drop it directly onto any slot in the pedigree tree.</p>
+              </div>
+              <input
+                type="text"
+                placeholder="Search registry to drag..."
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="w-full text-xs py-1.5 px-3 bg-slate-950 border-white/10 rounded-lg text-white"
+              />
+              <div className="flex flex-col gap-2 overflow-y-auto max-h-[450px] pr-1">
+                {draggableRabbits.length === 0 ? (
+                  <span className="text-[10px] text-slate-500 text-center py-6">No matching rabbits.</span>
+                ) : (
+                  draggableRabbits.map(r => (
+                    <div
+                      key={r.id}
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify(r));
+                      }}
+                      className="p-2 bg-slate-950 border border-white/5 hover:border-indigo-500/40 rounded-xl cursor-grab active:cursor-grabbing flex items-center justify-between transition-all hover:bg-slate-900"
+                    >
+                      <div>
+                        <h6 className="text-[10px] font-bold text-white truncate max-w-[120px]">{r.name}</h6>
+                        <span className="text-[8px] text-slate-400 font-mono">Tattoo: {r.tattooNumber || 'None'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-xs">{r.sex === 'buck' ? '♂️' : '♀️'}</span>
+                        <span className="text-[8px] text-indigo-300 font-black tracking-wide bg-indigo-500/10 py-0.5 px-1 rounded uppercase font-mono">{r.variety.slice(0, 5)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Visual Lineage Tree Canvas */}
+            <div className="glass-container p-6 overflow-x-auto xl:col-span-3">
               {/* Tree Grid */}
-              <div className="min-w-[650px] lg:min-w-0 grid grid-cols-4 gap-2 relative">
+              <div className={generations === 4 ? "min-w-[650px] lg:min-w-0 grid grid-cols-4 gap-2 relative" : "min-w-[500px] lg:min-w-0 grid grid-cols-3 gap-2 relative"}>
                 {/* Generation 1: Self */}
                 <div className="flex flex-col justify-center items-center">
                   <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-2">Gen 1 (Selected)</h4>
@@ -870,6 +977,24 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                     <p className="text-[10px] text-slate-400 mt-0.5">Tattoo: {pedigreeNodes.self.tattooNumber || 'None'}</p>
                     <p className="text-[10px] text-indigo-300 font-semibold mt-1">{pedigreeNodes.self.breed}</p>
                     <p className="text-[10px] text-slate-300 mt-0.5">Weight: {formatWeight(pedigreeNodes.self.weightOz)}</p>
+                    <div className="mt-1 flex items-center gap-1">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Inbreeding (F):</span>
+                      {isFeatureAllowed('genetics_calc') ? (
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                          (pedigreeNodes.self.inbreedingCoeff || 0) > 0.1 ? 'bg-red-500/20 text-red-400 border border-red-500/10' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/10'
+                        }`}>
+                          {((pedigreeNodes.self.inbreedingCoeff || 0) * 100).toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span 
+                          onClick={() => window.dispatchEvent(new CustomEvent('change-tab', { detail: 'billing' }))}
+                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-500/20 text-indigo-400 border border-indigo-500/10 cursor-pointer flex items-center gap-1"
+                          title="Upgrade to Family/Pro plan to unlock inbreeding calculation"
+                        >
+                          🔒 Unlock
+                        </span>
+                      )}
+                    </div>
                     {onEditNode && (
                       <button
                         type="button"
@@ -892,7 +1017,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   <div className="flex flex-col items-center">
                     <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 mb-2">Gen 2 (Parents)</h4>
                     {/* Sire */}
-                    <div className="w-full max-w-[165px] p-2.5 bg-slate-900 border border-blue-500/20 rounded-2xl relative shadow-md">
+                    <div 
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverNodeId('sire');
+                      }}
+                      onDragLeave={() => setDragOverNodeId(null)}
+                      onDrop={(e) => handleDropOnNode(e, 'sire', 'Sire (Father)')}
+                      className={`w-full max-w-[165px] p-2.5 bg-slate-900 border rounded-2xl relative shadow-md transition-all ${
+                        dragOverNodeId === 'sire' 
+                          ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+                          : 'border-blue-500/20'
+                      }`}
+                    >
                       <div className="absolute top-2 right-2 bg-blue-500/15 text-blue-400 text-[9px] px-2 py-0.5 rounded-full font-bold">SIRE</div>
                       {pedigreeNodes.sire ? (
                         <div>
@@ -938,7 +1075,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
 
                   {/* Dam */}
                   <div className="flex flex-col items-center">
-                    <div className="w-full max-w-[165px] p-2.5 bg-slate-900 border border-pink-500/20 rounded-2xl relative shadow-md">
+                    <div 
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverNodeId('dam');
+                      }}
+                      onDragLeave={() => setDragOverNodeId(null)}
+                      onDrop={(e) => handleDropOnNode(e, 'dam', 'Dam (Mother)')}
+                      className={`w-full max-w-[165px] p-2.5 bg-slate-900 border rounded-2xl relative shadow-md transition-all ${
+                        dragOverNodeId === 'dam' 
+                          ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+                          : 'border-pink-500/20'
+                      }`}
+                    >
                       <div className="absolute top-2 right-2 bg-pink-500/15 text-pink-400 text-[9px] px-2 py-0.5 rounded-full font-bold">DAM</div>
                       {pedigreeNodes.dam ? (
                         <div>
@@ -988,7 +1137,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 text-center mb-1">Gen 3 (Grandparents)</h4>
                   
                   {/* Sire's Sire */}
-                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div 
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverNodeId('sireSire');
+                    }}
+                    onDragLeave={() => setDragOverNodeId(null)}
+                    onDrop={(e) => handleDropOnNode(e, 'sireSire', "Sire's Sire")}
+                    className={`w-full max-w-[150px] p-1.5 bg-slate-900/60 border rounded-xl shadow-md transition-all ${
+                      dragOverNodeId === 'sireSire' 
+                        ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+                        : 'border-white/5'
+                    }`}
+                  >
                     <p className="text-[8px] font-extrabold uppercase text-blue-400">Sire's Sire</p>
                     {pedigreeNodes.sireSire ? (
                       <div>
@@ -1026,7 +1187,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   </div>
 
                   {/* Sire's Dam */}
-                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div 
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverNodeId('sireDam');
+                    }}
+                    onDragLeave={() => setDragOverNodeId(null)}
+                    onDrop={(e) => handleDropOnNode(e, 'sireDam', "Sire's Dam")}
+                    className={`w-full max-w-[150px] p-1.5 bg-slate-900/60 border rounded-xl shadow-md transition-all ${
+                      dragOverNodeId === 'sireDam' 
+                        ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+                        : 'border-white/5'
+                    }`}
+                  >
                     <p className="text-[8px] font-extrabold uppercase text-pink-400">Sire's Dam</p>
                     {pedigreeNodes.sireDam ? (
                       <div>
@@ -1064,7 +1237,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   </div>
 
                   {/* Dam's Sire */}
-                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div 
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverNodeId('damSire');
+                    }}
+                    onDragLeave={() => setDragOverNodeId(null)}
+                    onDrop={(e) => handleDropOnNode(e, 'damSire', "Dam's Sire")}
+                    className={`w-full max-w-[150px] p-1.5 bg-slate-900/60 border rounded-xl shadow-md transition-all ${
+                      dragOverNodeId === 'damSire' 
+                        ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+                        : 'border-white/5'
+                    }`}
+                  >
                     <p className="text-[8px] font-extrabold uppercase text-blue-400">Dam's Sire</p>
                     {pedigreeNodes.damSire ? (
                       <div>
@@ -1102,7 +1287,19 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                   </div>
 
                   {/* Dam's Dam */}
-                  <div className="w-full max-w-[150px] p-1.5 bg-slate-900/60 border border-white/5 rounded-xl shadow-md">
+                  <div 
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverNodeId('damDam');
+                    }}
+                    onDragLeave={() => setDragOverNodeId(null)}
+                    onDrop={(e) => handleDropOnNode(e, 'damDam', "Dam's Dam")}
+                    className={`w-full max-w-[150px] p-1.5 bg-slate-900/60 border rounded-xl shadow-md transition-all ${
+                      dragOverNodeId === 'damDam' 
+                        ? 'border-indigo-500 bg-indigo-500/10 scale-105 shadow-indigo-500/10' 
+                        : 'border-white/5'
+                    }`}
+                  >
                     <p className="text-[8px] font-extrabold uppercase text-pink-400">Dam's Dam</p>
                     {pedigreeNodes.damDam ? (
                       <div>
@@ -1141,20 +1338,23 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
 
                 </div>
 
-                {/* Generation 4: Great-Grandparents */}
-                <div className="flex flex-col justify-between gap-2 py-1">
-                  <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 text-center mb-1">Gen 4 (Great-Grandparents)</h4>
-                  {renderGreatGrandparentCard('sireSireSire', "Sire's Sire's Sire", 'buck', 'text-blue-400')}
-                  {renderGreatGrandparentCard('sireSireDam', "Sire's Sire's Dam", 'doe', 'text-pink-400')}
-                  {renderGreatGrandparentCard('sireDamSire', "Sire's Dam's Sire", 'buck', 'text-blue-400')}
-                  {renderGreatGrandparentCard('sireDamDam', "Sire's Dam's Dam", 'doe', 'text-pink-400')}
-                  {renderGreatGrandparentCard('damSireSire', "Dam's Sire's Sire", 'buck', 'text-blue-400')}
-                  {renderGreatGrandparentCard('damSireDam', "Dam's Sire's Dam", 'doe', 'text-pink-400')}
-                  {renderGreatGrandparentCard('damDamSire', "Dam's Dam's Sire", 'buck', 'text-blue-400')}
-                  {renderGreatGrandparentCard('damDamDam', "Dam's Dam's Dam", 'doe', 'text-pink-400')}
-                </div>
+                {generations === 4 && (
+                  /* Generation 4: Great-Grandparents */
+                  <div className="flex flex-col justify-between gap-2 py-1">
+                    <h4 className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 text-center mb-1">Gen 4 (Great-Grandparents)</h4>
+                    {renderGreatGrandparentCard('sireSireSire', "Sire's Sire's Sire", 'buck', 'text-blue-400')}
+                    {renderGreatGrandparentCard('sireSireDam', "Sire's Sire's Dam", 'doe', 'text-pink-400')}
+                    {renderGreatGrandparentCard('sireDamSire', "Sire's Dam's Sire", 'buck', 'text-blue-400')}
+                    {renderGreatGrandparentCard('sireDamDam', "Sire's Dam's Dam", 'doe', 'text-pink-400')}
+                    {renderGreatGrandparentCard('damSireSire', "Dam's Sire's Sire", 'buck', 'text-blue-400')}
+                    {renderGreatGrandparentCard('damSireDam', "Dam's Sire's Dam", 'doe', 'text-pink-400')}
+                    {renderGreatGrandparentCard('damDamSire', "Dam's Dam's Sire", 'buck', 'text-blue-400')}
+                    {renderGreatGrandparentCard('damDamDam', "Dam's Dam's Dam", 'doe', 'text-pink-400')}
+                  </div>
+                )}
               </div>
             </div>
+          </div>
 
             {/* Audit panel */}
             {arbaAudit && (

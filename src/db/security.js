@@ -12,6 +12,14 @@ export const deriveSessionKey = (userPassword, userEmail) => {
 };
 
 /**
+ * Hashes a plaintext password using SHA-256 for secure storage and comparison
+ */
+export const hashPassword = (password) => {
+  if (!password) return '';
+  return CryptoJS.SHA256(password).toString();
+};
+
+/**
  * Encrypt a plain text string using AES-256
  */
 export const encryptAES = (plainText, secretKey) => {

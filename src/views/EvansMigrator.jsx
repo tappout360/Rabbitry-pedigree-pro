@@ -106,6 +106,11 @@ export default function EvansMigrator({ allRabbits, setAllRabbits, currentUser, 
   const [errorText, setErrorText] = useState('');
   const fileInputRef = useRef(null);
 
+  // Evans Verification Perks States
+  const [isEvansVerified, setIsEvansVerified] = useState(false);
+  const [evansDiscountUnlocked, setEvansDiscountUnlocked] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
   // Default mappings detection
   const standardFields = [
     { key: 'tattooNumber', label: 'Tattoo / Ear Number', required: true, synonyms: ['tattoo', 'ear', 'id', 'tag'] },
@@ -157,6 +162,41 @@ export default function EvansMigrator({ allRabbits, setAllRabbits, currentUser, 
         });
         setMappings(initialMappings);
         setStep(2);
+
+        // Evans Automated Verification check via API
+        if (currentUser) {
+          const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+          const token = localStorage.getItem('rp_auth_token');
+          fetch(`${API_ROOT}/billing/evans-verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              fileName: file.name,
+              columnFingerprint: headers,
+              recordCount: rows.length
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.verified) {
+              setIsEvansVerified(true);
+              setEvansDiscountUnlocked(true);
+            }
+          })
+          .catch(err => {
+            console.error("Evans automated verification check error:", err);
+            // Local fallback logic if offline
+            const requiredEvansHeaders = ['tattoo', 'ear', 'name', 'sex', 'gender', 'sire', 'dam'];
+            const matched = headers.filter(col => requiredEvansHeaders.some(req => col.toLowerCase().includes(req)));
+            if (matched.length >= 4 && rows.length > 0) {
+              setIsEvansVerified(true);
+              setEvansDiscountUnlocked(true);
+            }
+          });
+        }
       } catch (err) {
         setErrorText("Failed to parse CSV file: " + err.message);
       }
@@ -674,6 +714,49 @@ No errors reported. Data stored locally in IndexedDB.
               </span>
             </div>
           </div>
+
+          {evansDiscountUnlocked && (
+            <div className="w-full mt-2 p-5 bg-gradient-to-r from-amber-500/20 to-yellow-600/20 border border-amber-500/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-left">
+              <div className="flex-1">
+                <h5 className="font-bold text-amber-300 flex items-center gap-1.5 text-sm">
+                  <Sparkles className="w-4 h-4" /> Special Evans Migrant Offer Unlocked!
+                </h5>
+                <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                  As a verified Evans Software migrant, you qualify for the **WarrenWise Lifetime plan** at a special discount price of **$169.00** one-time (regular $249). Complete your migration setup and lock in 5 years of all major updates!
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setCheckoutLoading(true);
+                    const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+                    const token = localStorage.getItem('rp_auth_token');
+                    const res = await fetch(`${API_ROOT}/billing/create-checkout-session`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({ tier: 'lifetime', billingCycle: 'one_time', evansSpecial: true })
+                    });
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                    }
+                  } catch (e) {
+                    console.error("Evans Checkout Session Creation failed:", e);
+                  } finally {
+                    setCheckoutLoading(false);
+                  }
+                }}
+                disabled={checkoutLoading}
+                className="btn-interactive text-xs py-2 px-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold shrink-0 border-none flex items-center gap-2"
+              >
+                {checkoutLoading ? 'Redirecting...' : 'Claim $169 Lifetime Offer'}
+              </button>
+            </div>
+          )}
 
           <div className="flex gap-3 justify-center w-full mt-4 flex-wrap">
             <button

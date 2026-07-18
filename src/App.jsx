@@ -7,13 +7,27 @@ import {
   LogOut, HeartPulse, ShieldCheck, Check, Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { GeneticsEngine } from './genetics';
+import CryptoJS from 'crypto-js';
+import { useAsyncAction } from './hooks/useAsyncAction';
+import UndoToast from './components/ui/UndoToast';
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import HealthCheck from './components/ui/HealthCheck';
-import Academy from './views/Academy';
-import RegistrarPrep from './views/RegistrarPrep';
-import EvansMigrator from './views/EvansMigrator';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
+import UpgradeGate from './components/ui/UpgradeGate';
+import { GeneticsEngine } from './genetics';
+const Academy = React.lazy(() => import('./views/Academy'));
+const RegistrarPrep = React.lazy(() => import('./views/RegistrarPrep'));
+const EvansMigrator = React.lazy(() => import('./views/EvansMigrator'));
+const SubscriptionManager = React.lazy(() => import('./views/SubscriptionManager'));
+import { useSubscription } from './hooks/useSubscription';
+import ParentConsentGate from './views/ParentConsentGate';
+import PrivacyPolicy from './views/PrivacyPolicy';
+import ParentControls from './components/ui/ParentControls';
+import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
 import PhotoGallery from './components/gallery/PhotoGallery';
@@ -782,6 +796,7 @@ const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:50
 
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
+  const { execute: runAsync } = useAsyncAction();
 
   const matchLocationKey = (locValue, locKey) => {
     if (!locValue || !locKey) return false;
@@ -797,14 +812,14 @@ export default function App() {
   const [adminBreeders, setAdminBreeders] = useState(() => {
     const saved = localStorage.getItem('rp_admin_breeders');
     const defaultList = [
-      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: 'JakylieRabbitry4388$$' },
-      { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'password123' },
-      { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: 'arba_pass_2026' },
-      { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: 'feed_the_buns' },
-      { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: 'passwordemily' },
-      { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'merlinsrabbit' },
-      { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'i_am_the_batman' },
-      { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'password123' }
+      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40' },
+      { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' },
+      { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032' },
+      { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: '60281b3793df67117865cbb6db58b43ad835c24e73f88f01b15c92c813f02ad1' },
+      { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: '6dcd317c244c4fae2e66cc48abfc4e24eb2fb1fa546bf1d7de6dfd0f8a846c1b' },
+      { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'b3a726ea7bd7ca164e29780512871146c86a34cd8c2184d081f2621183cf9e96' },
+      { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'dcf22dfa640102cd8b28ef94c03cc56c80c65538e1215ee54c0e6cfec0c99df3' },
+      { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' }
     ];
     let list = defaultList;
     if (saved) {
@@ -1007,6 +1022,7 @@ export default function App() {
     theme: 'dark', // Defaults to Midnight Obsidian Dark Theme
     ageGroup: 'adult',
     isYouth: false,
+    birthdate: '',
     parentName: '',
     parentEmail: '',
     agreeHipaa: false,
@@ -1022,6 +1038,16 @@ export default function App() {
   const [kindlingBreedingId, setKindlingBreedingId] = useState(null);
   const [kitsAliveInput, setKitsAliveInput] = useState(6);
   const [kitsDeadInput, setKitsDeadInput] = useState(0);
+
+  useEffect(() => {
+    const handleChangeTab = (e) => {
+      if (e.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    window.addEventListener('change-tab', handleChangeTab);
+    return () => window.removeEventListener('change-tab', handleChangeTab);
+  }, []);
   
   // Customization settings
   const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || '🐇');
@@ -1035,6 +1061,9 @@ export default function App() {
 
   // Mascot Reward Pop-up State
   const [successMascot, setSuccessMascot] = useState(null);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [selectedChildControlsId, setSelectedChildControlsId] = useState(null);
+  const [conflictsCount, setConflictsCount] = useState(0);
 
   // Pedigree Builder Modals & Interaction States
   const [pedigreeEditNode, setPedigreeEditNode] = useState(null); // { rabbitId, gender, label, currentId, isOffspring }
@@ -1079,63 +1108,124 @@ export default function App() {
 
   const [selectedSpecies, setSelectedSpecies] = useState(() => localStorage.getItem('rp_selected_species') || 'rabbit');
 
+  const [activeUndo, setActiveUndo] = useState(null);
+
   // Data State (Partitioned by breederId)
   const [allRabbits, setAllRabbits] = useState([]);
-  const rabbits = allRabbits.filter(r => {
-    const matchesBreeder = selectedBreederContext === 'all' || r.breederId === selectedBreederContext;
-    if (!matchesBreeder) return false;
-    if (selectedSpecies === 'all') return true;
-    const rabbitSpecies = r.species || 'rabbit';
-    return rabbitSpecies === selectedSpecies;
-  });
+  const rabbits = React.useMemo(() => {
+    return allRabbits.filter(r => {
+      const matchesBreeder = selectedBreederContext === 'all' || r.breederId === selectedBreederContext;
+      if (!matchesBreeder) return false;
+      if (selectedSpecies === 'all') return true;
+      const rabbitSpecies = r.species || 'rabbit';
+      return rabbitSpecies === selectedSpecies;
+    });
+  }, [allRabbits, selectedBreederContext, selectedSpecies]);
 
   const [allBreedings, setAllBreedings] = useState([]);
-  const breedings = allBreedings.filter(b => {
-    const matchesBreeder = selectedBreederContext === 'all' || b.breederId === selectedBreederContext;
-    if (!matchesBreeder) return false;
-    if (selectedSpecies === 'all') return true;
-    const parent = allRabbits.find(r => r.id === b.buckId || r.id === b.doeId);
-    return (parent?.species || 'rabbit') === selectedSpecies;
-  });
+  const breedings = React.useMemo(() => {
+    return allBreedings.filter(b => {
+      const matchesBreeder = selectedBreederContext === 'all' || b.breederId === selectedBreederContext;
+      if (!matchesBreeder) return false;
+      if (selectedSpecies === 'all') return true;
+      const parent = allRabbits.find(r => r.id === b.buckId || r.id === b.doeId);
+      return (parent?.species || 'rabbit') === selectedSpecies;
+    });
+  }, [allBreedings, allRabbits, selectedBreederContext, selectedSpecies]);
 
   const [allLitters, setAllLitters] = useState([]);
-  const litters = allLitters.filter(l => {
-    const matchesBreeder = selectedBreederContext === 'all' || l.breederId === selectedBreederContext;
-    if (!matchesBreeder) return false;
-    if (selectedSpecies === 'all') return true;
-    const breeding = allBreedings.find(b => b.id === l.breedingId);
-    if (!breeding) return true;
-    const parent = allRabbits.find(r => r.id === breeding.buckId || r.id === breeding.doeId);
-    return (parent?.species || 'rabbit') === selectedSpecies;
-  });
+  const litters = React.useMemo(() => {
+    return allLitters.filter(l => {
+      const matchesBreeder = selectedBreederContext === 'all' || l.breederId === selectedBreederContext;
+      if (!matchesBreeder) return false;
+      if (selectedSpecies === 'all') return true;
+      const breeding = allBreedings.find(b => b.id === l.breedingId);
+      if (!breeding) return true;
+      const parent = allRabbits.find(r => r.id === breeding.buckId || r.id === breeding.doeId);
+      return (parent?.species || 'rabbit') === selectedSpecies;
+    });
+  }, [allLitters, allBreedings, allRabbits, selectedBreederContext, selectedSpecies]);
 
   const [allLedger, setAllLedger] = useState([]);
-  const ledger = allLedger.filter(lt => selectedBreederContext === 'all' || lt.breederId === selectedBreederContext);
+  const ledger = React.useMemo(() => {
+    return allLedger.filter(lt => selectedBreederContext === 'all' || lt.breederId === selectedBreederContext);
+  }, [allLedger, selectedBreederContext]);
 
   const [allShows, setAllShows] = useState([]);
-  const shows = allShows.filter(s => selectedBreederContext === 'all' || s.breederId === selectedBreederContext);
+  const shows = React.useMemo(() => {
+    return allShows.filter(s => selectedBreederContext === 'all' || s.breederId === selectedBreederContext);
+  }, [allShows, selectedBreederContext]);
 
   const [allShowEntries, setAllShowEntries] = useState([]);
 
   const [allChores, setAllChores] = useState([]);
-  const chores = allChores.filter(c => selectedBreederContext === 'all' || c.breederId === selectedBreederContext);
+  const chores = React.useMemo(() => {
+    return allChores.filter(c => selectedBreederContext === 'all' || c.breederId === selectedBreederContext);
+  }, [allChores, selectedBreederContext]);
 
   // Assistant write-only scoping check
-  const isAssistantWriteOnly = currentUser?.role === 'assistant' && selectedBreederContext !== currentUser?.id;
+  const isAssistantWriteOnly = React.useMemo(() => {
+    return currentUser?.role === 'assistant' && selectedBreederContext !== currentUser?.id;
+  }, [currentUser, selectedBreederContext]);
 
   const [allTransfers, setAllTransfers] = useState([]);
 
   const [allSignatures, setAllSignatures] = useState([]);
 
   const [allMedical, setAllMedical] = useState([]);
-  const medicalRecords = allMedical.filter(m => selectedBreederContext === 'all' || 
-    rabbits.some(r => r.id === m.rabbitId)
-  );
+  const medicalRecords = React.useMemo(() => {
+    return allMedical.filter(m => selectedBreederContext === 'all' || 
+      rabbits.some(r => r.id === m.rabbitId)
+    );
+  }, [allMedical, selectedBreederContext, rabbits]);
 
   const [allWeights, setAllWeights] = useState([]);
-  const weightRecords = allWeights.filter(w => selectedBreederContext === 'all' || 
-    rabbits.some(r => r.id === w.rabbitId)
-  );
+  const weightRecords = React.useMemo(() => {
+    return allWeights.filter(w => selectedBreederContext === 'all' || 
+      rabbits.some(r => r.id === w.rabbitId)
+    );
+  }, [allWeights, selectedBreederContext, rabbits]);
+
+  const ledgerChartData = React.useMemo(() => {
+    const sorted = [...ledger]
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(-10);
+    
+    let balance = 0;
+    return sorted.map(item => {
+      const amount = item.amount || 0;
+      if (item.type === 'income') {
+        balance += amount;
+      } else {
+        balance -= amount;
+      }
+      return {
+        date: item.date ? item.date.slice(5) : 'N/A',
+        amount: amount,
+        type: item.type,
+        income: item.type === 'income' ? amount : 0,
+        expense: item.type === 'expense' ? amount : 0,
+        runningBalance: parseFloat(balance.toFixed(2))
+      };
+    });
+  }, [ledger]);
+
+  const breedDistributionData = React.useMemo(() => {
+    const counts = {};
+    rabbits.forEach(r => {
+      if (r.status !== 'pedigree_only') {
+        const b = r.breed || 'Unknown';
+        counts[b] = (counts[b] || 0) + 1;
+      }
+    });
+    
+    const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'];
+    return Object.entries(counts).map(([name, value], index) => ({
+      name,
+      value,
+      color: COLORS[index % COLORS.length]
+    }));
+  }, [rabbits]);
 
   const [showTransferWizard, setShowTransferWizard] = useState(null); // rabbit object
   const [transferWizardStep, setTransferWizardStep] = useState(1);
@@ -1307,6 +1397,11 @@ export default function App() {
         setAllApprovals(data.approvals || []);
         setAdminBreeders(data.adminBreeders || []);
         setDbLoaded(true);
+
+        // Load pending conflicts count
+        if (data.conflicts && data.conflicts.length > 0) {
+          setConflictsCount(data.conflicts.length);
+        }
 
         // Fetch latest cloud backup data if connected
         const token = localStorage.getItem('rp_auth_token');
@@ -2034,7 +2129,8 @@ export default function App() {
         return;
       }
 
-      if (user.password !== loginPassword) {
+      const hashedTyped = CryptoJS.SHA256(loginPassword).toString();
+      if (user.password !== hashedTyped) {
         setLoginError('Incorrect password. Please try again.');
         return;
       }
@@ -2214,7 +2310,7 @@ export default function App() {
       rabbitryName: profileForm.rabbitryName,
       role: profileForm.role,
       status: 'pending', // Requires approval
-      password: profileForm.password,
+      password: CryptoJS.SHA256(profileForm.password).toString(),
       logo: profileForm.logo,
       theme: profileForm.theme,
       ageGroup: profileForm.ageGroup || 'adult',
@@ -2504,7 +2600,8 @@ export default function App() {
     // SuperAdmins are unlimited
     if (breeder?.isSuperAdmin) return false;
     
-    const limit = breeder?.subscriptionLimit !== undefined ? Number(breeder.subscriptionLimit) : 25;
+    const subLimits = useSubscription.getState().getLimits();
+    const limit = subLimits.animalLimit;
     
     // Count active junior/senior weaned rabbits (ignore pedigree_only and sold)
     const activeCount = allRabbits.filter(r => r.breederId === bId && r.status !== 'pedigree_only' && r.status !== 'sold').length;
@@ -2517,8 +2614,8 @@ export default function App() {
     e.preventDefault();
     const targetBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
     if (isSubscriptionLimitReached(targetBreederId)) {
-      const activeLimit = adminBreeders.find(b => b.id === targetBreederId)?.subscriptionLimit || 25;
-      alert(`Subscription Limit Reached: Your current Basic/Free plan is limited to ${activeLimit} active rabbits. Please contact administration or upgrade to Pro to unlock unlimited profiles.`);
+      const subLimits = useSubscription.getState().getLimits();
+      alert(`Subscription Limit Reached: Your current plan ${subLimits.isTrial ? '(Trial)' : ''} is limited to ${subLimits.animalLimit} active rabbits. Please upgrade or manage your subscription in the Billing tab.`);
       return;
     }
     if (!newRabbit.tattooNumber || !newRabbit.name) {
@@ -2600,16 +2697,26 @@ export default function App() {
       alert("Permission denied. Barn Assistants cannot delete records.");
       return;
     }
-    const targetRab = rabbits.find(r => r.id === id);
-    const rabName = targetRab ? targetRab.name : 'Rabbit';
-    if (window.confirm("Are you sure you want to delete this rabbit profile?")) {
-      setAllRabbits(prev => prev.filter(r => r.id !== id));
-      addSyncAction('DELETE', 'rabbits', { id });
-      showToast(`Rabbit "${rabName}" deleted from registry.`, "error");
-      if (selectedRabbit && selectedRabbit.id === id) {
-        setSelectedRabbit(null);
-      }
+    const targetRab = allRabbits.find(r => r.id === id);
+    if (!targetRab) return;
+    const rabName = targetRab.name || 'Rabbit';
+
+    // Soft delete: remove from state first
+    setAllRabbits(prev => prev.filter(r => r.id !== id));
+    if (selectedRabbit && selectedRabbit.id === id) {
+      setSelectedRabbit(null);
     }
+
+    setActiveUndo({
+      message: `Rabbit "${rabName}" profile has been removed.`,
+      undoAction: () => {
+        setAllRabbits(prev => [...prev, targetRab]);
+      },
+      commitAction: () => {
+        addSyncAction('DELETE', 'rabbits', { id });
+        showToast(`Rabbit "${rabName}" permanently deleted from registry.`, "info");
+      }
+    });
   };
 
   // Save Edited Rabbit Profile Handler
@@ -3764,11 +3871,21 @@ export default function App() {
       alert("Permission denied. Barn Assistants cannot delete health records.");
       return;
     }
-    if (window.confirm("Are you sure you want to delete this weight log?")) {
-      setAllWeights(prev => prev.filter(w => w.id !== id));
-      addSyncAction('DELETE', 'weights', { id });
-      showToast("Weight log deleted.", "error");
-    }
+    const targetWeight = allWeights.find(w => w.id === id);
+    if (!targetWeight) return;
+
+    setAllWeights(prev => prev.filter(w => w.id !== id));
+
+    setActiveUndo({
+      message: "Weight entry deleted.",
+      undoAction: () => {
+        setAllWeights(prev => [...prev, targetWeight]);
+      },
+      commitAction: () => {
+        addSyncAction('DELETE', 'weights', { id });
+        showToast("Weight entry permanently deleted.", "info");
+      }
+    });
   };
 
   // Assign Rabbit to Cage Location
@@ -3924,11 +4041,21 @@ export default function App() {
       alert("Permission denied. Barn Assistants cannot delete medical records.");
       return;
     }
-    if (window.confirm("Are you sure you want to delete this medical record?")) {
-      setAllMedical(prev => prev.filter(m => m.id !== id));
-      addSyncAction('DELETE', 'medical', { id });
-      showToast("Medical record deleted.", "error");
-    }
+    const targetMedical = allMedical.find(m => m.id === id);
+    if (!targetMedical) return;
+
+    setAllMedical(prev => prev.filter(m => m.id !== id));
+
+    setActiveUndo({
+      message: "Medical record deleted.",
+      undoAction: () => {
+        setAllMedical(prev => [...prev, targetMedical]);
+      },
+      commitAction: () => {
+        addSyncAction('DELETE', 'medical', { id });
+        showToast("Medical record permanently deleted.", "info");
+      }
+    });
   };
 
   // FDA Veterinary Withdrawal Tracker
@@ -4069,16 +4196,51 @@ export default function App() {
       
       showToast(`Uploading ${sortedQueue.length} operations. MessagePack compressed payload: ${compression.compressedSize} bytes.`, "info");
 
-      if (sortedQueue.length > 0) {
+      // Generate or retrieve a stable device ID for vector clock tracking
+      let deviceId = localStorage.getItem('rp_device_id');
+      if (!deviceId) {
+        deviceId = `device-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        localStorage.setItem('rp_device_id', deviceId);
+      }
+
+      // Enrich each action payload with vector clock metadata
+      const enrichedActions = sortedQueue.map(item => {
+        const payload = { ...item.payload };
+        if (!payload.vectorClock) payload.vectorClock = {};
+        payload.vectorClock[deviceId] = (payload.vectorClock[deviceId] || 0) + 1;
+        return { ...item, payload };
+      });
+
+      if (enrichedActions.length > 0) {
         const response = await fetch(`${API_ROOT}/sync`, {
           method: 'POST',
           headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ actions: sortedQueue })
+          body: JSON.stringify({ actions: enrichedActions, clientDevice: deviceId })
         });
-        if (!response.ok) throw new Error("Sync upload failed");
+
+        if (response.status === 409) {
+          // Sync conflicts detected — parse them and alert the user
+          const conflictData = await response.json();
+          const newConflicts = conflictData.conflicts || [];
+          setConflictsCount(newConflicts.length);
+          
+          // Store conflicts locally in Dexie for offline access
+          try {
+            await db.conflicts.clear();
+            if (newConflicts.length > 0) {
+              await db.conflicts.bulkAdd(newConflicts);
+            }
+          } catch (e) {
+            console.warn("Failed to cache conflicts locally:", e);
+          }
+
+          showToast(`⚠️ ${newConflicts.length} sync conflict(s) require your review. Open the Sync Issues panel.`, "info");
+        } else if (!response.ok) {
+          throw new Error("Sync upload failed");
+        }
       }
 
       // After successful upload, pull latest cloud state and merge
@@ -4094,22 +4256,26 @@ export default function App() {
     }
   };
 
-  const filteredRabbits = rabbits.filter(r => 
-    r.status !== 'pedigree_only' && (showArchived || r.status !== 'sold') && (
-      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.breed.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const filteredRabbits = React.useMemo(() => {
+    return rabbits.filter(r => 
+      r.status !== 'pedigree_only' && (showArchived || r.status !== 'sold') && (
+        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.breed.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [rabbits, showArchived, searchQuery]);
 
-  const filteredPhotos = rabbits
-    .filter(r => r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead')
-    .filter(r => mediaRabbitFilter === 'all' || r.id === mediaRabbitFilter)
-    .flatMap(rabbit => (rabbit.photos || []).map((photo, photoIdx) => {
-      const pObj = getPhotoObj(photo);
-      return { rabbit, photo: pObj, index: photoIdx };
-    }))
-    .filter(item => mediaTagFilter === 'all' || item.photo.tag === mediaTagFilter);
+  const filteredPhotos = React.useMemo(() => {
+    return rabbits
+      .filter(r => r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead')
+      .filter(r => mediaRabbitFilter === 'all' || r.id === mediaRabbitFilter)
+      .flatMap(rabbit => (rabbit.photos || []).map((photo, photoIdx) => {
+        const pObj = getPhotoObj(photo);
+        return { rabbit, photo: pObj, index: photoIdx };
+      }))
+      .filter(item => mediaTagFilter === 'all' || item.photo.tag === mediaTagFilter);
+  }, [rabbits, mediaRabbitFilter, mediaTagFilter]);
 
 
 
@@ -4547,7 +4713,7 @@ export default function App() {
                           RabbitryPedigree Pro is for rabbitry management and veterinary records only. Storing human medical data or personal health records is strictly prohibited.
                         </p>
                       </div>
-                      <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-cyan-300 mt-1">
+                       <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-cyan-300 mt-1">
                         <input 
                           type="checkbox"
                           checked={profileForm.agreeHipaa}
@@ -4557,6 +4723,15 @@ export default function App() {
                         />
                         I agree to this HIPAA disclaimer.
                       </label>
+                      <div className="text-center mt-1 pt-1.5 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => setShowPrivacyPolicy(true)}
+                          className="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-semibold bg-transparent border-none cursor-pointer"
+                        >
+                          View WarrenWise Privacy Policy & COPPA Disclosures
+                        </button>
+                      </div>
                     </div>
 
                     <button 
@@ -5290,6 +5465,20 @@ export default function App() {
               <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
             </button>
             <button 
+              onClick={() => setActiveTab('billing')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'billing' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <DollarSign className="w-5 h-5 text-emerald-400 font-bold" /> Upgrade & Billing
+            </button>
+            {currentUser && !currentUser.isYouth && (
+              <button 
+                onClick={() => setActiveTab('parentControls')}
+                className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'parentControls' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+              >
+                <ShieldCheck className="w-5 h-5 text-cyan-400 font-bold" /> Parent Controls
+              </button>
+            )}
+            <button 
               onClick={() => setActiveTab('help')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'help' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
@@ -5619,6 +5808,26 @@ export default function App() {
                 </div>
               )}
 
+              {/* Sync Conflicts Warning Banner */}
+              {conflictsCount > 0 && (
+                <div className="glass-container p-4 border border-orange-500/30 bg-orange-950/15 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-indigo-500"></div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚡</span>
+                    <div>
+                      <h4 className="font-bold text-orange-300 text-xs">Sync Conflicts Detected</h4>
+                      <p className="text-[10px] text-slate-300 mt-0.5">{conflictsCount} pedigree update(s) from another device require your review before they can be merged.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('sync')}
+                    className="shrink-0 text-[10px] py-1.5 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg cursor-pointer border-none"
+                  >
+                    Review Conflicts
+                  </button>
+                </div>
+              )}
+
               {/* Assistant Review Center Widget */}
               {currentUser?.role === 'owner' && allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length > 0 && (
                 <div className="glass-container p-6 border-2 border-amber-500/25 relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/95 to-amber-950/15">
@@ -5813,6 +6022,92 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {/* Analytics & Graphs Dashboard Panels */}
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* Ledger Cash Flow Trend */}
+                <div className="glass-container p-6 xl:col-span-2 flex flex-col gap-4">
+                  <div className="flex flex-col text-left">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Ledger Financial Cash Flow</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Chronological revenue vs expense trend (last 10 entries).</p>
+                  </div>
+                  <div className="h-64 w-full">
+                    {ledgerChartData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-xs text-slate-500 font-semibold">No financial records logged yet.</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={ledgerChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0.01}/>
+                            </linearGradient>
+                            <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#ec4899" stopOpacity={0.25}/>
+                              <stop offset="95%" stopColor="#ec4899" stopOpacity={0.01}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                          <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" fontSize={9} tickLine={false} />
+                          <YAxis stroke="rgba(255,255,255,0.4)" fontSize={9} tickLine={false} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '12px' }}
+                            labelStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '10px' }}
+                            itemStyle={{ fontSize: '10px' }}
+                          />
+                          <Area type="monotone" dataKey="income" name="Income" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorIncome)" />
+                          <Area type="monotone" dataKey="expense" name="Expense" stroke="#ec4899" strokeWidth={2} fillOpacity={1} fill="url(#colorExpense)" />
+                          <Area type="monotone" dataKey="runningBalance" name="Cash Balance" stroke="#6366f1" strokeWidth={2.5} fill="none" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                {/* Breed Standard Breakdown */}
+                <div className="glass-container p-6 xl:col-span-1 flex flex-col gap-4">
+                  <div className="flex flex-col text-left">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Herd Breed Distribution</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Partition of active pedigree stock by standard breed.</p>
+                  </div>
+                  <div className="h-64 w-full flex flex-col items-center justify-center">
+                    {breedDistributionData.length === 0 ? (
+                      <div className="text-xs text-slate-500 font-semibold">No stock animals logged yet.</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="80%">
+                        <PieChart>
+                          <Pie
+                            data={breedDistributionData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={75}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {breedDistributionData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '12px' }}
+                            itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                    {/* Visual Legend */}
+                    <div className="flex flex-wrap gap-2 justify-center mt-2 max-h-12 overflow-y-auto pr-1">
+                      {breedDistributionData.map(item => (
+                        <div key={item.name} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                          <span className="truncate max-w-[80px]">{item.name}: {item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Customizable Widget 2: Calendar Tasks */}
               {dashboardWidgets.alerts && (
@@ -9410,6 +9705,7 @@ export default function App() {
 
           {/* TAB 5: SYNC QUEUE PANEL */}
           {activeTab === 'sync' && (
+            <>
             <div className="glass-container p-6 flex flex-col gap-6">
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
@@ -9479,6 +9775,17 @@ export default function App() {
                 )}
               </div>
             </div>
+
+            {/* Sync Conflict Resolution Panel */}
+            <ErrorBoundary>
+              <SyncIssues 
+                currentUser={currentUser} 
+                onClose={() => {
+                  setConflictsCount(0);
+                }} 
+              />
+            </ErrorBoundary>
+            </>
           )}
 
           {/* TAB: SYSTEM DIAGNOSTICS */}
@@ -9493,37 +9800,117 @@ export default function App() {
           {/* TAB: 4-H KIDS LEARNING ACADEMY */}
           {activeTab === 'academy' && (
             <ErrorBoundary>
-              <Academy
-                rabbits={rabbits}
-                triggerConfetti={triggerConfetti}
-                currentUser={currentUser}
-              />
+              <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Learning Academy...</div>}>
+                <Academy
+                  rabbits={rabbits}
+                  triggerConfetti={triggerConfetti}
+                  currentUser={currentUser}
+                />
+              </React.Suspense>
             </ErrorBoundary>
           )}
 
           {/* TAB: ARBA REGISTRAR INPSECTION PREP */}
           {activeTab === 'registrarPrep' && (
             <ErrorBoundary>
-              <RegistrarPrep
-                rabbits={rabbits}
-                allRabbits={allRabbits}
-                selectedRabbitId={prepRabbitId}
-                setSelectedRabbitId={setPrepRabbitId}
-              />
+              <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Registrar Inspector...</div>}>
+                <RegistrarPrep
+                  rabbits={rabbits}
+                  allRabbits={allRabbits}
+                  selectedRabbitId={prepRabbitId}
+                  setSelectedRabbitId={setPrepRabbitId}
+                />
+              </React.Suspense>
             </ErrorBoundary>
           )}
 
           {/* TAB: EVANS SOFTWARE MIGRATOR */}
           {activeTab === 'evansMigrator' && (
             <ErrorBoundary>
-              <EvansMigrator
-                allRabbits={allRabbits}
-                setAllRabbits={setAllRabbits}
-                currentUser={currentUser}
-                triggerConfetti={triggerConfetti}
-              />
+              <UpgradeGate 
+                featureName="evans_import"
+                fallbackMessage="Evans Software one-click import engine is a Pro plan exclusive feature. Upgrade to Pro/Commercial to migrate your local Evans database files instantly."
+              >
+                <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Evans Migrator...</div>}>
+                  <EvansMigrator
+                    allRabbits={allRabbits}
+                    setAllRabbits={setAllRabbits}
+                    currentUser={currentUser}
+                    triggerConfetti={triggerConfetti}
+                  />
+                </React.Suspense>
+              </UpgradeGate>
             </ErrorBoundary>
           )}
+
+          {/* TAB: UPGRADE & BILLING */}
+          {activeTab === 'billing' && (
+            <ErrorBoundary>
+              <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Subscription Manager...</div>}>
+                <SubscriptionManager 
+                  currentUser={currentUser} 
+                  triggerConfetti={triggerConfetti} 
+                />
+              </React.Suspense>
+            </ErrorBoundary>
+          )}
+
+          {/* TAB: PARENT CONTROLS VIEW */}
+          {activeTab === 'parentControls' && (() => {
+            const kids = adminBreeders.filter(b => b.isYouth && (
+              b.parentEmail === currentUser?.parentEmail || 
+              b.parentEmail === currentUser?.email || 
+              (b.coachAuthorized && b.employerAccountNumber === currentUser?.accountNumber)
+            ));
+            
+            return (
+              <div className="flex flex-col gap-6 max-w-xl mx-auto">
+                <div className="glass-container p-6 flex flex-col gap-3">
+                  <h3 className="text-xl font-bold flex items-center gap-2 text-white">
+                    <ShieldCheck className="w-6 h-6 text-cyan-400" /> Manage Youth Accounts
+                  </h3>
+                  <p className="text-xs opacity-75 text-slate-300">
+                    Select a linked student/helper account to configure parental controls, safety locks, and monitor logs.
+                  </p>
+                  
+                  {kids.length === 0 ? (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-center text-xs opacity-70 mt-2">
+                      No linked youth or assistant accounts found. Have your child sign up using your email "{currentUser?.email}" or link them in the 4-H Academy section.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 mt-2">
+                      {kids.map(kid => (
+                        <div key={kid.id} className="p-3 bg-white/5 border border-white/5 rounded-xl flex justify-between items-center">
+                          <div className="text-left">
+                            <span className="text-xs font-black text-white">{kid.name}</span>
+                            <div className="text-[10px] opacity-75 text-slate-400 mt-0.5">
+                              Role: {kid.role} | Division: {kid.ageGroup?.toUpperCase()}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedChildControlsId(kid.id)}
+                            className="btn-interactive text-[11px] py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold border-none rounded-lg"
+                          >
+                            Configure Rules
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedChildControlsId && (
+                  <ErrorBoundary>
+                    <ParentControls 
+                      childId={selectedChildControlsId} 
+                      onClose={() => setSelectedChildControlsId(null)} 
+                    />
+                  </ErrorBoundary>
+                )}
+              </div>
+            );
+          })()}
 
           {/* TAB: HELP CENTER, MANUAL & TERMS */}
           {activeTab === 'help' && (
@@ -12451,6 +12838,11 @@ export default function App() {
         />
       )}
 
+      {/* Privacy Policy and COPPA Disclosures Modal */}
+      {showPrivacyPolicy && (
+        <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />
+      )}
+
       {/* Toast Notifications Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(toast => (
@@ -12472,6 +12864,19 @@ export default function App() {
           </div>
         ))}
       </div>
+
+      {activeUndo && (
+        <UndoToast
+          message={activeUndo.message}
+          onUndo={() => {
+            activeUndo.undoAction();
+            showToast("Action undone.", "info");
+          }}
+          onDismiss={() => {
+            activeUndo.commitAction();
+          }}
+        />
+      )}
     </div>
   );
 }

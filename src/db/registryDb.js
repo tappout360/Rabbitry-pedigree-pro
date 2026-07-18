@@ -62,6 +62,102 @@ db.version(3).stores({
   youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback'
 });
 
+// Version 4: Subscription & billing tracking tables
+db.version(4).stores({
+  adminBreeders: 'id, email, username, role',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex]',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status',
+  litters: 'id, breederId, breedingId, kindleDate',
+  ledger: 'id, breederId, rabbitId, date',
+  shows: 'id, breederId, date',
+  showEntries: 'id, breederId, showId, rabbitId',
+  chores: 'id, breederId, dueDate',
+  transfers: 'id, breederId, rabbitId, date',
+  signatures: 'id, breederId',
+  medical: 'id, breederId, rabbitId, date',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date]',
+  syncQueue: 'id, breederId, timestamp',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status'
+});
+
+// Version 5: COPPA Youth and Parental Consent attributes
+db.version(5).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex]',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status',
+  litters: 'id, breederId, breedingId, kindleDate',
+  ledger: 'id, breederId, rabbitId, date',
+  shows: 'id, breederId, date',
+  showEntries: 'id, breederId, showId, rabbitId',
+  chores: 'id, breederId, dueDate',
+  transfers: 'id, breederId, rabbitId, date',
+  signatures: 'id, breederId',
+  medical: 'id, breederId, rabbitId, date',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date]',
+  syncQueue: 'id, breederId, timestamp',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status'
+});
+
+// Version 6: Coach Authorization and Sync Conflict Resolution
+db.version(6).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized',
+  conflicts: 'id, recordId, tbl, fieldName',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex]',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status',
+  litters: 'id, breederId, breedingId, kindleDate',
+  ledger: 'id, breederId, rabbitId, date',
+  shows: 'id, breederId, date',
+  showEntries: 'id, breederId, showId, rabbitId',
+  chores: 'id, breederId, dueDate',
+  transfers: 'id, breederId, rabbitId, date',
+  signatures: 'id, breederId',
+  medical: 'id, breederId, rabbitId, date',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date]',
+  syncQueue: 'id, breederId, timestamp',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status'
+});
+
+// Version 7: Photo Thumbnails and Offline Queue
+db.version(7).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized',
+  conflicts: 'id, recordId, tbl, fieldName',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex]',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status',
+  litters: 'id, breederId, breedingId, kindleDate',
+  ledger: 'id, breederId, rabbitId, date',
+  shows: 'id, breederId, date',
+  showEntries: 'id, breederId, showId, rabbitId',
+  chores: 'id, breederId, dueDate',
+  transfers: 'id, breederId, rabbitId, date',
+  signatures: 'id, breederId',
+  medical: 'id, breederId, rabbitId, date',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date]',
+  syncQueue: 'id, breederId, timestamp',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd, trialEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status',
+  photoThumbnails: 'id, rabbitId, date',
+  offlinePhotos: 'id, rabbitId, status'
+});
+
 let migrationPromise = null;
 
 export async function performMigrationAndLoad() {
@@ -70,10 +166,9 @@ export async function performMigrationAndLoad() {
   }
 
   migrationPromise = (async () => {
-    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v4');
+    const isMigrated = localStorage.getItem('rp_migrated_to_dexie_v7');
     
     const migrateOrLoadTable = async (localStorageKey, dexieTable, defaultList = []) => {
-      // If not migrated yet, we check localStorage first. If migrated, we check IndexedDB count.
       if (isMigrated) {
         const count = await dexieTable.count();
         if (count > 0) {
@@ -81,7 +176,6 @@ export async function performMigrationAndLoad() {
         }
       }
       
-      // Check localStorage
       const saved = localStorage.getItem(localStorageKey);
       let list = defaultList;
       if (saved) {
@@ -95,7 +189,6 @@ export async function performMigrationAndLoad() {
         }
       }
       
-      // Clear and populate Dexie
       await dexieTable.clear();
       if (list.length > 0) {
         await dexieTable.bulkAdd(list);
@@ -113,7 +206,7 @@ export async function performMigrationAndLoad() {
     const showEntries = await migrateOrLoadTable('rp_show_entries', db.showEntries, []);
     const chores = await migrateOrLoadTable('rp_chores', db.chores, DEFAULT_CHORES);
     const transfers = await migrateOrLoadTable('rp_transfers', db.transfers, DEFAULT_TRANSFERS);
-    // Map missing breederId fields on seed records dynamically to ensure strict schema index compliance
+    
     const medicalSeed = DEFAULT_MEDICAL.map(m => {
       const r = DEFAULT_RABBITS.find(rx => rx.id === m.rabbitId);
       return { ...m, breederId: r ? r.breederId : 'ab-1' };
@@ -135,9 +228,22 @@ export async function performMigrationAndLoad() {
     const youthProgress = await migrateOrLoadTable('rp_youth_progress', db.youthProgress, []);
     const youthQuizLogs = await migrateOrLoadTable('rp_youth_quiz_logs', db.youthQuizLogs, []);
 
+    // Seed defaults for Subscriptions
+    const defaultSubs = [
+      { id: 'sub-seed-1', breederId: 'ab-1', tier: 'pro', status: 'active', stripeCustomerId: 'cus_seed1', stripeSubscriptionId: 'sub_seed1', currentPeriodEnd: '2028-12-31', trialEnd: null, cancelledAt: null, evansVerified: false, evansRedemptionDate: null, createdAt: new Date().toISOString() },
+      { id: 'sub-seed-2', breederId: 'ab-owner-1', tier: 'pro', status: 'active', stripeCustomerId: 'cus_seed2', stripeSubscriptionId: 'sub_seed2', currentPeriodEnd: '2028-12-31', trialEnd: null, cancelledAt: null, evansVerified: false, evansRedemptionDate: null, createdAt: new Date().toISOString() },
+      { id: 'sub-seed-3', breederId: 'ab-youth-2', tier: 'free', status: 'active', stripeCustomerId: 'cus_seed3', stripeSubscriptionId: 'sub_seed3', currentPeriodEnd: '2028-12-31', trialEnd: null, cancelledAt: null, evansVerified: false, evansRedemptionDate: null, createdAt: new Date().toISOString() }
+    ];
+    const subscriptions = await migrateOrLoadTable('rp_subscriptions', db.subscriptions, defaultSubs);
+    const invoices = await migrateOrLoadTable('rp_invoices', db.invoices, []);
+    const evansVerifications = await migrateOrLoadTable('rp_evans_verifications', db.evansVerifications, []);
+    const conflicts = await migrateOrLoadTable('rp_conflicts', db.conflicts, []);
+    const photoThumbnails = await migrateOrLoadTable('rp_photo_thumbnails', db.photoThumbnails, []);
+    const offlinePhotos = await migrateOrLoadTable('rp_offline_photos', db.offlinePhotos, []);
+
     // Mark migration as done
     if (!isMigrated) {
-      localStorage.setItem('rp_migrated_to_dexie_v4', 'true');
+      localStorage.setItem('rp_migrated_to_dexie_v7', 'true');
     }
 
     return {
@@ -156,10 +262,16 @@ export async function performMigrationAndLoad() {
       syncQueue,
       approvals,
       youthProgress,
-      youthQuizLogs
+      youthQuizLogs,
+      subscriptions,
+      invoices,
+      evansVerifications,
+      conflicts,
+      photoThumbnails,
+      offlinePhotos
     };
   })().catch(err => {
-    migrationPromise = null; // Clear lock on error to allow retry
+    migrationPromise = null;
     throw err;
   });
 
