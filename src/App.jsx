@@ -8275,7 +8275,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
                       {(() => {
                         const REGIONAL_SHOW_TEMPLATES = [
                           { name: "Portland Breeders Winter Show", date: "2026-11-15", loc: "Portland, OR", zip: "97201", notes: "Double youth/open show." },
@@ -8307,14 +8307,16 @@ export default function App() {
                         }
 
                         return filtered.map((t, idx) => (
-                          <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-xl flex flex-col gap-1 text-xs text-left relative overflow-hidden">
-                            <div className="flex justify-between items-start gap-2">
-                              <span className="font-bold text-indigo-300 pr-12">{t.name}</span>
-                              <span className="text-[10px] opacity-70 bg-indigo-500/20 px-1.5 py-0.5 rounded font-mono shrink-0">{t.date}</span>
-                            </div>
-                            <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                              <span>{t.loc} ({t.zip})</span>
-                              <span className="text-emerald-400 font-bold font-mono">{t.distance} miles away</span>
+                          <div key={idx} className="p-2 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between gap-3 text-xs text-left relative hover:bg-white/10 transition-all">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="font-bold text-indigo-300 truncate">{t.name}</span>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                                <span className="font-mono text-cyan-300 font-semibold">{t.date}</span>
+                                <span>•</span>
+                                <span>{t.loc}</span>
+                                <span>•</span>
+                                <span className="text-emerald-400 font-bold font-mono">{t.distance} mi</span>
+                              </div>
                             </div>
                             <button 
                               type="button"
@@ -8337,9 +8339,9 @@ export default function App() {
                                   type: 'kiba'
                                 });
                               }}
-                              className="btn-interactive text-[11px] py-1 px-3 mt-2 bg-emerald-600/85 hover:bg-emerald-650 border-none self-start cursor-pointer"
+                              className="py-1 px-2.5 bg-emerald-650 hover:bg-emerald-700 border-none rounded-lg text-white font-bold text-[10px] cursor-pointer shrink-0 transition-all shadow"
                             >
-                              Import Show
+                              Import
                             </button>
                           </div>
                         ));
