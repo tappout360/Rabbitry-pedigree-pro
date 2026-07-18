@@ -82,11 +82,28 @@ export default function Academy({
   const [anatomySpecies, setAnatomySpecies] = useState('rabbit');
 
   // Showmanship Walkthrough States
+  const [walkthroughStage, setWalkthroughStage] = useState(null);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [selectedWalkthroughOption, setSelectedWalkthroughOption] = useState(null);
   const [walkthroughScore, setWalkthroughScore] = useState(0);
   const [walkthroughFeedback, setWalkthroughFeedback] = useState('');
   const [walkthroughComplete, setWalkthroughComplete] = useState(false);
+
+  // Milestone Progression State
+  const [milestoneLevel, setMilestoneLevel] = useState(() => {
+    const val = localStorage.getItem('academy_milestone_level');
+    return val ? Number(val) : 1;
+  });
+
+  const unlockMilestone = (levelToUnlock) => {
+    setMilestoneLevel(prev => {
+      if (levelToUnlock > prev) {
+        localStorage.setItem('academy_milestone_level', levelToUnlock);
+        return levelToUnlock;
+      }
+      return prev;
+    });
+  };
 
   // Load members from Dexie
   const loadMembers = async () => {
@@ -401,6 +418,48 @@ export default function Academy({
         </div>
       </div>
 
+      {/* Showmanship Milestone Progression Track */}
+      <div className="glass-container p-5 border border-indigo-500/20 bg-indigo-950/5 flex flex-col gap-3">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-350 flex items-center gap-1.5">
+            🏆 Showmanship Milestone Progression Track
+          </span>
+          <span className="text-xs bg-indigo-500/20 text-indigo-300 font-bold px-2.5 py-0.5 rounded-full">
+            Unlocked: {milestoneLevel} / 5 Stages
+          </span>
+        </div>
+
+        {/* Dynamic Horizontal timeline */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-1">
+          {[
+            { level: 1, label: "Basic Handling", icon: "🐾", desc: "Carry & Posing checks" },
+            { level: 2, label: "Breed Standards", icon: "📐", desc: "Body type poses" },
+            { level: 3, label: "Show Technique", icon: "🩺", desc: "11-Step Inspection checklist" },
+            { level: 4, label: "Strategic Reasoning", icon: "🧬", desc: "Genetics & Inbreeding Q&A" },
+            { level: 5, label: "Master Challenge", icon: "🏆", desc: "Full 100-Point scorecard run" }
+          ].map(stage => {
+            const isUnlocked = milestoneLevel >= stage.level;
+            return (
+              <div 
+                key={stage.level} 
+                className={`p-3 rounded-2xl border flex flex-col items-center text-center gap-1 transition-all ${
+                  isUnlocked 
+                    ? 'bg-indigo-650/15 border-indigo-500/40 text-white shadow shadow-indigo-500/10' 
+                    : 'bg-black/30 border-white/5 text-slate-500 opacity-60'
+                }`}
+              >
+                <div className="text-base flex items-center gap-1">
+                  <span>{stage.icon}</span>
+                  {!isUnlocked && <span className="text-[10px] opacity-75">🔒</span>}
+                </div>
+                <span className="text-[10px] font-black tracking-wide leading-tight mt-0.5">{stage.label}</span>
+                <span className="text-[8px] opacity-75 leading-tight hidden md:inline">{stage.desc}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Main Mode Controller */}
       {academyMode === 'menu' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -456,6 +515,7 @@ export default function Academy({
               </div>
               <button 
                 onClick={() => {
+                  setWalkthroughStage(null);
                   setWalkthroughStep(0);
                   setSelectedWalkthroughOption(null);
                   setWalkthroughScore(0);
@@ -1468,7 +1528,7 @@ export default function Academy({
                     if (canvas) {
                       const dataUrl = canvas.toDataURL("image/png");
                       const link = document.createElement('a');
-                      link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`;
+link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`;
                       link.href = dataUrl;
                       link.click();
                     }
@@ -1487,107 +1547,293 @@ export default function Academy({
 
       {/* SHOWMANSHIP WALKTHROUGH MODE */}
       {academyMode === 'walkthrough' && (() => {
-        const steps = [
-          {
-            title: "Step 1: Carrying Style 🐾",
-            mascot: "How do you pick up and carry your rabbit to the table?",
-            options: [
-              { key: "A", text: "Lift by the ears and carry them high.", correct: false, score: 0, feedback: "❌ Carrying a rabbit by its ears is a severe safety violation and causes permanent damage to the ear cartilage! Deduct 5 points." },
-              { key: "B", text: "Slide one hand under the chest, lift, support the rump with the other hand (Football Carry) and tuck under your arm.", correct: true, score: 10, feedback: "🎉 Correct! The football carry is the official, safest method to transport rabbits. Support that rump!" },
-              { key: "C", text: "Carry them in a small plastic container without body support.", correct: false, score: 3, feedback: "❌ Incorrect. The animal must be handled directly by the youth exhibitor to show control. Deduct 3 points." }
-            ]
-          },
-          {
-            title: "Step 2: Posing Stance 🐰",
-            mascot: "Pose your rabbit. Bella is a Holland Lop (Compact body type).",
-            options: [
-              { key: "A", text: "Stretch the front legs out straight and pull the hind legs flat.", correct: false, score: 2, feedback: "❌ Incorrect. Holland Lops are a Compact breed and should be posed tucked in a tight ball. Stretched pose is only for Cylindrical/Full-Arch breeds. Deduct 4 points." },
-              { key: "B", text: "Tuck the front feet under the eyes, and push the rear feet in line with the hips so they look round and compact.", correct: true, score: 10, feedback: "🎉 Correct! Posing compactly is standard for Compact type breeds. They should look like a round ball!" },
-              { key: "C", text: "Let them lay flat on their side to show their belly.", correct: false, score: 0, feedback: "❌ Incorrect. Rabbits are never shown on their sides! Deduct 5 points." }
-            ]
-          },
-          {
-            title: "Step 3: Ears Inspection 👂",
-            mascot: "Inspect inside the ears. You find brown crusty scales and scabs at the base. What is this?",
-            options: [
-              { key: "A", text: "Normal dirt. Clean it with a dry paper towel.", correct: false, score: 1, feedback: "❌ Incorrect. Brown scales indicate ear mites (Ear Canker). Prying it can cause pain and infection." },
-              { key: "B", text: "Ear Canker (Mites) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Ear Canker is an active mite infection and is an official ARBA Disqualification. The animal must be treated and not shown." },
-              { key: "C", text: "Molt lines inside the ears.", correct: false, score: 2, feedback: "❌ Incorrect. Molting does not produce crusty scabs or scaling inside the ears." }
-            ]
-          },
-          {
-            title: "Step 4: Eyes Inspection 👁️",
-            mascot: "Check the eyes. You spot a cloudy white film covering the pupil of the left eye. What is this?",
-            options: [
-              { key: "A", text: "Cataracts (Blindness) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Blindness or cataracts in one or both eyes is a standard ARBA DQ." },
-              { key: "B", text: "Eye dust from bedding.", correct: false, score: 1, feedback: "❌ Incorrect. Film over the pupil is a cataract, not dust." },
-              { key: "C", text: "Standard variety pigment reflection.", correct: false, score: 2, feedback: "❌ Incorrect. The pupil should be clear or show matching ruby/blue eyes depending on variety, not cloudy." }
-            ]
-          },
-          {
-            title: "Step 5: Nose Inspection 👃",
-            mascot: "Check the nose. There is white, sticky wet discharge around both nostrils.",
-            options: [
-              { key: "A", text: "Cold / Snuffles - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! White nasal discharge is a sign of pasteurellosis (Snuffles), which is highly contagious and an official DQ." },
-              { key: "B", text: "Normal condensation from drinking water.", correct: false, score: 2, feedback: "❌ Incorrect. Water is clear, not white and sticky." },
-              { key: "C", text: "Feed dust accumulation.", correct: false, score: 3, feedback: "❌ Incorrect. Feed dust is brown/green, not sticky white discharge." }
-            ]
-          },
-          {
-            title: "Step 6: Teeth Inspection 🦷",
-            mascot: "Open the muzzle. The top front incisors are positioned permanently behind the bottom incisors.",
-            options: [
-              { key: "A", text: "Normal teeth alignment.", correct: false, score: 0, feedback: "❌ Incorrect. In normal rabbits, the top teeth overlap in front of the bottom teeth." },
-              { key: "B", text: "Malocclusion (Wolf Teeth) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Malocclusion is an inherited teeth misalignment DQ where the incisors do not meet properly." },
-              { key: "C", text: "Standard variety jaw shape.", correct: false, score: 2, feedback: "❌ Incorrect. Jaw variety does not override malocclusion DQs." }
-            ]
-          },
-          {
-            title: "Step 7: Front Feet & Nails 🦵",
-            mascot: "Check the front feet. You count 4 nails on the right paw and 5 nails on the left paw. The right paw is missing a toenail.",
-            options: [
-              { key: "A", text: "Missing claw / toenail - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Missing claws, cut claws, or extra claws are standard ARBA show DQs." },
-              { key: "B", text: "Normal. Compact breeds have fewer claws.", correct: false, score: 1, feedback: "❌ Incorrect. All breeds must have 5 claws on front feet (including the dewclaw) and 4 on hind feet." },
-              { key: "C", text: "Acceptable since the other paw is complete.", correct: false, score: 3, feedback: "❌ Incorrect. Claws must match on both sides." }
-            ]
-          },
-          {
-            title: "Step 8: Underbelly & Sexing 🐑",
-            mascot: "Turn the rabbit over. You check the vent area and find swollen, inflamed tissue with raw scabs.",
-            options: [
-              { key: "A", text: "Vent Disease (Spirochetosis) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Vent disease is a contagious venereal infection and is an immediate DQ." },
-              { key: "B", text: "Normal localized molting.", correct: false, score: 2, feedback: "❌ Incorrect. Molting doesn't cause raw scabs or swelling in the vent area." },
-              { key: "C", text: "Normal breeding maturity signs.", correct: false, score: 1, feedback: "❌ Incorrect. Healthy vents are not swollen, raw, or scabby." }
-            ]
-          },
-          {
-            title: "Step 9: Hocks & Rear Feet 🦶",
-            mascot: "Inspect the hind feet soles. You see red, raw patches of exposed skin without fur covering.",
-            options: [
-              { key: "A", text: "Dirty feet. Needs a foot bath.", correct: false, score: 2, feedback: "❌ Incorrect. Foot baths won't cure raw bleeding sores on the hocks." },
-              { key: "B", text: "Sore Hocks - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Sore hocks (ulcerative pododermatitis) that are raw or bleeding are an official DQ." },
-              { key: "C", text: "Normal breed markings.", correct: false, score: 1, feedback: "❌ Incorrect. Sore hocks are a physical condition flaw, not color markings." }
-            ]
-          },
-          {
-            title: "Step 10: Tail Check 🥕",
-            mascot: "Inspect the tail. It is permanently crooked/bent to the left, and does not sit straight.",
-            options: [
-              { key: "A", text: "Wry Tail / Crooked Tail - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Wry tail (permanently bent tail) is an official ARBA show DQ." },
-              { key: "B", text: "Standard wagging position.", correct: false, score: 2, feedback: "❌ Incorrect. A wry tail cannot be straightened manually." },
-              { key: "C", text: "Typical for senior age classes.", correct: false, score: 3, feedback: "❌ Incorrect. Age does not excuse a permanently crooked tail." }
-            ]
-          },
-          {
-            title: "Step 11: Final Presentation 🎓",
-            mascot: "You have finished inspecting the animal! How do you end your presentation?",
-            options: [
-              { key: "A", text: "Re-pose the rabbit, face the judge, smile, make eye contact, and politely say: 'This completes my presentation.'", correct: true, score: 10, feedback: "🎉 Correct! Showmanship judges grade confidence, poise, and clean endings. Outstanding job!" },
-              { key: "B", text: "Walk away immediately to let the next exhibitor take their turn.", correct: false, score: 1, feedback: "❌ Incorrect. Always wait for the judge to acknowledge or dismiss you." },
-              { key: "C", text: "Put the rabbit in the hutch without saying anything.", correct: false, score: 2, feedback: "❌ Incorrect. Clear communication is key for high showmanship scores." }
-            ]
-          }
-        ];
+        // If no stage selected, show Stage selector card
+        if (walkthroughStage === null) {
+          const stages = [
+            { level: 1, name: "Stage 1: Basic Handling 🐾", desc: "Carrying, Flipping & Calming checks", xp: 30 },
+            { level: 2, name: "Stage 2: Breed Standards 📐", desc: "Body type poses, colors & senior weights", xp: 30 },
+            { level: 3, name: "Stage 3: Showmanship Technique 🩺", desc: "Official 11-step sequence veterinary checks", xp: 110 },
+            { level: 4, name: "Stage 4: Strategic Genetics & Inbreeding 🧬", desc: "Advanced Punnett squares & Wright's Coefficient logic", xp: 30 },
+            { level: 5, name: "Stage 5: Master Challenge Scorecard 🏆", desc: "100-Point ARBA scorecard full simulation test", xp: 100 }
+          ];
+
+          return (
+            <div className="max-w-xl mx-auto w-full flex flex-col gap-6">
+              <div className="glass-container p-6 border border-cyan-500/30 flex flex-col gap-4 text-center">
+                <span className="text-3xl animate-bounce">🎓</span>
+                <h3 className="text-lg font-black text-white">Select Your Showmanship Stage</h3>
+                <p className="text-xs opacity-75">Progress sequentially through stages to unlock higher levels and earn standard badges.</p>
+
+                <div className="flex flex-col gap-3.5 mt-2 text-left">
+                  {stages.map(st => {
+                    const isUnlocked = milestoneLevel >= st.level;
+                    return (
+                      <button
+                        key={st.level}
+                        disabled={!isUnlocked}
+                        onClick={() => {
+                          setWalkthroughStage(st.level);
+                          setWalkthroughStep(0);
+                          setSelectedWalkthroughOption(null);
+                          setWalkthroughScore(0);
+                          setWalkthroughFeedback('');
+                          setWalkthroughComplete(false);
+                        }}
+                        className={`p-3.5 rounded-xl border transition-all text-xs font-semibold text-slate-200 flex items-start justify-between gap-3 w-full ${
+                          isUnlocked 
+                            ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-cyan-400/30' 
+                            : 'bg-black/40 border-white/5 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`font-black ${isUnlocked ? 'text-cyan-300' : 'text-slate-500'}`}>{st.name}</span>
+                          <span className="text-[10px] opacity-75 font-normal">{st.desc}</span>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1.5 mt-1">
+                          <span className="text-[9px] bg-cyan-950/40 text-cyan-400 px-2 py-0.5 rounded font-mono font-bold">+{st.xp} XP</span>
+                          {!isUnlocked && <span>🔒</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setAcademyMode('menu')}
+                  className="btn-interactive text-xs bg-slate-800 border border-white/10 text-slate-350 hover:text-white mt-4"
+                >
+                  Back to Academy Menu
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // Define decks for each stage
+        let steps = [];
+        if (walkthroughStage === 1) {
+          steps = [
+            {
+              title: "Stage 1 - Step 1: Carrying Style 🐾",
+              mascot: "How do you pick up and carry your rabbit safely to the show table?",
+              options: [
+                { key: "A", text: "Lift by the ears and carry them high.", correct: false, score: 0, feedback: "❌ Carrying a rabbit by its ears is a severe safety violation and causes permanent damage to the ear cartilage!" },
+                { key: "B", text: "Slide one hand under the chest, lift, support the rump with the other hand (Football Carry) and tuck under your arm.", correct: true, score: 10, feedback: "🎉 Correct! The football carry is the official, safest method to transport rabbits. Support that rump!" },
+                { key: "C", text: "Carry them in a small plastic container without body support.", correct: false, score: 3, feedback: "❌ Incorrect. The animal must be handled directly by the youth exhibitor to show control." }
+              ]
+            },
+            {
+              title: "Stage 1 - Step 2: Calming & Flipping 🐾",
+              mascot: "How do you securely flip the rabbit over onto its back to inspect the belly?",
+              options: [
+                { key: "A", text: "Grab by the ears and twist quickly.", correct: false, score: 0, feedback: "❌ Unsafe! Never grab or twist a rabbit by the ears. This can snap their neck or injure their back." },
+                { key: "B", text: "Gently hold the scruff at the shoulders with one hand, support the rump with the other hand, and pivot them back smoothly onto the table cushion.", correct: true, score: 10, feedback: "🎉 Correct! Supporting the weight by the scruff and rump while pivoting is the safest flipping method." },
+                { key: "C", text: "Roll them over by the tail.", correct: false, score: 2, feedback: "❌ Incorrect. Grabbing or rolling by the tail can break the tail bone." }
+              ]
+            },
+            {
+              title: "Stage 1 - Step 3: Grooming & Condition 🐾",
+              mascot: "You notice small wool mats on the flanks of a Holland Lop before showing. What should you do?",
+              options: [
+                { key: "A", text: "Blow them out or groom them out gently before taking the rabbit to the table.", correct: true, score: 10, feedback: "🎉 Correct! Rabbits must be clean and groomed prior to showing. Clean flanks prevent points deductions." },
+                { key: "B", text: "Cut them out with scissors right at the judge's table.", correct: false, score: 1, feedback: "❌ Incorrect. Trimming or scissoring on the show table is prohibited and looks unprofessional!" },
+                { key: "C", text: "Do nothing, the judge won't check the flanks.", correct: false, score: 3, feedback: "❌ Incorrect. Judges inspect the entire body, and mats will result in condition deductions." }
+              ]
+            }
+          ];
+        } else if (walkthroughStage === 2) {
+          steps = [
+            {
+              title: "Stage 2 - Step 1: Posing Body Types 📐",
+              mascot: "You are posing a New Zealand. It is a Commercial body type breed. How should they be posed?",
+              options: [
+                { key: "A", text: "Tucked up in a round ball like a compact Holland Lop.", correct: false, score: 2, feedback: "❌ Incorrect. Commercial body type breeds should not be tucked compactly like compact breeds." },
+                { key: "B", text: "Posed with front feet slightly behind the eyes and hind feet flat under hips, allowing the back to rise and show a deep loin curve.", correct: true, score: 10, feedback: "🎉 Correct! This showcases the deep loin, round rump, and length of a commercial body type." },
+                { key: "C", text: "Posed flat and stretched out like a Himalayan.", correct: false, score: 1, feedback: "❌ Incorrect. Stretched flat is for Cylindrical breeds (Himalayans), not Commercial breeds." }
+              ]
+            },
+            {
+              title: "Stage 2 - Step 2: Broken Pattern Rules 📐",
+              mascot: "You present a Broken Black Mini Rex. You notice a patch of white hairs inside the black ears. Is this allowed?",
+              options: [
+                { key: "A", text: "Yes, broken pattern allows white anywhere.", correct: false, score: 2, feedback: "❌ Incorrect. Under ARBA standards, the ears of broken patterned rabbits must show standard colored markings." },
+                { key: "B", text: "No, the ears of broken patterned rabbits must show colored pattern standard markings. It is a DQ.", correct: true, score: 10, feedback: "🎉 Correct! White spots inside the ears of broken patterned rabbits is a disqualification (DQ)!" },
+                { key: "C", text: "Yes, it is considered a fault but not a DQ.", correct: false, score: 3, feedback: "❌ Incorrect. This is a severe markings error and is graded as a DQ." }
+              ]
+            },
+            {
+              title: "Stage 2 - Step 3: Maximum Weight limits 📐",
+              mascot: "Under the ARBA Standard of Perfection, what is the maximum weight limit for a Senior Holland Lop?",
+              options: [
+                { key: "A", text: "4.0 lbs (64 oz).", correct: true, score: 10, feedback: "🎉 Correct! The maximum registration and show weight limit for a Senior Holland Lop is 4.0 lbs." },
+                { key: "B", text: "6.5 lbs (104 oz).", correct: false, score: 2, feedback: "❌ Incorrect. 6.5 lbs is too heavy for a Holland Lop (it would be disqualified for weight)." },
+                { key: "C", text: "9.0 lbs (144 oz).", correct: false, score: 0, feedback: "❌ Incorrect. 9.0 lbs is commercial breed weight class!" }
+              ]
+            }
+          ];
+        } else if (walkthroughStage === 3) {
+          steps = [
+            {
+              title: "Stage 3 - Step 1: Carrying Style 🐾",
+              mascot: "How do you carry the rabbit safely to the table?",
+              options: [
+                { key: "A", text: "Lift by the ears and carry them high.", correct: false, score: 0, feedback: "❌ Carrying a rabbit by its ears is a severe safety violation and causes permanent damage to the ear cartilage!" },
+                { key: "B", text: "Slide one hand under the chest, lift, support the rump with the other hand (Football Carry) and tuck under your arm.", correct: true, score: 10, feedback: "🎉 Correct! The football carry is the official, safest method to transport rabbits. Support that rump!" },
+                { key: "C", text: "Carry them in a small plastic container without body support.", correct: false, score: 3, feedback: "❌ Incorrect. The animal must be handled directly by the youth exhibitor to show control." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 2: Posing Stance 🐰",
+              mascot: "Pose your rabbit. Bella is a Holland Lop (Compact body type).",
+              options: [
+                { key: "A", text: "Stretch the front legs out straight and pull the hind legs flat.", correct: false, score: 2, feedback: "❌ Incorrect. Holland Lops are a Compact breed and should be posed tucked in a tight ball. Stretched pose is only for Cylindrical/Full-Arch breeds. Deduct 4 points." },
+                { key: "B", text: "Tuck the front feet under the eyes, and push the rear feet in line with the hips so they look round and compact.", correct: true, score: 10, feedback: "🎉 Correct! Posing compactly is standard for Compact type breeds. They should look like a round ball!" },
+                { key: "C", text: "Let them lay flat on their side to show their belly.", correct: false, score: 0, feedback: "❌ Incorrect. Rabbits are never shown on their sides! Deduct 5 points." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 3: Ears Inspection 👂",
+              mascot: "Inspect inside the ears. You find brown crusty scales and scabs at the base. What is this?",
+              options: [
+                { key: "A", text: "Normal dirt. Clean it with a dry paper towel.", correct: false, score: 1, feedback: "❌ Incorrect. Brown scales indicate ear mites (Ear Canker). Prying it can cause pain and infection." },
+                { key: "B", text: "Ear Canker (Mites) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Ear Canker is an active mite infection and is an official ARBA Disqualification. The animal must be treated and not shown." },
+                { key: "C", text: "Molt lines inside the ears.", correct: false, score: 2, feedback: "❌ Incorrect. Molting does not produce crusty scabs or scaling inside the ears." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 4: Eyes Inspection 👁️",
+              mascot: "Check the eyes. You spot a cloudy white film covering the pupil of the left eye. What is this?",
+              options: [
+                { key: "A", text: "Cataracts (Blindness) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Blindness or cataracts in one or both eyes is a standard ARBA DQ." },
+                { key: "B", text: "Eye dust from bedding.", correct: false, score: 1, feedback: "❌ Incorrect. Film over the pupil is a cataract, not dust." },
+                { key: "C", text: "Standard variety pigment reflection.", correct: false, score: 2, feedback: "❌ Incorrect. The pupil should be clear or show matching ruby/blue eyes depending on variety, not cloudy." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 5: Nose Inspection 👃",
+              mascot: "Check the nose. There is white, sticky wet discharge around both nostrils.",
+              options: [
+                { key: "A", text: "Cold / Snuffles - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! White nasal discharge is a sign of pasteurellosis (Snuffles), which is highly contagious and an official DQ." },
+                { key: "B", text: "Normal condensation from drinking water.", correct: false, score: 2, feedback: "❌ Incorrect. Water is clear, not white and sticky." },
+                { key: "C", text: "Feed dust accumulation.", correct: false, score: 3, feedback: "❌ Incorrect. Feed dust is brown/green, not sticky white discharge." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 6: Teeth Inspection 🦷",
+              mascot: "Open the muzzle. The top front incisors are positioned permanently behind the bottom incisors.",
+              options: [
+                { key: "A", text: "Normal teeth alignment.", correct: false, score: 0, feedback: "❌ Incorrect. In normal rabbits, the top teeth overlap in front of the bottom teeth." },
+                { key: "B", text: "Malocclusion (Wolf Teeth) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Malocclusion is an inherited teeth misalignment DQ where the incisors do not meet properly." },
+                { key: "C", text: "Standard variety jaw shape.", correct: false, score: 2, feedback: "❌ Incorrect. Jaw variety does not override malocclusion DQs." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 7: Front Feet & Nails 🦵",
+              mascot: "Check the front feet. You count 4 nails on the right paw and 5 nails on the left paw. The right paw is missing a toenail.",
+              options: [
+                { key: "A", text: "Missing claw / toenail - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Missing claws, cut claws, or extra claws are standard ARBA show DQs." },
+                { key: "B", text: "Normal. Compact breeds have fewer claws.", correct: false, score: 1, feedback: "❌ Incorrect. All breeds must have 5 claws on front feet (including the dewclaw) and 4 on hind feet." },
+                { key: "C", text: "Acceptable since the other paw is complete.", correct: false, score: 3, feedback: "❌ Incorrect. Claws must match on both sides." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 8: Underbelly & Sexing 🐑",
+              mascot: "Turn the rabbit over. You check the vent area and find swollen, inflamed tissue with raw scabs.",
+              options: [
+                { key: "A", text: "Vent Disease (Spirochetosis) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Vent disease is a contagious venereal infection and is an immediate DQ." },
+                { key: "B", text: "Normal localized molting.", correct: false, score: 2, feedback: "❌ Incorrect. Molting doesn't cause raw scabs or swelling in the vent area." },
+                { key: "C", text: "Normal breeding maturity signs.", correct: false, score: 1, feedback: "❌ Incorrect. Healthy vents are not swollen, raw, or scabby." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 9: Hocks & Rear Feet 🦶",
+              mascot: "Inspect the hind feet soles. You see red, raw patches of exposed skin without fur covering.",
+              options: [
+                { key: "A", text: "Dirty feet. Needs a foot bath.", correct: false, score: 2, feedback: "❌ Incorrect. Foot baths won't cure raw bleeding sores on the hocks." },
+                { key: "B", text: "Sore Hocks - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Sore hocks (ulcerative pododermatitis) that are raw or bleeding are an official DQ." },
+                { key: "C", text: "Normal breed markings.", correct: false, score: 1, feedback: "❌ Incorrect. Sore hocks are a physical condition flaw, not color markings." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 10: Tail Check 🥕",
+              mascot: "Inspect the tail. It is permanently crooked/bent to the left, and does not sit straight.",
+              options: [
+                { key: "A", text: "Wry Tail / Crooked Tail - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Wry tail (permanently bent tail) is an official ARBA show DQ." },
+                { key: "B", text: "Standard wagging position.", correct: false, score: 2, feedback: "❌ Incorrect. A wry tail cannot be straightened manually." },
+                { key: "C", text: "Typical for senior age classes.", correct: false, score: 3, feedback: "❌ Incorrect. Age does not excuse a permanently crooked tail." }
+              ]
+            },
+            {
+              title: "Stage 3 - Step 11: Final Presentation 🎓",
+              mascot: "You have finished inspecting the animal! How do you end your presentation?",
+              options: [
+                { key: "A", text: "Re-pose the rabbit, face the judge, smile, make eye contact, and politely say: 'This completes my presentation.'", correct: true, score: 10, feedback: "🎉 Correct! Showmanship judges grade confidence, poise, and clean endings. Outstanding job!" },
+                { key: "B", text: "Walk away immediately to let the next exhibitor take their turn.", correct: false, score: 1, feedback: "❌ Incorrect. Always wait for the judge to acknowledge or dismiss you." },
+                { key: "C", text: "Put the rabbit in the hutch without saying anything.", correct: false, score: 2, feedback: "❌ Incorrect. Clear communication is key for high showmanship scores." }
+              ]
+            }
+          ];
+        } else if (walkthroughStage === 4) {
+          steps = [
+            {
+              title: "Stage 4 - Step 1: Agouti Genotype Crosses 🧬",
+              mascot: "You cross a heterozygous Agouti buck (A/a) with a self black doe (a/a). What percentage of offspring will be Agouti?",
+              options: [
+                { key: "A", text: "50% Agouti (A/a) and 50% Self (a/a).", correct: true, score: 10, feedback: "🎉 Correct! The cross is A/a x a/a. The Agouti gene (A) is dominant, yielding 50% A/a (Agouti) and 50% a/a (Self)." },
+                { key: "B", text: "100% Agouti.", correct: false, score: 1, feedback: "❌ Incorrect. The Agouti buck only carries one Agouti allele, so half the offspring will get the recessive self allele." },
+                { key: "C", text: "75% Agouti and 25% Self.", correct: false, score: 2, feedback: "❌ Incorrect. 3:1 ratio is only for heterozygous dominant crosses (A/a x A/a)." }
+              ]
+            },
+            {
+              title: "Stage 4 - Step 2: Wright's Coefficient Calculation 🧬",
+              mascot: "You breed a buck to his own daughter. What is the Wright's Inbreeding Coefficient (Fx) of the offspring (assuming zero prior inbreeding)?",
+              options: [
+                { key: "A", text: "25.0% (Fx = 0.25).", correct: true, score: 10, feedback: "🎉 Correct! Sire-to-daughter breeding shares 50% genetics, resulting in a 25.0% inbreeding coefficient." },
+                { key: "B", text: "12.5% (Fx = 0.125).", correct: false, score: 2, feedback: "❌ Incorrect. 12.5% is for half-sibling or grandparent crossings." },
+                { key: "C", text: "50.0% (Fx = 0.50).", correct: false, score: 0, feedback: "❌ Incorrect. Fx is calculated as 1/2 of relationship coefficient (0.50), resulting in 0.25." }
+              ]
+            },
+            {
+              title: "Stage 4 - Step 3: Linebreeding Strategy 🧬",
+              mascot: "What is the primary agricultural purpose of using linebreeding over outcrossing in show stock?",
+              options: [
+                { key: "A", text: "To consistently lock in desirable homozygous standard traits and breed-conforming type.", correct: true, score: 10, feedback: "🎉 Correct! Linebreeding concentrates genes of outstanding ancestors to build consistency in pedigree lines." },
+                { key: "B", text: "To prevent all mutations entirely.", correct: false, score: 1, feedback: "❌ Incorrect. Inbreeding cannot stop genetic mutations." },
+                { key: "C", text: "To increase genetic diversity as much as possible.", correct: false, score: 2, feedback: "❌ Incorrect. Inbreeding reduces genetic diversity to stabilize characteristics." }
+              ]
+            }
+          ];
+        } else if (walkthroughStage === 5) {
+          steps = [
+            {
+              title: "Stage 5 - Step 1: Judge Scorecard Run 🏆",
+              mascot: "You are evaluating an exhibitor who presented their animal correctly but had grease on their shirt sleeves (-5 pts) and dropped the rabbit during pose check (-10 pts). How many points are deducted from their 100-point total?",
+              options: [
+                { key: "A", text: "15 points deducted (Score: 85/100).", correct: true, score: 30, feedback: "🎉 Correct! Grease stains and dropping the rabbit are graded under attire and handling. 15 points deducted." },
+                { key: "B", text: "5 points deducted (Score: 95/100).", correct: false, score: 5, feedback: "❌ Mismatch! Dropping the rabbit is a severe handling deduction (-10) on top of the attire stain." },
+                { key: "C", text: "25 points deducted (Score: 75/100).", correct: false, score: 10, feedback: "❌ Too severe! Standard scorecard deductions call for 15 total points." }
+              ]
+            },
+            {
+              title: "Stage 5 - Step 2: Advanced SOP Fault Check 🏆",
+              mascot: "You are judging a senior Netherland Dwarf buck. He weighs exactly 2.5 lbs (40 oz), has a compact body, but has a slight roll back coat and ears measuring 3 inches. Which of these is a disqualification?",
+              options: [
+                { key: "A", text: "Ears measuring 3 inches.", correct: true, score: 35, feedback: "🎉 Correct! Under ARBA standards, Netherland Dwarf ears must not exceed 2.5 inches. 3 inches is an immediate DQ!" },
+                { key: "B", text: "Weight of 2.5 lbs.", correct: false, score: 5, feedback: "❌ Incorrect. 2.5 lbs is well within the Senior Netherland Dwarf standard (max 2.5 lbs)." },
+                { key: "C", text: "Roll back coat type.", correct: false, score: 10, feedback: "❌ Incorrect. Netherland Dwarfs are roll back coat types. This is standard, not a fault." }
+              ]
+            },
+            {
+              title: "Stage 5 - Step 3: Sportsmanship Scenario 🏆",
+              mascot: "A judge places your rabbit last in class. What is the correct response under the ARBA Youth Showmanship code of conduct?",
+              options: [
+                { key: "A", text: "Shake the judge's hand, congratulate the winner, and politely ask the judge for pointers to improve your stock.", correct: true, score: 35, feedback: "🎉 Correct! Sportsmanship is the foundation of 4-H. Graceful losing and seeking feedback show maturity!" },
+                { key: "B", text: "Argue with the judge about standard markings.", correct: false, score: 0, feedback: "❌ Severe penalty! Arguing with show officials is grounds for immediate exhibition suspension." },
+                { key: "C", text: "Walk off and complain on the social feed.", correct: false, score: 5, feedback: "❌ Incorrect. Unsportsmanlike conduct ruins the community experience." }
+              ]
+            }
+          ];
+        }
 
         const currentStepData = steps[walkthroughStep];
 
@@ -1651,16 +1897,23 @@ export default function Academy({
                     <div className="flex flex-col gap-3 mt-2">
                       <div className="p-4 bg-gradient-to-tr from-yellow-500/10 to-indigo-500/10 border border-yellow-500/20 rounded-2xl text-center flex flex-col gap-2">
                         <span className="text-4xl animate-bounce">🏆</span>
-                        <h4 className="text-base font-bold text-white">Showmanship Practice Completed!</h4>
-                        <p className="text-xs opacity-75">You scored {walkthroughScore} out of 110 points.</p>
+                        <h4 className="text-base font-bold text-white">Stage {walkthroughStage} Completed!</h4>
+                        <p className="text-xs opacity-75">You scored {walkthroughScore} points.</p>
                       </div>
                       
                       <button
                         onClick={() => {
                           addPoints(walkthroughScore);
-                          if (walkthroughScore >= 90 && !unlockedBadges.includes("Showmanship Star 👑")) {
-                            unlockBadge("Showmanship Star 👑");
+                          
+                          // Dynamic progressive unlocking of the next milestone!
+                          const nextLevel = walkthroughStage + 1;
+                          if (nextLevel <= 5) {
+                            unlockMilestone(nextLevel);
+                            showToast(`🏆 Milestone stage ${nextLevel} unlocked!`, "success");
+                          } else {
+                            unlockBadge("Showmanship Champion 👑");
                           }
+
                           setAcademyMode('menu');
                         }}
                         className="btn-interactive w-full py-2.5 bg-indigo-600 border-none font-bold text-white text-xs rounded-xl"
