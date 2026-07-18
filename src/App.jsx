@@ -800,6 +800,7 @@ const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:50
 
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
+  const [dbError, setDbError] = useState(null);
   const { execute: runAsync } = useAsyncAction();
 
   const matchLocationKey = (locValue, locKey) => {
@@ -1422,11 +1423,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Failed to migrate or load database:", err);
-        if (err.failures) {
-          console.error("BulkError failures:", err.failures.map(f => f.message || f.toString()));
-        } else if (err.inner) {
-          console.error("Inner error:", err.inner);
-        }
+        setDbError(err.message || err.toString());
         setDbLoaded(true);
       }
     }
@@ -1435,11 +1432,15 @@ export default function App() {
 
   const [showArchived, setShowArchived] = useState(false);
   const showToast = (message, type = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 3000);
+    // Avoid spamming identical toast messages
+    setToasts(prev => {
+      if (prev.some(t => t.message === message)) return prev;
+      const id = Date.now();
+      setTimeout(() => {
+        setToasts(current => current.filter(t => t.id !== id));
+      }, 5000);
+      return [...prev, { id, message, type }];
+    });
   };
 
   // Last Saved Chores Timestamp
@@ -1905,7 +1906,9 @@ export default function App() {
       .then(() => { prevRabbitsRef.current = allRabbits; })
       .catch(err => {
         console.error("Error saving rabbits to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved rabbits state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved rabbits state.", "error");
+        }
         setAllRabbits(prevRabbitsRef.current);
       });
   }, [allRabbits, dbLoaded, currentUser]);
@@ -1917,7 +1920,9 @@ export default function App() {
       .then(() => { prevBreedingsRef.current = allBreedings; })
       .catch(err => {
         console.error("Error saving breedings to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved breedings state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved breedings state.", "error");
+        }
         setAllBreedings(prevBreedingsRef.current);
       });
   }, [allBreedings, dbLoaded]);
@@ -1929,7 +1934,9 @@ export default function App() {
       .then(() => { prevLittersRef.current = allLitters; })
       .catch(err => {
         console.error("Error saving litters to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved litters state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved litters state.", "error");
+        }
         setAllLitters(prevLittersRef.current);
       });
   }, [allLitters, dbLoaded]);
@@ -1943,7 +1950,9 @@ export default function App() {
       .then(() => { prevLedgerRef.current = allLedger; })
       .catch(err => {
         console.error("Error saving ledger to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved ledger state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved ledger state.", "error");
+        }
         setAllLedger(prevLedgerRef.current);
       });
   }, [allLedger, dbLoaded, currentUser]);
@@ -1955,7 +1964,9 @@ export default function App() {
       .then(() => { prevShowsRef.current = allShows; })
       .catch(err => {
         console.error("Error saving shows to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved shows state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved shows state.", "error");
+        }
         setAllShows(prevShowsRef.current);
       });
   }, [allShows, dbLoaded]);
@@ -1967,7 +1978,9 @@ export default function App() {
       .then(() => { prevShowEntriesRef.current = allShowEntries; })
       .catch(err => {
         console.error("Error saving showEntries to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved show entries state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved show entries state.", "error");
+        }
         setAllShowEntries(prevShowEntriesRef.current);
       });
   }, [allShowEntries, dbLoaded]);
@@ -1979,7 +1992,9 @@ export default function App() {
       .then(() => { prevChoresRef.current = allChores; })
       .catch(err => {
         console.error("Error saving chores to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved chores state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved chores state.", "error");
+        }
         setAllChores(prevChoresRef.current);
       });
   }, [allChores, dbLoaded]);
@@ -1991,7 +2006,9 @@ export default function App() {
       .then(() => { prevTransfersRef.current = allTransfers; })
       .catch(err => {
         console.error("Error saving transfers to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved transfers state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved transfers state.", "error");
+        }
         setAllTransfers(prevTransfersRef.current);
       });
   }, [allTransfers, dbLoaded]);
@@ -2003,7 +2020,9 @@ export default function App() {
       .then(() => { prevSignaturesRef.current = allSignatures; })
       .catch(err => {
         console.error("Error saving signatures to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved signatures state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved signatures state.", "error");
+        }
         setAllSignatures(prevSignaturesRef.current);
       });
   }, [allSignatures, dbLoaded]);
@@ -2017,7 +2036,9 @@ export default function App() {
       .then(() => { prevMedicalRef.current = allMedical; })
       .catch(err => {
         console.error("Error saving medical to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved medical state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved medical state.", "error");
+        }
         setAllMedical(prevMedicalRef.current);
       });
   }, [allMedical, dbLoaded, currentUser]);
@@ -2029,7 +2050,9 @@ export default function App() {
       .then(() => { prevWeightsRef.current = allWeights; })
       .catch(err => {
         console.error("Error saving weights to Dexie:", err);
-        showToast("Local database write failed. Reverting to last saved weights state.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting to last saved weights state.", "error");
+        }
         setAllWeights(prevWeightsRef.current);
       });
   }, [allWeights, dbLoaded]);
@@ -2049,7 +2072,9 @@ export default function App() {
       .then(() => { prevAdminBreedersRef.current = adminBreeders; })
       .catch(err => {
         console.error("Error saving adminBreeders to Dexie:", err);
-        showToast("Local database write failed. Reverting admin breeders.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting admin breeders.", "error");
+        }
         setAdminBreeders(prevAdminBreedersRef.current);
       });
   }, [adminBreeders, dbLoaded]);
@@ -2061,7 +2086,9 @@ export default function App() {
       .then(() => { prevSyncQueueRef.current = syncQueue; })
       .catch(err => {
         console.error("Error saving syncQueue to Dexie:", err);
-        showToast("Local database write failed. Reverting sync queue.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting sync queue.", "error");
+        }
         setSyncQueue(prevSyncQueueRef.current);
       });
   }, [syncQueue, dbLoaded]);
@@ -2073,7 +2100,9 @@ export default function App() {
       .then(() => { prevApprovalsRef.current = allApprovals; })
       .catch(err => {
         console.error("Error saving approvals to Dexie:", err);
-        showToast("Local database write failed. Reverting approvals.", "error");
+        if (!dbError) {
+          showToast("Local database write failed. Reverting approvals.", "error");
+        }
         setAllApprovals(prevApprovalsRef.current);
       });
   }, [allApprovals, dbLoaded]);
@@ -5589,6 +5618,39 @@ export default function App() {
           </select>
         </div>
       </header>
+
+      {/* Database Version / Schema Upgrade Conflict Recovery Alert Banner */}
+      {dbError && (
+        <div className="mx-6 mb-4 p-5 glass-container border-2 border-red-500/50 bg-gradient-to-br from-slate-900 via-slate-900/95 to-red-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-red-650"></div>
+          <div className="flex items-center gap-3.5 pl-2">
+            <span className="text-3xl shrink-0 animate-pulse">⚠️</span>
+            <div className="text-left">
+              <h4 className="text-sm font-black text-red-400 tracking-wide uppercase">Local Database Conflict Detected</h4>
+              <p className="text-xs opacity-90 leading-relaxed mt-1">
+                Your browser holds an older, incompatible local IndexedDB database version ({dbError}). Reset the local cache to self-heal and sync cleanly with PostgreSQL cloud servers.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2.5 shrink-0 pl-2 md:pl-0">
+            <button 
+              onClick={() => {
+                db.delete().then(() => {
+                  localStorage.removeItem('rp_migrated_to_dexie_v9');
+                  window.location.reload();
+                }).catch(err => {
+                  console.error("Failed to delete database:", err);
+                  localStorage.removeItem('rp_migrated_to_dexie_v9');
+                  window.location.reload();
+                });
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl border-none cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md shadow-red-500/20"
+            >
+              Reset Database Cache
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Offline Performance Suggestion Banner */}
       {isOffline && designMode === 'fun' && !dismissedOfflineTip && (
@@ -13484,19 +13546,28 @@ export default function App() {
         {toasts.map(toast => (
           <div 
             key={toast.id} 
-            className={`glass-container p-4 rounded-xl shadow-lg flex items-center gap-3 border pointer-events-auto transition-all duration-300 transform translate-y-0 scale-100 ${
+            className={`glass-container p-4 rounded-xl shadow-lg flex items-center justify-between gap-3 border pointer-events-auto transition-all duration-300 transform translate-y-0 scale-100 ${
               toast.type === 'error' ? 'border-red-500/35 bg-red-950/80 text-red-200' :
               toast.type === 'info' ? 'border-orange-500/35 bg-orange-950/80 text-orange-200 font-semibold' :
               'border-emerald-500/35 bg-emerald-950/80 text-emerald-200'
             }`}
           >
-            <span className="text-base">
-              {toast.type === 'error' ? '❌' : toast.type === 'info' ? '⚡' : '✅'}
-            </span>
-            <div className="flex flex-col">
-              <span className="text-xs font-black text-white">{toast.message}</span>
-              <span className="text-[9px] opacity-75 text-indigo-200">SQLite Storage Synced</span>
+            <div className="flex items-center gap-3">
+              <span className="text-base">
+                {toast.type === 'error' ? '❌' : toast.type === 'info' ? '⚡' : '✅'}
+              </span>
+              <div className="flex flex-col">
+                <span className="text-xs font-black text-white">{toast.message}</span>
+                <span className="text-[9px] opacity-75 text-indigo-200 font-mono">SQLite Storage Synced</span>
+              </div>
             </div>
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="text-xs font-bold hover:text-white bg-transparent border-none text-slate-400 cursor-pointer self-start p-1"
+              aria-label="Dismiss Toast"
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>
