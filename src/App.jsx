@@ -1895,7 +1895,7 @@ export default function App() {
   const prevApprovalsRef = React.useRef(allApprovals);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError || !currentUser) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
     const encrypted = allRabbits.map(r => encryptRecord(r, key, ['dob', 'notes', 'colorCarrier']));
     db.rabbits.clear()
@@ -1903,43 +1903,34 @@ export default function App() {
       .then(() => { prevRabbitsRef.current = allRabbits; })
       .catch(err => {
         console.error("Error saving rabbits to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved rabbits state.", "error");
-        }
         setAllRabbits(prevRabbitsRef.current);
       });
-  }, [allRabbits, dbLoaded, currentUser]);
+  }, [allRabbits, dbLoaded, currentUser, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.breedings.clear()
       .then(() => db.breedings.bulkAdd(allBreedings))
       .then(() => { prevBreedingsRef.current = allBreedings; })
       .catch(err => {
         console.error("Error saving breedings to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved breedings state.", "error");
-        }
         setAllBreedings(prevBreedingsRef.current);
       });
-  }, [allBreedings, dbLoaded]);
+  }, [allBreedings, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.litters.clear()
       .then(() => db.litters.bulkAdd(allLitters))
       .then(() => { prevLittersRef.current = allLitters; })
       .catch(err => {
         console.error("Error saving litters to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved litters state.", "error");
-        }
         setAllLitters(prevLittersRef.current);
       });
-  }, [allLitters, dbLoaded]);
+  }, [allLitters, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError || !currentUser) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
     const encrypted = allLedger.map(lt => encryptRecord(lt, key, ['amount', 'notes']));
     db.ledger.clear()
@@ -1947,85 +1938,67 @@ export default function App() {
       .then(() => { prevLedgerRef.current = allLedger; })
       .catch(err => {
         console.error("Error saving ledger to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved ledger state.", "error");
-        }
         setAllLedger(prevLedgerRef.current);
       });
-  }, [allLedger, dbLoaded, currentUser]);
+  }, [allLedger, dbLoaded, currentUser, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.shows.clear()
       .then(() => db.shows.bulkAdd(allShows))
       .then(() => { prevShowsRef.current = allShows; })
       .catch(err => {
         console.error("Error saving shows to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved shows state.", "error");
-        }
         setAllShows(prevShowsRef.current);
       });
-  }, [allShows, dbLoaded]);
+  }, [allShows, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.showEntries.clear()
       .then(() => db.showEntries.bulkAdd(allShowEntries))
       .then(() => { prevShowEntriesRef.current = allShowEntries; })
       .catch(err => {
         console.error("Error saving showEntries to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved show entries state.", "error");
-        }
         setAllShowEntries(prevShowEntriesRef.current);
       });
-  }, [allShowEntries, dbLoaded]);
+  }, [allShowEntries, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.chores.clear()
       .then(() => db.chores.bulkAdd(allChores))
       .then(() => { prevChoresRef.current = allChores; })
       .catch(err => {
         console.error("Error saving chores to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved chores state.", "error");
-        }
         setAllChores(prevChoresRef.current);
       });
-  }, [allChores, dbLoaded]);
+  }, [allChores, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.transfers.clear()
       .then(() => db.transfers.bulkAdd(allTransfers))
       .then(() => { prevTransfersRef.current = allTransfers; })
       .catch(err => {
         console.error("Error saving transfers to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved transfers state.", "error");
-        }
         setAllTransfers(prevTransfersRef.current);
       });
-  }, [allTransfers, dbLoaded]);
+  }, [allTransfers, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.signatures.clear()
       .then(() => db.signatures.bulkAdd(allSignatures))
       .then(() => { prevSignaturesRef.current = allSignatures; })
       .catch(err => {
         console.error("Error saving signatures to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved signatures state.", "error");
-        }
         setAllSignatures(prevSignaturesRef.current);
       });
-  }, [allSignatures, dbLoaded]);
+  }, [allSignatures, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError || !currentUser) return;
     const key = deriveSessionKey(currentUser?.password, currentUser?.email);
     const encrypted = allMedical.map(m => encryptRecord(m, key, ['treatment', 'notes']));
     db.medical.clear()
@@ -2033,26 +2006,20 @@ export default function App() {
       .then(() => { prevMedicalRef.current = allMedical; })
       .catch(err => {
         console.error("Error saving medical to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved medical state.", "error");
-        }
         setAllMedical(prevMedicalRef.current);
       });
-  }, [allMedical, dbLoaded, currentUser]);
+  }, [allMedical, dbLoaded, currentUser, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.weights.clear()
       .then(() => db.weights.bulkAdd(allWeights))
       .then(() => { prevWeightsRef.current = allWeights; })
       .catch(err => {
         console.error("Error saving weights to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting to last saved weights state.", "error");
-        }
         setAllWeights(prevWeightsRef.current);
       });
-  }, [allWeights, dbLoaded]);
+  }, [allWeights, dbLoaded, dbError]);
 
   useEffect(() => {
     localStorage.setItem('rp_design_mode', designMode);
@@ -2063,46 +2030,37 @@ export default function App() {
   }, [customAccent]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.adminBreeders.clear()
       .then(() => db.adminBreeders.bulkAdd(adminBreeders))
       .then(() => { prevAdminBreedersRef.current = adminBreeders; })
       .catch(err => {
         console.error("Error saving adminBreeders to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting admin breeders.", "error");
-        }
         setAdminBreeders(prevAdminBreedersRef.current);
       });
-  }, [adminBreeders, dbLoaded]);
+  }, [adminBreeders, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.syncQueue.clear()
       .then(() => db.syncQueue.bulkAdd(syncQueue))
       .then(() => { prevSyncQueueRef.current = syncQueue; })
       .catch(err => {
         console.error("Error saving syncQueue to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting sync queue.", "error");
-        }
         setSyncQueue(prevSyncQueueRef.current);
       });
-  }, [syncQueue, dbLoaded]);
+  }, [syncQueue, dbLoaded, dbError]);
 
   useEffect(() => {
-    if (!dbLoaded) return;
+    if (!dbLoaded || dbError) return;
     db.approvals.clear()
       .then(() => db.approvals.bulkAdd(allApprovals))
       .then(() => { prevApprovalsRef.current = allApprovals; })
       .catch(err => {
         console.error("Error saving approvals to Dexie:", err);
-        if (!dbError) {
-          showToast("Local database write failed. Reverting approvals.", "error");
-        }
         setAllApprovals(prevApprovalsRef.current);
       });
-  }, [allApprovals, dbLoaded]);
+  }, [allApprovals, dbLoaded, dbError]);
 
   // Sync log helper
   const addSyncAction = (action, table, payload) => {
