@@ -25,6 +25,10 @@ const EvansMigrator = React.lazy(() => import('./views/EvansMigrator'));
 const SubscriptionManager = React.lazy(() => import('./views/SubscriptionManager'));
 const Marketplace = React.lazy(() => import('./views/Marketplace'));
 const SocialFeed = React.lazy(() => import('./views/SocialFeed'));
+const BreedingScheduler = React.lazy(() => import('./views/BreedingScheduler'));
+const FinancialLedger = React.lazy(() => import('./views/FinancialLedger'));
+const ShowPlanner = React.lazy(() => import('./views/ShowPlanner'));
+const HealthLogger = React.lazy(() => import('./views/HealthLogger'));
 import { useSubscription } from './hooks/useSubscription';
 import ParentConsentGate from './views/ParentConsentGate';
 import PrivacyPolicy from './views/PrivacyPolicy';
@@ -47,10 +51,10 @@ import { schedulePregnancyAlerts, checkPendingAlerts, requestNotificationPermiss
 import VisualBarnMap from './components/barn/VisualBarnMap';
 
 const LOGO_OPTIONS = [
-  { id: 'logo-meadow', label: 'Meadow Bunny 🐇', emoji: '🐇' },
-  { id: 'logo-cyber', label: 'Cyber Rabbit ⚡', emoji: '⚡🐇' },
-  { id: 'logo-crown', label: 'Royal Crown 👑', emoji: '👑🐇' },
-  { id: 'logo-orchard', label: 'Orchard Apple 🍏', emoji: '🍏🐇' }
+  { id: 'logo-meadow', label: 'Meadow Bunny ðŸ‡', emoji: 'ðŸ‡' },
+  { id: 'logo-cyber', label: 'Cyber Rabbit âš¡', emoji: 'âš¡ðŸ‡' },
+  { id: 'logo-crown', label: 'Royal Crown ðŸ‘‘', emoji: 'ðŸ‘‘ðŸ‡' },
+  { id: 'logo-orchard', label: 'Orchard Apple ðŸ', emoji: 'ðŸðŸ‡' }
 ];
 
 const ONBOARDING_RABBITS = [
@@ -172,16 +176,16 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Assign Breeder Role</label>
           {b.isSuperAdmin ? (
-            <div className="text-xs font-bold text-indigo-300 py-1.5">App Owner / Super Admin 👑</div>
+            <div className="text-xs font-bold text-indigo-300 py-1.5">App Owner / Super Admin ðŸ‘‘</div>
           ) : (
             <select
               value={b.role}
               onChange={(e) => handleRoleChange(e.target.value)}
               className="text-xs py-1.5 px-3"
             >
-              <option value="owner">Breeder / Owner 👑</option>
-              <option value="assistant">Barn Assistant 🌾</option>
-              <option value="registrar">ARBA Registrar 📜</option>
+              <option value="owner">Breeder / Owner ðŸ‘‘</option>
+              <option value="assistant">Barn Assistant ðŸŒ¾</option>
+              <option value="registrar">ARBA Registrar ðŸ“œ</option>
             </select>
           )}
         </div>
@@ -595,7 +599,7 @@ const parsePedigreeText = (text) => {
         currentBlock.name = isName[1].trim();
       } else if (isEarNo) {
         const earLine = isEarNo[1].trim();
-        const weightInEar = earLine.match(/^([a-z0-9\-\_\/\\\ß]+)(?:\s+(?:Wt\.?|Weight)\s*(.+))?/i);
+        const weightInEar = earLine.match(/^([a-z0-9\-\_\/\\\ÃŸ]+)(?:\s+(?:Wt\.?|Weight)\s*(.+))?/i);
         if (weightInEar) {
           currentBlock.tattooNumber = weightInEar[1].trim();
           if (weightInEar[2]) {
@@ -1023,7 +1027,7 @@ export default function App() {
     password: '',
     rabbitryName: 'Grandview Rabbitry',
     role: 'owner', // 'owner' or 'assistant'
-    logo: '🐇',
+    logo: 'ðŸ‡',
     theme: 'dark', // Defaults to Midnight Obsidian Dark Theme
     ageGroup: 'adult',
     isYouth: false,
@@ -1056,7 +1060,7 @@ export default function App() {
   }, []);
   
   // Customization settings
-  const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || '🐇');
+  const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || 'ðŸ‡');
   const [rabbitryName, setRabbitryName] = useState(() => localStorage.getItem('rp_rabbitry_name') || 'Grandview Rabbitry');
   const [breederZip, setBreederZip] = useState(() => localStorage.getItem('rp_breeder_zip') || '97201');
   const [breederState, setBreederState] = useState(() => localStorage.getItem('rp_breeder_state') || 'OR');
@@ -1474,7 +1478,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRabbit, setSelectedRabbit] = useState(null);
   const [prepRabbitId, setPrepRabbitId] = useState('');
-  const [healthSelectedRabbitId, setHealthSelectedRabbitId] = useState('');
+
   const [printCardRabbit, setPrintCardRabbit] = useState(null);
   const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
   const [editProfileMode, setEditProfileMode] = useState(false);
@@ -1490,10 +1494,7 @@ export default function App() {
   });
   const [cageMoveRabbitId, setCageMoveRabbitId] = useState(null); // rabbit id being moved on cage map
   
-  // Health & Growth Form States
-  const [newWeightEntry, setNewWeightEntry] = useState({ date: new Date().toISOString().split('T')[0], weightOz: '', stage: 'Routine' });
-  const [newMedicalEntry, setNewMedicalEntry] = useState({ date: new Date().toISOString().split('T')[0], type: 'Vaccination', treatment: '', notes: '', cost: '', fdaWithdrawalDays: 0, fdaApprovalStatus: 'FDA Approved for Rabbits' });
-  const [showMedicalFormModal, setShowMedicalFormModal] = useState(false);
+
   const [showQuickWeightModal, setShowQuickWeightModal] = useState(false);
   const [rabbitPage, setRabbitPage] = useState(1);
   const [mediaPage, setMediaPage] = useState(1);
@@ -1676,7 +1677,7 @@ export default function App() {
       setBreederName(currentUser.name || '');
       setBreederPhone(currentUser.phone || '');
       setRabbitryName(currentUser.rabbitryName || '');
-      setRabbitryLogo(currentUser.logo || '🐇');
+      setRabbitryLogo(currentUser.logo || 'ðŸ‡');
       setTheme(currentUser.theme || 'dark');
       setArbaMemberNumber(currentUser.arbaMemberNumber || '');
       if (currentUser.zip) setBreederZip(currentUser.zip);
@@ -2125,7 +2126,7 @@ export default function App() {
           const newXp = (member.xp || 0) + 15;
           const newLevel = Math.floor(newXp / 100) + 1;
           db.youthProgress.update(chore.assignedTo, { xp: newXp, currentLevel: newLevel }).then(() => {
-            showToast(`⭐ ${member.memberName} earned 15 XP! (New total: ${newXp} XP)`, 'info');
+            showToast(`â­ ${member.memberName} earned 15 XP! (New total: ${newXp} XP)`, 'info');
           });
         }
       });
@@ -2220,11 +2221,11 @@ export default function App() {
         localStorage.setItem('rp_selected_context', user.id);
       }
       setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
-      setRabbitryLogo(user.logo || '🐇');
+      setRabbitryLogo(user.logo || 'ðŸ‡');
       setTheme(user.theme || 'dark');
       localStorage.setItem('rp_logged_in_email', user.email);
       localStorage.setItem('rp_rabbitry_name', user.rabbitryName || 'Grandview Rabbitry');
-      localStorage.setItem('rp_logo', user.logo || '🐇');
+      localStorage.setItem('rp_logo', user.logo || 'ðŸ‡');
       localStorage.setItem('rp_theme', user.theme || 'dark');
 
       triggerConfetti();
@@ -2257,11 +2258,11 @@ export default function App() {
         }
         
         setRabbitryName(serverUser.rabbitryName || 'Grandview Rabbitry');
-        setRabbitryLogo(serverUser.logo || '🐇');
+        setRabbitryLogo(serverUser.logo || 'ðŸ‡');
         setTheme(serverUser.theme || 'dark');
         localStorage.setItem('rp_logged_in_email', serverUser.email);
         localStorage.setItem('rp_rabbitry_name', serverUser.rabbitryName || 'Grandview Rabbitry');
-        localStorage.setItem('rp_logo', serverUser.logo || '🐇');
+        localStorage.setItem('rp_logo', serverUser.logo || 'ðŸ‡');
         localStorage.setItem('rp_theme', serverUser.theme || 'dark');
         
         triggerConfetti();
@@ -2760,7 +2761,7 @@ export default function App() {
     // Trigger Success Mascot Pop-up (Clean popup, not overlaying inputs!)
     setSuccessMascot({
       type: 'usagi',
-      emoji: '🐇',
+      emoji: 'ðŸ‡',
       title: 'Rabbit Registered!',
       message: `Your Registrar has verified that "${createdRabbit.name}" fits breed limits and is successfully saved to the local database!`
     });
@@ -2882,28 +2883,29 @@ export default function App() {
     showToast(`Rabbit moved to cage ${newLocation}`, 'success');
   };
 
-  // Add Breeding Handler
-  const handleAddBreeding = (e) => {
+  // Add Breeding Handler (accepts data from BreedingScheduler view)
+  const handleAddBreeding = (e, breedingData) => {
     e.preventDefault();
-    if (!newBreeding.buckId || !newBreeding.doeId) {
+    const data = breedingData || newBreeding;
+    if (!data.buckId || !data.doeId) {
       alert("Select Sire and Dam!");
       return;
     }
 
-    const doe = rabbits.find(r => r.id === newBreeding.doeId);
+    const doe = rabbits.find(r => r.id === data.doeId);
     const doeName = doe ? doe.name : 'Unknown Doe';
     const doeLocation = doe ? doe.location : 'N/A';
 
-    const breedDateObj = new Date(newBreeding.breedDate);
+    const breedDateObj = new Date(data.breedDate);
     const palpateDate = new Date(breedDateObj.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const nestBoxDate = new Date(breedDateObj.getTime() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const kindleDate = new Date(breedDateObj.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Trigger local offline alert scheduling
-    schedulePregnancyAlerts(doeName, doeLocation, newBreeding.breedDate);
+    schedulePregnancyAlerts(doeName, doeLocation, data.breedDate);
 
     const createdBreeding = {
-      ...newBreeding,
+      ...data,
       id: uuidv7(),
       breederId: selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext,
       palpateDate,
@@ -2926,7 +2928,7 @@ export default function App() {
     // Trigger Success Mascot Pop-up for breeding
     setSuccessMascot({
       type: 'kiba',
-      emoji: '🥕',
+      emoji: 'ðŸ¥•',
       title: 'Breeding Mating Logged!',
       message: `Your Barn Assistant scheduled the gestation calendar! Palpation check set for ${palpateDate}. Let's hope for a successful kindling!`
     });
@@ -3830,7 +3832,7 @@ export default function App() {
     // Trigger Success Mascot Pop-up for Show Leg registration
     setSuccessMascot({
       type: 'gen',
-      emoji: '🏆',
+      emoji: 'ðŸ†',
       title: 'Grand Champion Leg Logged!',
       message: `Your Genetics Sage registered the show leg certificate! This award moves ${selectedRabbit.name} closer to grand champion status!`
     });
@@ -3949,44 +3951,36 @@ export default function App() {
     setNewTx({ date: new Date().toISOString().split('T')[0], type: 'expense', amount: '', category: 'feed', notes: '', rabbitId: '' });
   };
 
-  // Add Weight Entry Handler
-  const handleAddWeight = (e) => {
-    e.preventDefault();
-    if (!healthSelectedRabbitId || !newWeightEntry.weightOz) {
+  // Add Weight Entry Handler (accepts data object from HealthLogger view)
+  const handleAddWeight = (data) => {
+    if (!data.rabbitId || !data.weightOz) {
       alert("Please select a rabbit and enter a weight!");
       return;
     }
 
-    const weightOzValue = weightUnit === 'lbs' ? Math.round(Number(newWeightEntry.weightOz) * 16) : Number(newWeightEntry.weightOz);
+    const weightOzValue = weightUnit === 'lbs' ? Math.round(Number(data.weightOz) * 16) : Number(data.weightOz);
 
     const createdWeight = {
       id: uuidv7(),
-      rabbitId: healthSelectedRabbitId,
-      date: newWeightEntry.date,
+      rabbitId: data.rabbitId,
+      date: data.date,
       weightOz: weightOzValue,
-      stage: newWeightEntry.stage
+      stage: data.stage
     };
 
     if (isAssistantWriteOnly) {
-      submitForApproval('INSERT_WEIGHT', 'weights', { createdWeight, healthSelectedRabbitId });
+      submitForApproval('INSERT_WEIGHT', 'weights', { createdWeight, healthSelectedRabbitId: data.rabbitId });
     } else {
       setAllWeights(prev => [createdWeight, ...prev]);
       
       // Update the rabbit's current weight in the registry too!
-      setAllRabbits(prev => prev.map(r => r.id === healthSelectedRabbitId ? { ...r, weightOz: weightOzValue } : r));
+      setAllRabbits(prev => prev.map(r => r.id === data.rabbitId ? { ...r, weightOz: weightOzValue } : r));
 
       if (isOffline) {
         addSyncAction('INSERT', 'weights', createdWeight);
       }
     }
     showToast(`Weight entry logged!`, "success");
-
-    // Reset weight form
-    setNewWeightEntry({
-      date: new Date().toISOString().split('T')[0],
-      weightOz: '',
-      stage: 'Routine'
-    });
   };
 
   // Delete Weight Entry Handler
@@ -4065,7 +4059,7 @@ export default function App() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    showToast("Listening... Speak now 🎙️", "info");
+    showToast("Listening... Speak now ðŸŽ™ï¸", "info");
 
     recognition.onresult = (event) => {
       let speechToText = event.results[0][0].transcript;
@@ -4105,36 +4099,35 @@ export default function App() {
     recognition.start();
   };
 
-  // Add Medical Record Handler
-  const handleAddMedical = (e) => {
-    e.preventDefault();
-    if (!healthSelectedRabbitId || !newMedicalEntry.treatment) {
+  // Add Medical Record Handler (accepts data object from HealthLogger view)
+  const handleAddMedical = (data) => {
+    if (!data.rabbitId || !data.treatment) {
       alert("Please select a rabbit and enter treatment details!");
-      return;
+      return false;
     }
 
     // HIPAA safe harbor filter: Block human PHI references
     const forbiddenTerms = /(ssn|social security|patient|prescription|doctor|physician|diagnose|human|medicaid|medicare|insurance)/i;
-    if (forbiddenTerms.test(newMedicalEntry.treatment) || forbiddenTerms.test(newMedicalEntry.notes)) {
+    if (forbiddenTerms.test(data.treatment) || forbiddenTerms.test(data.notes)) {
       setSuccessMascot({
         type: 'usagi',
-        emoji: '🛡️',
+        emoji: 'ðŸ›¡ï¸',
         title: 'HIPAA Security Warning!',
         message: 'Human medical details, prescription information, physician names, or Social Security references are strictly prohibited in veterinary files to maintain federal Safe Harbor compliance.'
       });
-      return;
+      return false;
     }
 
     const createdMedical = {
       id: uuidv7(),
-      rabbitId: healthSelectedRabbitId,
-      date: newMedicalEntry.date,
-      type: newMedicalEntry.type,
-      treatment: sanitizeTextInput(newMedicalEntry.treatment),
-      notes: sanitizeTextInput(newMedicalEntry.notes),
-      cost: Number(newMedicalEntry.cost) || 0,
-      fdaWithdrawalDays: Number(newMedicalEntry.fdaWithdrawalDays) || 0,
-      fdaApprovalStatus: newMedicalEntry.fdaApprovalStatus || 'FDA Approved for Rabbits'
+      rabbitId: data.rabbitId,
+      date: data.date,
+      type: data.type,
+      treatment: sanitizeTextInput(data.treatment),
+      notes: sanitizeTextInput(data.notes),
+      cost: Number(data.cost) || 0,
+      fdaWithdrawalDays: Number(data.fdaWithdrawalDays) || 0,
+      fdaApprovalStatus: data.fdaApprovalStatus || 'FDA Approved for Rabbits'
     };
 
     if (isAssistantWriteOnly) {
@@ -4146,17 +4139,7 @@ export default function App() {
       }
     }
     showToast(`Medical record logged!`, "success");
-
-    // Reset medical form
-    setNewMedicalEntry({
-      date: new Date().toISOString().split('T')[0],
-      type: 'Vaccination',
-      treatment: '',
-      notes: '',
-      cost: '',
-      fdaWithdrawalDays: 0,
-      fdaApprovalStatus: 'FDA Approved for Rabbits'
-    });
+    return true;
   };
 
   // Delete Medical Record Handler
@@ -4346,7 +4329,7 @@ export default function App() {
         });
 
         if (response.status === 409) {
-          // Sync conflicts detected — parse them and alert the user
+          // Sync conflicts detected â€” parse them and alert the user
           const conflictData = await response.json();
           const newConflicts = conflictData.conflicts || [];
           setConflictsCount(newConflicts.length);
@@ -4371,7 +4354,7 @@ export default function App() {
             await db.syncQueue.bulkAdd(remainingQueue);
           }
 
-          showToast(`⚠️ ${newConflicts.length} sync conflict(s) require your review. Open the Sync Issues panel.`, "info");
+          showToast(`âš ï¸ ${newConflicts.length} sync conflict(s) require your review. Open the Sync Issues panel.`, "info");
           
           // Pull and merge anyway so we get other successful updates
           await handlePullAndMerge(token, currentUser);
@@ -4429,7 +4412,7 @@ export default function App() {
         <div className="flex flex-col items-center gap-4 relative z-10 animate-fade-in">
           <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-indigo-500"></div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl animate-bounce">🐇</span>
+            <span className="text-2xl animate-bounce">ðŸ‡</span>
             <p className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
               RabbitryPedigree Pro
             </p>
@@ -4448,7 +4431,7 @@ export default function App() {
         <div className="theme-dark min-h-screen bg-slate-950 text-slate-100 flex flex-col">
           <header className="w-full p-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-2xl animate-bounce">🐇👑</span>
+              <span className="text-2xl animate-bounce">ðŸ‡ðŸ‘‘</span>
               <div>
                 <h1 className="text-lg font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
                   WarrenWise Marketplace
@@ -4483,7 +4466,7 @@ export default function App() {
           {/* Custom Header Navigation Bar */}
           <header className="w-full max-w-6xl mx-auto flex items-center justify-between border-b border-white/10 pb-4">
             <div className="flex items-center gap-2">
-              <span className="text-3xl animate-hop-bounce">🐇👑</span>
+              <span className="text-3xl animate-hop-bounce">ðŸ‡ðŸ‘‘</span>
               <div>
                 <h1 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
                   Rabbitry Pedigree Pro
@@ -4494,10 +4477,10 @@ export default function App() {
             
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-[10px] font-black uppercase tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-slate-300">
-                🌐 Web3 Offline-First
+                ðŸŒ Web3 Offline-First
               </span>
               <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full text-indigo-300">
-                🛡️ FDA & HIPAA Secure
+                ðŸ›¡ï¸ FDA & HIPAA Secure
               </span>
             </div>
           </header>
@@ -4520,28 +4503,28 @@ export default function App() {
               {/* Showcase highlights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">📜</span>
+                  <span className="text-lg">ðŸ“œ</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">Interactive Pedigrees</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Design three-generation family trees with automated digital signatures.</p>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">⚔️</span>
+                  <span className="text-lg">âš”ï¸</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">4-H Youth Academy</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Gamified learning and adaptive quizzes tailored to youth age divisions.</p>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">🚜</span>
+                  <span className="text-lg">ðŸšœ</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">Visual Barn Map</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Allocate cages, track gestating pairs, and organize hutch lists.</p>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">☁️</span>
+                  <span className="text-lg">â˜ï¸</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">Secure Offline Sync</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Record weights off-grid; edits queue locally and sync chronologically.</p>
@@ -4551,7 +4534,7 @@ export default function App() {
 
               {/* Mascot Welcome Message Banner */}
               <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/25 flex gap-3.5 items-center">
-                <span className="text-2xl shrink-0">🧙‍♂️</span>
+                <span className="text-2xl shrink-0">ðŸ§™â€â™‚ï¸</span>
                 <div className="flex-1">
                   <span className="text-[10px] font-black text-pink-400 font-mono uppercase tracking-wider">Genetics Sage Mascot</span>
                   <p className="text-[10px] opacity-90 leading-relaxed text-indigo-150 mt-0.5 font-semibold">
@@ -4608,7 +4591,7 @@ export default function App() {
                         </div>
                         <div className="relative">
                           <input 
-                            type={showLoginPassword ? "text" : "password"} required placeholder="••••••••"
+                            type={showLoginPassword ? "text" : "password"} required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                             value={loginPassword}
                             onChange={(e) => setLoginPassword(e.target.value)}
                             className="bg-white/5 border-white/10 w-full pr-10"
@@ -4651,7 +4634,7 @@ export default function App() {
                           onClick={() => setAuthView('marketplace')}
                           className="text-indigo-450 hover:text-indigo-350 font-black uppercase text-[10px] tracking-wider flex items-center justify-center gap-1.5 mx-auto border border-indigo-500/30 px-4.5 py-2 rounded-xl hover:bg-indigo-500/5 transition-all cursor-pointer"
                         >
-                          🛒 Browse Public Marketplace
+                          ðŸ›’ Browse Public Marketplace
                         </button>
                       </div>
                     </div>
@@ -4757,8 +4740,8 @@ export default function App() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { id: 'owner', label: 'Breeder / Owner 👑', text: 'Own registry with ARBA abilities', restricted: profileForm.ageGroup === 'junior' },
-                          { id: 'assistant', label: 'Barn Assistant 🌾', text: 'Document data for an employer', restricted: false }
+                          { id: 'owner', label: 'Breeder / Owner ðŸ‘‘', text: 'Own registry with ARBA abilities', restricted: profileForm.ageGroup === 'junior' },
+                          { id: 'assistant', label: 'Barn Assistant ðŸŒ¾', text: 'Document data for an employer', restricted: false }
                         ].map(role => (
                           <button
                             type="button" key={role.id}
@@ -4817,10 +4800,10 @@ export default function App() {
                         <label className="text-[11px] font-bold text-indigo-300">Theme</label>
                         <div className="grid grid-cols-2 gap-1.5">
                           {[
-                            { id: 'forest', name: 'Forest 🌿' },
-                            { id: 'kawaii', name: 'Kawaii 🌸' },
-                            { id: 'cyber', name: 'Cyber ⚡' },
-                            { id: 'dark', name: 'Dark 🌙' }
+                            { id: 'forest', name: 'Forest ðŸŒ¿' },
+                            { id: 'kawaii', name: 'Kawaii ðŸŒ¸' },
+                            { id: 'cyber', name: 'Cyber âš¡' },
+                            { id: 'dark', name: 'Dark ðŸŒ™' }
                           ].map(t => (
                             <button
                               type="button" key={t.id}
@@ -4897,12 +4880,12 @@ export default function App() {
                             </div>
                             {isTooYoung && (
                               <p className="text-red-400 text-[10px] leading-snug mt-1">
-                                ⚠️ Under ARBA rules, youth must be at least 5 years old to show and register animals. You may still use the app under supervision!
+                                âš ï¸ Under ARBA rules, youth must be at least 5 years old to show and register animals. You may still use the app under supervision!
                               </p>
                             )}
                             {profileForm.isYouth && !isTooYoung && (
                               <p className="text-pink-300 text-[10px] leading-snug mt-1">
-                                🎓 <strong>ARBA Youth Rule:</strong> Youth members must present and handle their own animals in youth classes. Long-sleeved show shirts or coats are required at the table!
+                                ðŸŽ“ <strong>ARBA Youth Rule:</strong> Youth members must present and handle their own animals in youth classes. Long-sleeved show shirts or coats are required at the table!
                               </p>
                             )}
                           </div>
@@ -5158,7 +5141,7 @@ export default function App() {
                         // Reset form
                         setProfileForm({
                           name: '', email: '', phone: '', password: '', rabbitryName: 'Grandview Rabbitry',
-                          role: 'owner', logo: '🐇', theme: 'dark', ageGroup: 'adult', isYouth: false, parentName: '', parentEmail: '', agreeHipaa: false
+                          role: 'owner', logo: 'ðŸ‡', theme: 'dark', ageGroup: 'adult', isYouth: false, parentName: '', parentEmail: '', agreeHipaa: false
                         });
                       }}
                       className="btn-interactive py-3 bg-indigo-600 font-bold text-white text-sm mx-4"
@@ -5208,7 +5191,7 @@ export default function App() {
               title: `Cavy Palpation & Weight Check`,
               description: `Pregnancy check & weight check due for cavy sow "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
               type: 'palpate',
-              icon: '🩺',
+              icon: 'ðŸ©º',
               badge: '15-20 Days Gestation',
               execute: (result) => {
                 logPalpation(b.id, result);
@@ -5223,7 +5206,7 @@ export default function App() {
               title: `Palpation Recommended`,
               description: `Pregnancy check due for "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
               type: 'palpate',
-              icon: '🩺',
+              icon: 'ðŸ©º',
               badge: '12-22 Days Gestation',
               execute: (result) => {
                 logPalpation(b.id, result);
@@ -5253,7 +5236,7 @@ export default function App() {
               title: `Isolate Cavy Sow`,
               description: `Move cavy sow "${dam}" to an isolated farrowing pen (Day ${diffDays} of gestation). Farrowing expected in ~8 days.`,
               type: 'nestbox',
-              icon: '🏠',
+              icon: 'ðŸ ',
               badge: 'Day 60 Gestation',
               execute: () => {
                 setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Farrowing Pen Isolation Confirmed]' } : item));
@@ -5268,7 +5251,7 @@ export default function App() {
               title: `Nest Box Insertion`,
               description: `Place the nest box in "${dam}"'s cage (Day ${diffDays} of gestation). Kindle expected in ~3 days.`,
               type: 'nestbox',
-              icon: '📦',
+              icon: 'ðŸ“¦',
               badge: 'Day 28 Gestation',
               execute: () => {
                 setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Nest Box Confirmed Placed]' } : item));
@@ -5346,7 +5329,7 @@ export default function App() {
               ? `Wean cavy sow "${damName}"'s pups (Litter is ${diffWeeks} weeks old). Weaning is critical for pup development.`
               : `Wean "${damName}"'s litter (Litter is ${diffWeeks} weeks old). Weaning is critical for kit growth.`,
             type: 'wean',
-            icon: '🥛',
+            icon: 'ðŸ¥›',
             litterId: l.id,
             kitsBornAlive: l.kitsBornAlive,
             badge: `${diffWeeks} Weeks Old`,
@@ -5368,7 +5351,7 @@ export default function App() {
           title: `FDA Withdrawal Active`,
           description: `Rabbit "${r.name}" is under drug withdrawal period for "${fda.drugName}" (${fda.remainingDays} days remaining).`,
           type: 'fda_warning',
-          icon: '⚠️',
+          icon: 'âš ï¸',
           badge: 'RESTRICTED',
           execute: () => {
             setSelectedRabbit(r);
@@ -5390,7 +5373,7 @@ export default function App() {
             title: `Junior Weight Check`,
             description: `Rabbit "${r.name}" (Age: ${ageMonths} mo) is ready for its official Junior weight logging.`,
             type: 'weight_check',
-            icon: '⚖️',
+            icon: 'âš–ï¸',
             rabbitId: r.id,
             badge: 'Stage: Junior',
             execute: (weightOz) => {
@@ -5421,7 +5404,7 @@ export default function App() {
         title: 'Upgrade Subscription Plan',
         description: `You are using ${activeCount} of your ${limit} active rabbit profiles limit. Upgrade to Pro to prevent registration blocks.`,
         type: 'upgrade',
-        icon: '🚀',
+        icon: 'ðŸš€',
         badge: `${activeCount}/${limit} Profiles`,
         execute: () => {
           alert("To upgrade your subscription, please contact administration or open the Help tab.");
@@ -5482,7 +5465,7 @@ export default function App() {
           </div>
         )}
         <div className="flex items-center gap-3">
-          <div className="text-4xl">{activeBreederContext?.logo || '🐇'}</div>
+          <div className="text-4xl">{activeBreederContext?.logo || 'ðŸ‡'}</div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">{activeBreederContext?.rabbitryName || 'Configure Rabbitry'}</h1>
@@ -5491,7 +5474,7 @@ export default function App() {
                 const divisionInfo = calculateArbaDivision(activeBreederContext.birthdate);
                 return (
                   <span className="text-xs bg-pink-500/20 text-pink-400 font-extrabold px-2 py-0.5 rounded animate-pulse" title={`Youth Exhibitor - ${divisionInfo.division}`}>
-                    🎓 {divisionInfo.division.split(' ')[0]}
+                    ðŸŽ“ {divisionInfo.division.split(' ')[0]}
                   </span>
                 );
               })()}
@@ -5562,7 +5545,7 @@ export default function App() {
               className={`btn-interactive text-xs py-2 px-4 bg-indigo-600 border border-indigo-400 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 animate-pulse ${isOffline ? 'opacity-50 cursor-not-allowed animate-none' : ''}`}
               title={isOffline ? "Cannot push changes while offline!" : "Push local modifications to PostgreSQL server"}
             >
-              ☁️ Push Sync ({syncQueue.length})
+              â˜ï¸ Push Sync ({syncQueue.length})
             </button>
           )}
 
@@ -5572,7 +5555,7 @@ export default function App() {
             className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold ${designMode === 'fun' ? 'bg-gradient-to-r from-pink-500 to-indigo-500 text-white shadow-md' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
             title="Toggle between Fun Mode (illustrations & guides) and Pro Mode (clean registrar view)"
           >
-            {designMode === 'fun' ? '🐰 Fun Mode' : '📜 Pro Mode'}
+            {designMode === 'fun' ? 'ðŸ° Fun Mode' : 'ðŸ“œ Pro Mode'}
           </button>
 
           {/* Species Context Switcher */}
@@ -5585,7 +5568,7 @@ export default function App() {
               }}
               className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'rabbit' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
             >
-              🐰 Rabbits
+              ðŸ° Rabbits
             </button>
             <button
               onClick={() => {
@@ -5595,7 +5578,7 @@ export default function App() {
               }}
               className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'cavy' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
             >
-              🐹 Cavies
+              ðŸ¹ Cavies
             </button>
             <button
               onClick={() => {
@@ -5620,7 +5603,7 @@ export default function App() {
             className="btn-interactive text-xs py-2 px-3 border border-white/10 bg-slate-800 text-slate-300 font-bold flex items-center gap-1"
             title="Switch primary weight unit between Ounces (oz) and Pounds (lbs)"
           >
-            ⚖️ Unit: {weightUnit.toUpperCase()}
+            âš–ï¸ Unit: {weightUnit.toUpperCase()}
           </button>
 
           {/* Barn Mode Switcher (Scoped to Cages tab) */}
@@ -5630,7 +5613,7 @@ export default function App() {
               className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold transition-all ${barnMode ? 'bg-orange-600 text-white shadow-md ring-2 ring-orange-400' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
               title="Toggle high-contrast, large touch-target Barn Mode for farm-ready use"
             >
-              {barnMode ? '🚜 Barn Mode ON' : '🚜 Barn Mode OFF'}
+              {barnMode ? 'ðŸšœ Barn Mode ON' : 'ðŸšœ Barn Mode OFF'}
             </button>
           )}
 
@@ -5640,16 +5623,16 @@ export default function App() {
             onChange={(e) => setTheme(e.target.value)}
             className="text-xs font-semibold py-2 px-3 border rounded-xl"
           >
-            <option value="forest">Forest Meadows 🌿</option>
-            <option value="kawaii">Kawaii Garden 🌸</option>
-            <option value="cyber">Neon Cyber-Barn ⚡</option>
-            <option value="ghibli">Ghibli Orchard 🍎</option>
-            <option value="dark">Midnight Obsidian 🌙</option>
-            <option value="spring">Spring Meadow 🌷</option>
-            <option value="rainbow">Rainbow Hutch 🌈</option>
-            <option value="golden">Golden Lop 🌾</option>
-            <option value="sparkle">Showtime Sparkle ✨</option>
-            <option value="pastel">Pastel Paradise 🦄</option>
+            <option value="forest">Forest Meadows ðŸŒ¿</option>
+            <option value="kawaii">Kawaii Garden ðŸŒ¸</option>
+            <option value="cyber">Neon Cyber-Barn âš¡</option>
+            <option value="ghibli">Ghibli Orchard ðŸŽ</option>
+            <option value="dark">Midnight Obsidian ðŸŒ™</option>
+            <option value="spring">Spring Meadow ðŸŒ·</option>
+            <option value="rainbow">Rainbow Hutch ðŸŒˆ</option>
+            <option value="golden">Golden Lop ðŸŒ¾</option>
+            <option value="sparkle">Showtime Sparkle âœ¨</option>
+            <option value="pastel">Pastel Paradise ðŸ¦„</option>
           </select>
         </div>
       </header>
@@ -5659,7 +5642,7 @@ export default function App() {
         <div className="mx-6 mb-4 p-5 glass-container border-2 border-red-500/50 bg-gradient-to-br from-slate-900 via-slate-900/95 to-red-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-red-650"></div>
           <div className="flex items-center gap-3.5 pl-2">
-            <span className="text-3xl shrink-0 animate-pulse">⚠️</span>
+            <span className="text-3xl shrink-0 animate-pulse">âš ï¸</span>
             <div className="text-left">
               <h4 className="text-sm font-black text-red-400 tracking-wide uppercase">Local Database Conflict Detected</h4>
               <p className="text-xs opacity-90 leading-relaxed mt-1">
@@ -5692,7 +5675,7 @@ export default function App() {
         <div className="mx-6 mb-4 glass-container p-5 border-2 border-orange-500/40 bg-gradient-to-br from-slate-900 via-slate-900/95 to-orange-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-600"></div>
           <div className="flex items-center gap-3.5 pl-2">
-            <span className="text-3xl shrink-0 animate-pulse">🌾</span>
+            <span className="text-3xl shrink-0 animate-pulse">ðŸŒ¾</span>
             <div>
               <h4 className="text-sm font-black text-orange-400 tracking-wide uppercase">Offline Performance Tip</h4>
               <p className="text-xs opacity-90 leading-relaxed mt-1">
@@ -5813,20 +5796,20 @@ export default function App() {
               onClick={() => setActiveTab('academy')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'academy' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <Award className="w-5 h-5 text-yellow-400" /> 🎓 4-H Academy
+              <Award className="w-5 h-5 text-yellow-400" /> ðŸŽ“ 4-H Academy
             </button>
             <button 
               onClick={() => setActiveTab('registrarPrep')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'registrarPrep' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <FileText className="w-5 h-5 text-indigo-400" /> 📜 Registrar Prep
+              <FileText className="w-5 h-5 text-indigo-400" /> ðŸ“œ Registrar Prep
             </button>
             {(sub.evansVerified || sub.tier === 'evans_lifetime') && (
               <button 
                 onClick={() => setActiveTab('evansMigrator')}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'evansMigrator' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
               >
-                <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
+                <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> ðŸ“¦ Evans Migrator
               </button>
             )}
             <button 
@@ -5847,13 +5830,13 @@ export default function App() {
               onClick={() => setActiveTab('marketplace')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'marketplace' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <ShoppingBag className="w-5 h-5 text-orange-450 font-bold" /> 🛒 Marketplace
+              <ShoppingBag className="w-5 h-5 text-orange-450 font-bold" /> ðŸ›’ Marketplace
             </button>
             <button 
               onClick={() => setActiveTab('social')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'social' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <Share2 className="w-5 h-5 text-indigo-400 font-bold" /> 🌐 Community Feed
+              <Share2 className="w-5 h-5 text-indigo-400 font-bold" /> ðŸŒ Community Feed
             </button>
             <button 
               onClick={() => setActiveTab('help')}
@@ -5983,7 +5966,7 @@ export default function App() {
             {/* Custom Accent Color Picker */}
             <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3">
               <label className="text-xs font-bold flex items-center gap-1.5 text-indigo-300">
-                🎨 Custom Accent Color Picker
+                ðŸŽ¨ Custom Accent Color Picker
               </label>
               <div className="flex items-center gap-2">
                 <input 
@@ -6050,7 +6033,7 @@ export default function App() {
             {/* My Credentials Viewer / Editor */}
             <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
               <span className="text-xs font-bold flex items-center gap-1.5 text-indigo-300">
-                🔑 My Security Credentials
+                ðŸ”‘ My Security Credentials
               </span>
               <div className="flex flex-col gap-1 mt-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Email Address</label>
@@ -6140,7 +6123,7 @@ export default function App() {
               }}
               className="btn-interactive w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-bold text-white border-none rounded-xl mt-2 flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
             >
-              💾 Save Barn Settings
+              ðŸ’¾ Save Barn Settings
             </button>
 
             {/* WarrenWise AI Mascot Dialogue (Fun Mode Only) */}
@@ -6208,7 +6191,7 @@ export default function App() {
               {deferredPrompt && showInstallBanner && (
                 <div className="glass-container p-4 border border-indigo-500/30 bg-indigo-950/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-fade-slide">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">📱</span>
+                    <span className="text-3xl">ðŸ“±</span>
                     <div>
                       <h4 className="font-bold text-white text-xs">Install Rabbitry Pedigree Pro App</h4>
                       <p className="text-[10px] text-slate-300 mt-0.5">Add to your home screen for rapid offline hutch logging and zero lag.</p>
@@ -6243,7 +6226,7 @@ export default function App() {
                 <div className="glass-container p-4 border border-orange-500/30 bg-orange-950/15 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-indigo-500"></div>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚡</span>
+                    <span className="text-2xl">âš¡</span>
                     <div>
                       <h4 className="font-bold text-orange-300 text-xs">Sync Conflicts Detected</h4>
                       <p className="text-[10px] text-slate-300 mt-0.5">{conflictsCount} pedigree update(s) from another device require your review before they can be merged.</p>
@@ -6263,7 +6246,7 @@ export default function App() {
                 <div className="glass-container p-6 border-2 border-amber-500/25 relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/95 to-amber-950/15">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600"></div>
                   <h3 className="text-base font-bold text-amber-400 flex items-center gap-1.5 mb-4">
-                    🌾 Assistant Review Center ({allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length} pending)
+                    ðŸŒ¾ Assistant Review Center ({allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length} pending)
                   </h3>
                   <div className="flex flex-col gap-3">
                     {allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').map(item => (
@@ -6325,13 +6308,13 @@ export default function App() {
                                   onClick={() => action.execute(true)}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                                 >
-                                  Positive 🤰
+                                  Positive ðŸ¤°
                                 </button>
                                 <button 
                                   onClick={() => action.execute(false)}
                                   className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                                 >
-                                  Negative ❌
+                                  Negative âŒ
                                 </button>
                               </div>
                             )}
@@ -6341,7 +6324,7 @@ export default function App() {
                                 onClick={() => action.execute()}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                               >
-                                Confirm Box Placed 📦
+                                Confirm Box Placed ðŸ“¦
                               </button>
                             )}
 
@@ -6359,7 +6342,7 @@ export default function App() {
                                 <input name="kitsAlive" type="number" min="0" placeholder="Kits Alive" required className="w-20 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <input name="kitsDead" type="number" min="0" placeholder="Kits Dead" defaultValue="0" className="w-20 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <button type="submit" className="bg-pink-650 hover:bg-pink-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
-                                  Kindle 🎂
+                                  Kindle ðŸŽ‚
                                 </button>
                               </form>
                             )}
@@ -6375,7 +6358,7 @@ export default function App() {
                               >
                                 <input name="weanCount" type="number" min="0" max={action.kitsBornAlive} placeholder="Kits Weaned" required className="w-24 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
-                                  Wean 🥛
+                                  Wean ðŸ¥›
                                 </button>
                               </form>
                             )}
@@ -6385,7 +6368,7 @@ export default function App() {
                                 onClick={() => action.execute()}
                                 className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                               >
-                                View Profile 🐇
+                                View Profile ðŸ‡
                               </button>
                             )}
 
@@ -6400,7 +6383,7 @@ export default function App() {
                               >
                                 <input name="weightOz" type="number" min="1" placeholder="Weight (oz)" required className="w-24 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
-                                  Save Weight ⚖️
+                                  Save Weight âš–ï¸
                                 </button>
                               </form>
                             )}
@@ -6609,7 +6592,7 @@ export default function App() {
                             <h4 className="font-bold mt-2 text-white">{s.name}</h4>
                             <p className="text-xs opacity-85 mt-1">Location: {s.location || 'TBD'} | Date: {s.date}</p>
                             <p className="text-xs text-yellow-400 font-bold mt-1">
-                              ⚠️ {diffDays === 0 ? "TODAY IS SHOW DAY!" : `${diffDays} days remaining.`} 
+                              âš ï¸ {diffDays === 0 ? "TODAY IS SHOW DAY!" : `${diffDays} days remaining.`} 
                               {s.status === 'attending' && " Prepare pedigrees, weigh rabbits, and check tattoos!"}
                             </p>
                           </div>
@@ -6645,7 +6628,7 @@ export default function App() {
                         triggerConfetti();
                         setSuccessMascot({
                           type: 'usagi',
-                          emoji: '🧼',
+                          emoji: 'ðŸ§¼',
                           title: 'Barn Cleaned!',
                           message: 'Your Registrar partner reports that all cages have been recorded as cleaned and sanitized. 10XP points awarded!'
                         });
@@ -6665,7 +6648,7 @@ export default function App() {
                   <div className="glass-container p-6 flex flex-col gap-4">
                     <div className="flex justify-between items-center border-b border-white/5 pb-2">
                       <h3 className="text-base font-bold flex items-center gap-1.5 text-indigo-300">
-                        📋 Daily Hutch Chores
+                        ðŸ“‹ Daily Hutch Chores
                       </h3>
                       <span className="text-[10px] bg-green-500/20 text-green-300 px-2 py-0.5 rounded font-bold font-mono">
                         {chores.filter(c => c.completed).length} / {chores.length} Done
@@ -6742,10 +6725,10 @@ export default function App() {
                   <div className="glass-container p-6 flex flex-col gap-4">
                     <h3 className="text-base font-bold text-indigo-300">Show Prep Checklist</h3>
                     <ul className="text-sm space-y-2 opacity-90">
-                      <li className="flex items-center gap-2">🟢 Check senior weights fit breed thresholds</li>
-                      <li className="flex items-center gap-2">🟢 Print ARBA-compliant 3-generation pedigrees</li>
-                      <li className="flex items-center gap-2">🟢 Verify tattoo matches registration paper</li>
-                      <li className="flex items-center gap-2">🟢 Scan cage cards to audit hutch list</li>
+                      <li className="flex items-center gap-2">ðŸŸ¢ Check senior weights fit breed thresholds</li>
+                      <li className="flex items-center gap-2">ðŸŸ¢ Print ARBA-compliant 3-generation pedigrees</li>
+                      <li className="flex items-center gap-2">ðŸŸ¢ Verify tattoo matches registration paper</li>
+                      <li className="flex items-center gap-2">ðŸŸ¢ Scan cage cards to audit hutch list</li>
                     </ul>
                   </div>
 
@@ -6783,7 +6766,7 @@ export default function App() {
                       
                       {/* Badge 1: Pedigree Builder */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${hasPedigree ? 'bg-white/5 border-pink-500/35 shadow-lg shadow-pink-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">🏆</span>
+                        <span className="text-2xl">ðŸ†</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Pedigree Builder</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${hasPedigree ? 'bg-pink-500/20 text-pink-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {hasPedigree ? 'UNLOCKED' : 'LOCKED'}
@@ -6792,7 +6775,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-pink-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-pink-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {hasPedigree ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
+                            {hasPedigree ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {hasPedigree 
@@ -6805,7 +6788,7 @@ export default function App() {
 
                       {/* Badge 2: Hutch Hero */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${hutchHero ? 'bg-white/5 border-yellow-500/35 shadow-lg shadow-yellow-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">🥕</span>
+                        <span className="text-2xl">ðŸ¥•</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Hutch Hero</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${hutchHero ? 'bg-yellow-500/20 text-yellow-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {hutchHero ? 'UNLOCKED' : 'LOCKED'}
@@ -6814,7 +6797,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-yellow-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-yellow-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {hutchHero ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
+                            {hutchHero ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {hutchHero 
@@ -6827,7 +6810,7 @@ export default function App() {
 
                       {/* Badge 3: Litter Legend */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${litterLegend ? 'bg-white/5 border-emerald-500/35 shadow-lg shadow-emerald-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">🐰</span>
+                        <span className="text-2xl">ðŸ°</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Litter Legend</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${litterLegend ? 'bg-green-500/20 text-green-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {litterLegend ? 'UNLOCKED' : 'LOCKED'}
@@ -6836,7 +6819,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-emerald-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-emerald-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {litterLegend ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
+                            {litterLegend ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {litterLegend 
@@ -6849,7 +6832,7 @@ export default function App() {
 
                       {/* Badge 4: Show Champion */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${showChamp ? 'bg-white/5 border-sky-500/35 shadow-lg shadow-sky-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">🏅</span>
+                        <span className="text-2xl">ðŸ…</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Show Champion</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${showChamp ? 'bg-sky-500/20 text-sky-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {showChamp ? 'UNLOCKED' : 'LOCKED'}
@@ -6858,7 +6841,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-sky-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-sky-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {showChamp ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
+                            {showChamp ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {showChamp 
@@ -6879,7 +6862,7 @@ export default function App() {
                 <div className="glass-container p-6 flex flex-col gap-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-base font-bold flex items-center gap-1.5 text-indigo-300">
-                      🌾 Barn Assistants & Workers
+                      ðŸŒ¾ Barn Assistants & Workers
                     </h3>
                     <span className="text-[10px] bg-indigo-500/20 px-2 py-0.5 rounded font-mono text-indigo-300">
                       My ID: {currentUser?.accountNumber || 'Pending'}
@@ -6991,7 +6974,7 @@ export default function App() {
               {currentUser?.role === 'assistant' && (
                 <div className="glass-container p-6 flex flex-col gap-4">
                   <h3 className="text-base font-bold flex items-center gap-1.5 text-indigo-300">
-                    🌾 Assistant Workspace
+                    ðŸŒ¾ Assistant Workspace
                   </h3>
                   <p className="text-xs opacity-85">
                     You are registered as a Barn Assistant. You have your own private hutch registry by default. 
@@ -7008,11 +6991,11 @@ export default function App() {
                       </p>
                       {currentUser.employerStatus === 'active' ? (
                         <p className="text-[11px] opacity-70 mt-2">
-                          💡 <strong>Use the Context Switcher</strong> in the top header to toggle between your own hutch and your employer's hutch registry to document their data.
+                          ðŸ’¡ <strong>Use the Context Switcher</strong> in the top header to toggle between your own hutch and your employer's hutch registry to document their data.
                         </p>
                       ) : (
                         <p className="text-[11px] opacity-70 mt-2">
-                          ⏳ Please ask your employer to log in and approve your worker association request from their dashboard to grant you documenting abilities.
+                          â³ Please ask your employer to log in and approve your worker association request from their dashboard to grant you documenting abilities.
                         </p>
                       )}
                     </div>
@@ -7052,7 +7035,7 @@ export default function App() {
                         onChange={(e) => setShowArchived(e.target.checked)}
                         className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
                       />
-                      📁 Show Sold / Archived
+                      ðŸ“ Show Sold / Archived
                     </label>
                   </div>
 
@@ -7115,8 +7098,8 @@ export default function App() {
                           });
                         }}
                       >
-                        <option value="rabbit">🐰 Rabbit</option>
-                        <option value="cavy">🐹 Guinea Pig (Cavy)</option>
+                        <option value="rabbit">ðŸ° Rabbit</option>
+                        <option value="cavy">ðŸ¹ Guinea Pig (Cavy)</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -7177,7 +7160,7 @@ export default function App() {
                           }}
                           className="text-[10px] text-indigo-400 font-bold border-none bg-transparent hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer"
                         >
-                          🎨 Color Wizard
+                          ðŸŽ¨ Color Wizard
                         </button>
                       </div>
                       <input 
@@ -7208,7 +7191,7 @@ export default function App() {
                           onChange={(e) => setNewRabbit({...newRabbit, isCharlie: e.target.checked})}
                           className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-3 h-3"
                         />
-                        ⚠️ Flag as 'Charlie' (Homozygous En/En)
+                        âš ï¸ Flag as 'Charlie' (Homozygous En/En)
                       </label>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -7474,23 +7457,23 @@ export default function App() {
                         onClick={() => setSelectedRabbit(null)}
                         className="btn-interactive text-xs py-1.5 px-3 bg-slate-800 hover:bg-slate-700 font-bold text-white border-none flex items-center gap-1"
                       >
-                        ← Back to Registry
+                        â† Back to Registry
                       </button>
                       <h2 className="text-xl font-black text-white flex items-center gap-2">
-                        🐇 {selectedRabbit.name} <span className="opacity-55 text-sm">({selectedRabbit.tattooNumber})</span>
+                        ðŸ‡ {selectedRabbit.name} <span className="opacity-55 text-sm">({selectedRabbit.tattooNumber})</span>
                       </h2>
                       {(() => {
                         const fda = isUnderFdaWithdrawal(selectedRabbit.id);
                         if (fda.active) {
                           return (
                             <span className="bg-rose-500/20 text-rose-300 border border-rose-500/35 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1.5 animate-pulse uppercase tracking-wider">
-                              ⚠️ FDA Withdrawal Active ({fda.remainingDays} days left: {fda.drugName})
+                              âš ï¸ FDA Withdrawal Active ({fda.remainingDays} days left: {fda.drugName})
                             </span>
                           );
                         } else {
                           return (
                             <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
-                              🛡️ FDA Safe / Clear
+                              ðŸ›¡ï¸ FDA Safe / Clear
                             </span>
                           );
                         }
@@ -7499,11 +7482,11 @@ export default function App() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {selectedRabbit.ownershipStatus === 'for_sale' ? (
                         <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1.5 rounded-lg uppercase animate-pulse">
-                          🛒 Active Sale Listing
+                          ðŸ›’ Active Sale Listing
                         </span>
                       ) : selectedRabbit.status === 'sold' ? (
                         <span className="text-xs font-bold text-emerald-450 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg uppercase">
-                          🤝 Sold
+                          ðŸ¤ Sold
                         </span>
                       ) : (
                         <button
@@ -7520,7 +7503,7 @@ export default function App() {
                           }}
                           className="btn-interactive text-xs py-1.5 px-3 bg-orange-650 hover:bg-orange-700 text-white font-bold rounded-lg border-none cursor-pointer flex items-center gap-1"
                         >
-                          🛒 List for Sale
+                          ðŸ›’ List for Sale
                         </button>
                       )}
                       <span className="text-xs font-bold text-indigo-350 bg-indigo-500/15 border border-indigo-500/25 px-2.5 py-1.5 rounded-lg uppercase">
@@ -7540,7 +7523,7 @@ export default function App() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <h3 className="text-base font-bold flex items-center gap-2">
-                          📋 Profile Details
+                          ðŸ“‹ Profile Details
                         </h3>
                         {!editProfileMode && (
                           <button
@@ -7552,7 +7535,7 @@ export default function App() {
                             }}
                             className="btn-interactive text-[10px] py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold border border-white/10 rounded-lg flex items-center gap-1 cursor-pointer"
                           >
-                            📜 Registrar Prep Packet
+                            ðŸ“œ Registrar Prep Packet
                           </button>
                         )}
                       </div>
@@ -7585,7 +7568,7 @@ export default function App() {
                           }}
                           className="btn-interactive text-xs py-1.5 px-4 bg-indigo-600 hover:bg-indigo-700 font-bold text-white border-none flex items-center gap-1.5"
                         >
-                          ✏️ Edit Profile
+                          âœï¸ Edit Profile
                         </button>
                       ) : (
                         <div className="flex gap-2">
@@ -7599,7 +7582,7 @@ export default function App() {
                             onClick={handleSaveProfile}
                             className="btn-interactive text-xs py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 font-bold text-white border-none flex items-center gap-1.5"
                           >
-                            💾 Save Changes
+                            ðŸ’¾ Save Changes
                           </button>
                         </div>
                       )}
@@ -7622,7 +7605,7 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Variety</span>
-                          <span className="font-semibold">{selectedRabbit.variety || '—'}</span>
+                          <span className="font-semibold">{selectedRabbit.variety || 'â€”'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Sex</span>
@@ -7630,7 +7613,7 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Date of Birth</span>
-                          <span className="font-semibold">{selectedRabbit.dob || '—'}</span>
+                          <span className="font-semibold">{selectedRabbit.dob || 'â€”'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Show Class</span>
@@ -7651,11 +7634,11 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">ARBA Reg #</span>
-                          <span className="font-mono font-semibold text-indigo-300">{selectedRabbit.registrationNumber || '—'}</span>
+                          <span className="font-mono font-semibold text-indigo-300">{selectedRabbit.registrationNumber || 'â€”'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Grand Champion #</span>
-                          <span className="font-mono font-semibold text-yellow-400">{selectedRabbit.gcNumber || '—'}</span>
+                          <span className="font-mono font-semibold text-yellow-400">{selectedRabbit.gcNumber || 'â€”'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5 col-span-2">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Notes</span>
@@ -7663,7 +7646,7 @@ export default function App() {
                         </div>
                         {selectedRabbit.isCharlie && (
                           <div className="col-span-2 md:col-span-3 lg:col-span-4 mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
-                            <span className="text-base leading-none">⚠️</span>
+                            <span className="text-base leading-none">âš ï¸</span>
                             <div>
                               <strong className="text-amber-200 block">Charlie Spotting Pattern (Homozygous En/En)</strong>
                               <p className="mt-0.5 opacity-90">Disqualified from ARBA show competition due to insufficient color coverage. Charlies carry homozygous dominant spotting genes and are prone to genetic megacolon, making them unsuitable for show-quality breeding programs.</p>
@@ -7712,7 +7695,7 @@ export default function App() {
                               onChange={(e) => setEditProfileData({...editProfileData, isCharlie: e.target.checked})}
                               className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-2.5 h-2.5"
                             />
-                            ⚠️ Charlie Pattern (En/En)
+                            âš ï¸ Charlie Pattern (En/En)
                           </label>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -7933,10 +7916,10 @@ export default function App() {
                           onChange={(e) => setNewLeg({...newLeg, award: e.target.value})}
                           className="text-xs py-1.5 px-3"
                         >
-                          <option value="1st Class">1st Class Ribbon 🥇</option>
-                          <option value="Best of Variety">Best of Variety (BOV) 🏆</option>
-                          <option value="Best of Breed">Best of Breed (BOB) 🌟</option>
-                          <option value="Best In Show">Best In Show (BIS) 👑</option>
+                          <option value="1st Class">1st Class Ribbon ðŸ¥‡</option>
+                          <option value="Best of Variety">Best of Variety (BOV) ðŸ†</option>
+                          <option value="Best of Breed">Best of Breed (BOB) ðŸŒŸ</option>
+                          <option value="Best In Show">Best In Show (BIS) ðŸ‘‘</option>
                         </select>
                         <input 
                           type="number" placeholder="Class Size" required
@@ -8030,2059 +8013,77 @@ export default function App() {
 
           {/* TAB 3: BREEDING & REPRODUCTION */}
           {activeTab === 'breeding' && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Breeding Scheduler Form */}
-              <div className="glass-container p-6">
-                <h3 className="text-lg font-bold mb-4">Schedule a Breeding Pair</h3>
-                <form onSubmit={handleAddBreeding} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-blue-400">Sire (Buck)</label>
-                    <select 
-                      value={newBreeding.buckId}
-                      onChange={(e) => setNewBreeding({...newBreeding, buckId: e.target.value})}
-                      required
-                    >
-                      <option value="">Select Buck</option>
-                      {rabbits.filter(r => r.sex === 'buck' && r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead').map(r => (
-                        <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold text-pink-400">Dam (Doe)</label>
-                    <select 
-                      value={newBreeding.doeId}
-                      onChange={(e) => setNewBreeding({...newBreeding, doeId: e.target.value})}
-                      required
-                    >
-                      <option value="">Select Doe</option>
-                      {rabbits.filter(r => r.sex === 'doe' && r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead').map(r => (
-                        <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold">Breeding Date</label>
-                    <input 
-                      type="date"
-                      value={newBreeding.breedDate}
-                      onChange={(e) => setNewBreeding({...newBreeding, breedDate: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <button type="submit" className="btn-interactive w-full">Log Breeding Chain to Local Queue</button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Active Gestation Timeline Tracker */}
-              <div className="glass-container p-6 flex flex-col gap-5 border border-orange-500/25">
-                <div className="flex justify-between items-center flex-wrap gap-4 border-b border-white/5 pb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-orange-400" /> Active Pregnancy Gestation Timelines
-                    </h3>
-                    <p className="text-xs text-slate-300 mt-0.5">Palpation checks, nest box placements, and kit kindling due dates.</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if ('Notification' in window) {
-                        Notification.requestPermission().then(permission => {
-                          if (permission === 'granted') {
-                            showToast("Local push alerts registered successfully!", "success");
-                          } else {
-                            showToast("Notification permission was denied.", "error");
-                          }
-                        });
-                      } else {
-                        showToast("Notifications not supported in this browser.", "error");
-                      }
-                    }}
-                    className="btn-interactive py-1.5 px-3 bg-slate-800 text-xs border border-white/10 text-slate-200 font-bold"
-                  >
-                    🔔 Enable Push Alerts
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                  {allBreedings.filter(b => b.status === 'bred' || b.status === 'palpated_positive' || b.status === 'Active').length === 0 ? (
-                    <div className="text-center py-6 text-xs text-slate-500">No active breeding chains. Schedule a breeding pair above to track pregnancy.</div>
-                  ) : (
-                    allBreedings
-                      .filter(b => b.status === 'bred' || b.status === 'palpated_positive' || b.status === 'Active')
-                      .map(b => {
-                        const doe = rabbits.find(r => r.id === b.doeId);
-                        const buck = rabbits.find(r => r.id === b.buckId);
-                        
-                        const matingTime = new Date(b.breedDate).getTime();
-                        const timeDiff = Date.now() - matingTime;
-                        const daysElapsed = Math.max(0, Math.floor(timeDiff / (24 * 60 * 60 * 1000)));
-                        const progressPct = Math.min(100, Math.round((daysElapsed / 31) * 100));
-
-                        return (
-                          <div key={b.id} className="bg-slate-950/60 p-5 rounded-2xl border border-white/5 flex flex-col gap-4">
-                            <div className="flex justify-between items-start gap-4 flex-wrap text-xs">
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-orange-400">Gestation Tracker</span>
-                                <h4 className="font-extrabold text-sm text-white mt-0.5">
-                                  Doe: {doe ? doe.name : 'Unknown'} x Buck: {buck ? buck.name : 'Unknown'}
-                                </h4>
-                                <p className="text-[10px] text-slate-400 mt-1">Mated: <strong>{b.breedDate}</strong> | Pregnancy Stage: <strong>{daysElapsed} / 31 days</strong></p>
-                              </div>
-                              <div className="flex gap-2">
-                                {b.status === 'bred' && (
-                                  <>
-                                    <button
-                                      onClick={() => logPalpation(b.id, true)}
-                                      className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-650 text-white font-bold rounded-lg border-none text-[10px] transition-all"
-                                    >
-                                      🤰 Palpate Positive
-                                    </button>
-                                    <button
-                                      onClick={() => logPalpation(b.id, false)}
-                                      className="py-1.5 px-3 bg-red-650 hover:bg-red-700 text-white font-bold rounded-lg border-none text-[10px] transition-all"
-                                    >
-                                      💨 Palpate Failed
-                                    </button>
-                                  </>
-                                )}
-                                {b.status === 'palpated_positive' && (
-                                  <button
-                                    onClick={() => setKindlingBreedingId(b.id)}
-                                    className="py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-650 text-white font-bold rounded-lg border-none text-[10px] transition-all"
-                                  >
-                                    🐇 Record Kindled
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Gestation timeline bar */}
-                            <div className="relative pt-6 pb-2 px-1">
-                              {/* Horizontal track line */}
-                              <div className="absolute top-[28px] left-0 right-0 h-1.5 bg-slate-800 rounded-full">
-                                <div 
-                                  className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-500"
-                                  style={{ width: `${progressPct}%` }}
-                                />
-                              </div>
-
-                              {/* Milestone nodes */}
-                              <div className="relative flex justify-between text-[10px]">
-                                {/* Milestone 0: Mating */}
-                                <div className="flex flex-col items-center text-center -translate-x-2">
-                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 0 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
-                                  <span className="font-bold text-slate-300 mt-1">Day 0</span>
-                                  <span className="text-[8.5px] opacity-60">Mating</span>
-                                </div>
-
-                                {/* Milestone 12: Palpation */}
-                                <div className="flex flex-col items-center text-center">
-                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 12 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
-                                  <span className="font-bold text-slate-300 mt-1">Day 12</span>
-                                  <span className="text-[8.5px] opacity-60">Palpate Check</span>
-                                </div>
-
-                                {/* Milestone 28: Nest Box */}
-                                <div className="flex flex-col items-center text-center">
-                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 28 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
-                                  <span className="font-bold text-slate-300 mt-1">Day 28</span>
-                                  <span className="text-[8.5px] opacity-60">Nest Box In</span>
-                                </div>
-
-                                {/* Milestone 31: Kindle */}
-                                <div className="flex flex-col items-center text-center translate-x-2">
-                                  <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${daysElapsed >= 31 ? 'bg-orange-500 border-orange-400' : 'bg-slate-900 border-slate-700'}`} />
-                                  <span className="font-bold text-slate-300 mt-1">Day 31</span>
-                                  <span className="text-[8.5px] opacity-60">Kindle Due</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                  )}
-                </div>
-              </div>
-
-              {/* Record Mating Kindled Dialog Popover */}
-              {kindlingBreedingId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-                  <div className="w-full max-w-sm bg-slate-900 border-2 border-indigo-500/30 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl text-slate-100">
-                    <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                      <h3 className="font-extrabold text-base text-indigo-400">
-                        🐇 Record Litter Kindled
-                      </h3>
-                      <button 
-                        onClick={() => setKindlingBreedingId(null)}
-                        className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer font-bold"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-3 text-xs text-left">
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold text-slate-300">Kits Born Alive</label>
-                        <input
-                          type="number"
-                          value={kitsAliveInput}
-                          onChange={(e) => setKitsAliveInput(Number(e.target.value))}
-                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
-                          min="0"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold text-slate-300">Kits Born Dead</label>
-                        <input
-                          type="number"
-                          value={kitsDeadInput}
-                          onChange={(e) => setKitsDeadInput(Number(e.target.value))}
-                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
-                          min="0"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 border-t border-white/5 pt-3">
-                      <button
-                        onClick={() => setKindlingBreedingId(null)}
-                        className="btn-interactive text-xs py-2 px-4 bg-slate-800 text-slate-300 border border-white/5"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => {
-                          logKindle(kindlingBreedingId, kitsAliveInput, kitsDeadInput);
-                          setKindlingBreedingId(null);
-                        }}
-                        className="btn-interactive text-xs py-2 px-5 bg-emerald-600 hover:bg-emerald-650 text-white font-bold"
-                      >
-                        Confirm Kindling
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Litters Logs */}
-              <div className="glass-container p-6">
-                <h3 className="text-lg font-bold mb-4">Litter Production Logs</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {litters.map(l => {
-                    const breeding = breedings.find(b => b.id === l.breedingId);
-                    const doe = breeding ? rabbits.find(r => r.id === breeding.doeId) : null;
-                    const buck = breeding ? rabbits.find(r => r.id === breeding.buckId) : null;
-
-                    return (
-                      <div key={l.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold uppercase tracking-wider text-pink-400">Litter ID: {l.id.slice(-6)}</span>
-                          <span className="text-xs bg-green-500/20 text-green-300 font-bold px-2 py-0.5 rounded">Active Weaned</span>
-                        </div>
-                        <p className="text-sm font-semibold">Doe: {doe ? doe.name : 'Unknown'} x Buck: {buck ? buck.name : 'Unknown'}</p>
-                        <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white/5 p-2 rounded-lg mt-1">
-                          <div>
-                            <span className="opacity-70 block">Born Alive</span>
-                            <span className="font-bold text-green-400 text-sm">{l.kitsBornAlive}</span>
-                          </div>
-                          <div>
-                            <span className="opacity-70 block">Born Dead</span>
-                            <span className="font-bold text-red-400 text-sm">{l.kitsBornDead}</span>
-                          </div>
-                          <div>
-                            <span className="opacity-70 block">Weaned</span>
-                            <span className="font-bold text-indigo-400 text-sm">{l.kitsBornAlive - l.kitsBornDead}</span>
-                          </div>
-                        </div>
-                        <p className="text-xs opacity-75 mt-1">Notes: {l.notes || 'None recorded.'}</p>
-                      </div>
-                    );
-                  })}
-                  {litters.length === 0 && (
-                    <p className="text-sm opacity-60 text-center py-6 md:col-span-2">No litter entries yet.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Missed Breeding & Fertility Analysis */}
-              <div className="glass-container p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <ShieldAlert className="w-5 h-5 text-rose-400" />
-                  <h3 className="text-lg font-bold">Missed Breeding & Fertility Analysis</h3>
-                </div>
-                <p className="text-xs opacity-75 mb-5">
-                  Logs failed breeding attempts (negative palpations) to identify potential buck/doe fertility issues.
-                </p>
-                {(() => {
-                  const failedBreedings = breedings.filter(b => b.status === 'palpated_negative');
-                  
-                  // Count failures per buck
-                  const buckFailures = {};
-                  // Count failures per doe
-                  const doeFailures = {};
-                  
-                  failedBreedings.forEach(b => {
-                    if (b.buckId) buckFailures[b.buckId] = (buckFailures[b.buckId] || 0) + 1;
-                    if (b.doeId) doeFailures[b.doeId] = (doeFailures[b.doeId] || 0) + 1;
-                  });
-                  
-                  const buckStats = Object.entries(buckFailures).map(([id, count]) => {
-                    const r = allRabbits.find(rab => rab.id === id);
-                    return { id, name: r ? r.name : 'Unknown Buck', tattooNumber: r ? r.tattooNumber : '', count };
-                  }).sort((a, b) => b.count - a.count);
-                  
-                  const doeStats = Object.entries(doeFailures).map(([id, count]) => {
-                    const r = allRabbits.find(rab => rab.id === id);
-                    return { id, name: r ? r.name : 'Unknown Doe', tattooNumber: r ? r.tattooNumber : '', count };
-                  }).sort((a, b) => b.count - a.count);
-                  
-                  return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="flex flex-col gap-3">
-                        <h4 className="text-sm font-bold text-sky-400 border-b border-white/5 pb-2">
-                          ♂️ Buck Fertility Warnings
-                        </h4>
-                        {buckStats.length > 0 ? (
-                          <div className="flex flex-col gap-2">
-                            {buckStats.map(s => (
-                              <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center text-xs">
-                                <div>
-                                  <span className="font-bold text-white">{s.name}</span>
-                                  {s.tattooNumber && <span className="opacity-50 ml-1.5 font-mono">({s.tattooNumber})</span>}
-                                </div>
-                                <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
-                                  {s.count} Failed {s.count === 1 ? 'Attempt' : 'Attempts'}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs opacity-60 italic py-2">No failed breeding attempts recorded for bucks.</p>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col gap-3">
-                        <h4 className="text-sm font-bold text-pink-400 border-b border-white/5 pb-2">
-                          ♀️ Doe Fertility Warnings
-                        </h4>
-                        {doeStats.length > 0 ? (
-                          <div className="flex flex-col gap-2">
-                            {doeStats.map(s => (
-                              <div key={s.id} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center text-xs">
-                                <div>
-                                  <span className="font-bold text-white">{s.name}</span>
-                                  {s.tattooNumber && <span className="opacity-50 ml-1.5 font-mono">({s.tattooNumber})</span>}
-                                </div>
-                                <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
-                                  {s.count} Failed {s.count === 1 ? 'Attempt' : 'Attempts'}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs opacity-60 italic py-2">No failed breeding attempts recorded for does.</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* ARBA Genetic Loci Sandbox & Punnett Simulator */}
-              <div className="glass-container p-6 border border-indigo-500/20 bg-slate-900/40">
-                <div className="flex justify-between items-center flex-wrap gap-4 border-b border-white/5 pb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-indigo-400" /> ARBA Genetic Loci Sandbox
-                    </h3>
-                    <p className="text-xs text-slate-350 mt-0.5 font-medium">Predict kit variety percentages and explore genotype crosses using standard Punnett calculations.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                  {/* Selectors Column */}
-                  <div className="flex flex-col gap-4">
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="font-bold text-blue-400">Select Sire (Buck)</label>
-                        <select 
-                          value={sandboxBuckId}
-                          onChange={(e) => setSandboxBuckId(e.target.value)}
-                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
-                        >
-                          <option value="">Select Buck</option>
-                          {rabbits.filter(r => r.sex === 'buck' && r.status !== 'pedigree_only' && r.status !== 'sold').map(r => (
-                            <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber} - {r.variety})</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="font-bold text-pink-400">Select Dam (Doe)</label>
-                        <select 
-                          value={sandboxDoeId}
-                          onChange={(e) => setSandboxDoeId(e.target.value)}
-                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
-                        >
-                          <option value="">Select Doe</option>
-                          {rabbits.filter(r => r.sex === 'doe' && r.status !== 'pedigree_only' && r.status !== 'sold').map(r => (
-                            <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber} - {r.variety})</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Educational Tip Bubble */}
-                    <div className="p-4 bg-indigo-950/20 border border-indigo-500/10 rounded-2xl text-left text-xs">
-                      <span className="text-[11px] font-bold text-indigo-300 block mb-1">WarrenWise Genetics Coach says:</span>
-                      <p className="opacity-80 leading-normal text-[11px] text-slate-350">
-                        "Every standard rabbit variety contains gene pairings at 5 key loci (A, B, C, D, E). Self colors like Black (aa) are recessive to Agouti (A). If both parents carry a hidden recessive gene, it can pop up in their offspring!"
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Prediction Results Column */}
-                  <div className="text-left">
-                    {!sandboxBuckId || !sandboxDoeId ? (
-                      <div className="h-full flex items-center justify-center border border-dashed border-white/10 rounded-2xl py-12 text-slate-500 text-xs italic">
-                        Select a Sire and Dam to analyze genetic crossing probabilities.
-                      </div>
-                    ) : (() => {
-                      const buck = rabbits.find(r => r.id === sandboxBuckId);
-                      const doe = rabbits.find(r => r.id === sandboxDoeId);
-                      if (!buck || !doe) return null;
-
-                      const buckGen = inferGenotypeFromVariety(buck.variety, buck.breed);
-                      const doeGen = inferGenotypeFromVariety(doe.variety, doe.breed);
-
-                      // Helper to show genotype string
-                      const showGen = (g) => {
-                        return `${g.A.join('')} ${g.B.join('')} ${g.C.join('')} ${g.D.join('')} ${g.E.join('')}`;
-                      };
-
-                      const results = crossRabbitsGenetics(buckGen, doeGen);
-
-                      return (
-                        <div className="flex flex-col gap-4 text-xs">
-                          {/* Genotypes Cards */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                              <span className="text-[10px] font-bold text-blue-300 block">Sire Genotype</span>
-                              <span className="font-mono text-sm font-black text-white">{showGen(buckGen)}</span>
-                            </div>
-                            <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl">
-                              <span className="text-[10px] font-bold text-pink-300 block">Dam Genotype</span>
-                              <span className="font-mono text-sm font-black text-white">{showGen(doeGen)}</span>
-                            </div>
-                          </div>
-
-                          {/* Variety Distributions */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-slate-450 block mb-2">Predicted Kit Color Variety Probabilities</span>
-                            <div className="flex flex-col gap-2">
-                              {results.varieties.map(v => (
-                                <div key={v.name} className="flex flex-col gap-1 bg-white/5 p-2 rounded-lg border border-white/5">
-                                  <div className="flex justify-between items-center text-[11px] font-bold">
-                                    <span>{v.name}</span>
-                                    <span className="text-indigo-300">{v.percent}%</span>
-                                  </div>
-                                  <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-                                      style={{ width: `${v.percent}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Cross Grid Sample */}
-                          <div className="bg-slate-950/40 p-3.5 rounded-xl border border-white/5">
-                            <span className="text-[10px] uppercase font-bold text-slate-450 block mb-1.5">Punnett Cross Grid Samples</span>
-                            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-                              {results.grid.slice(0, 8).map((entry, idx) => (
-                                <div key={idx} className="bg-white/5 p-1.5 rounded flex justify-between border border-white/5">
-                                  <span className="text-slate-450">{entry.childGenotype}</span>
-                                  <span className="font-bold text-indigo-200 truncate max-w-[55%]">{entry.varietyName}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-            </div>
+            <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-60">Loading Breeding Schedulerâ€¦</div>}>
+              <BreedingScheduler
+                rabbits={rabbits}
+                breedings={breedings}
+                allBreedings={allBreedings}
+                litters={litters}
+                allRabbits={allRabbits}
+                handleAddBreeding={handleAddBreeding}
+                logPalpation={logPalpation}
+                logKindle={logKindle}
+                showToast={showToast}
+              />
+            </React.Suspense>
           )}
 
-          {/* TAB 4: LEDGER LEDGER */}
+          {/* TAB 4: FINANCIAL LEDGER */}
           {activeTab === 'ledger' && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Add Transaction Form */}
-              <div className="glass-container p-6">
-                <h3 className="text-lg font-bold mb-4">Log Transaction</h3>
-                <form onSubmit={handleAddTx} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold">Type</label>
-                    <select 
-                      value={newTx.type}
-                      onChange={(e) => setNewTx({...newTx, type: e.target.value})}
-                    >
-                      <option value="expense">Expense</option>
-                      <option value="income">Income</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold">Category</label>
-                    <select 
-                      value={newTx.category}
-                      onChange={(e) => setNewTx({...newTx, category: e.target.value})}
-                    >
-                      <option value="feed">Feed</option>
-                      <option value="medical">Medical</option>
-                      <option value="equipment">Equipment</option>
-                      <option value="sale">Sale of Rabbit</option>
-                      <option value="show_fee">Show Entry Fee</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold">Amount ($)</label>
-                    <input 
-                      type="number" step="0.01" required placeholder="0.00"
-                      value={newTx.amount}
-                      onChange={(e) => setNewTx({...newTx, amount: e.target.value})}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-bold">Notes</label>
-                    <input 
-                      type="text" placeholder="Description"
-                      value={newTx.notes}
-                      onChange={(e) => setNewTx({...newTx, notes: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-4">
-                    <button type="submit" className="btn-interactive w-full">Record Ledger Event</button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Transactions List */}
-              <div className="glass-container p-6">
-                <h3 className="text-lg font-bold mb-4">Financial Log History</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/10 text-xs font-bold uppercase tracking-wider opacity-70">
-                        <th className="pb-3">Date</th>
-                        <th className="pb-3">Type</th>
-                        <th className="pb-3">Category</th>
-                        <th className="pb-3">Description</th>
-                        <th className="pb-3 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5 text-sm">
-                      {(() => {
-                        const ITEMS_PER_PAGE = 20;
-                        const startIndex = (ledgerPage - 1) * ITEMS_PER_PAGE;
-                        const paginated = ledger.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-                        return paginated.map(t => (
-                          <tr key={t.id} className="hover:bg-white/5 transition-all">
-                            <td className="py-3">{t.date}</td>
-                            <td className="py-3 capitalize">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${t.type === 'income' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                {t.type}
-                              </span>
-                            </td>
-                            <td className="py-3 capitalize">{t.category}</td>
-                            <td className="py-3">{t.notes}</td>
-                            <td className={`py-3 text-right font-bold ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                              {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
-                            </td>
-                          </tr>
-                        ));
-                      })()}
-                    </tbody>
-                  </table>
-                  {ledger.length === 0 && (
-                    <p className="text-center py-6 opacity-60">No financial records cataloged.</p>
-                  )}
-
-                  {/* Pagination Controls */}
-                  {ledger.length > 20 && (
-                    <div className="flex justify-between items-center border-t border-white/5 pt-4 mt-4 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setLedgerPage(prev => Math.max(prev - 1, 1))}
-                        disabled={ledgerPage === 1}
-                        className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
-                      >
-                        Prev Page
-                      </button>
-                      <span className="opacity-75 font-semibold text-white">
-                        Page {ledgerPage} of {Math.ceil(ledger.length / 20)} ({ledger.length} total)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setLedgerPage(prev => Math.min(prev + 1, Math.ceil(ledger.length / 20)))}
-                        disabled={ledgerPage === Math.ceil(ledger.length / 20)}
-                        className="btn-interactive py-1 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border-none text-white font-bold cursor-pointer"
-                      >
-                        Next Page
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-            </div>
+            <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-60">Loading Financial Ledger...</div>}>
+              <FinancialLedger
+                ledger={ledger}
+                handleAddTx={handleAddTx}
+              />
+            </React.Suspense>
           )}
 
           {/* TAB: SHOW PLANNER */}
           {activeTab === 'shows' && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Show Header */}
-              <div className="glass-container p-6 flex flex-col gap-2">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Award className="w-6 h-6 text-yellow-400 font-bold" /> Rabbitry Show Planner & Calendar
-                </h3>
-                <p className="text-sm opacity-75">
-                  Coordinate upcoming ARBA events, manage entries, track preparation requirements, and set notifications for barn days.
-                </p>
-                {activeBreederContext?.isYouth && (
-                  <div className="mt-2.5 p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl flex items-start gap-2.5 text-xs text-pink-300">
-                    <span className="text-base shrink-0 mt-0.5">⚠️</span>
-                    <p className="leading-relaxed font-sans">
-                      <strong>ARBA Youth Rules Notice:</strong> As a registered youth exhibitor, please remember that youth must carry, handle, and present their own animals on the show table without adult assistance in youth breed and showmanship classes. Refer to the official ARBA rules at <a href="https://arba.net" target="_blank" rel="noopener noreferrer" className="underline font-bold text-pink-400 hover:text-pink-300">arba.net</a> for complete guidelines.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Form column */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                  {/* Add Custom Show Form */}
-                  <div className="glass-container p-6">
-                    <h3 className="text-base font-bold mb-4">Add Custom Show</h3>
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      const name = e.target.showName.value;
-                      const date = e.target.showDate.value;
-                      const location = e.target.showLoc.value;
-                      const status = e.target.showStatus.value;
-                      const notes = e.target.showNotes.value;
-                      if (!name || !date) return;
-
-                      const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
-                      const newShow = {
-                        id: `show-${Date.now()}`,
-                        breederId: activeBreederId,
-                        name,
-                        date,
-                        location,
-                        status,
-                        notes,
-                        notifyDays: 14
-                      };
-                      setAllShows(prev => [newShow, ...prev]);
-                      e.target.reset();
-                      setSuccessMascot({
-                        title: "Show Added!",
-                        message: `"${name}" has been successfully added to your exhibition calendar. Get those pedigree forms ready!`,
-                        type: 'usagi'
-                      });
-                    }} className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-slate-300">Show Name</label>
-                        <input name="showName" type="text" placeholder="e.g. ARBA Spring Classic" required />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-slate-300">Date</label>
-                        <input name="showDate" type="date" required />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-slate-300">Location</label>
-                        <input name="showLoc" type="text" placeholder="City, State" />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-slate-300">Initial Status</label>
-                        <select name="showStatus" defaultValue="interested">
-                          <option value="attending">Attending</option>
-                          <option value="interested">Interested</option>
-                          <option value="not_attending">Not Attending</option>
-                        </select>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-slate-300">Notes</label>
-                        <textarea name="showNotes" placeholder="Preparation details..." rows="3" className="text-xs p-2 rounded-xl bg-white/5 border border-white/10 text-white" />
-                      </div>
-                      <button type="submit" className="btn-interactive w-full mt-2">Add Show to Calendar</button>
-                    </form>
-                  </div>
-
-                  {/* Quick-Add Templates */}
-                  <div className="glass-container p-6 flex flex-col gap-4">
-                    <div>
-                      <h3 className="text-base font-bold">Find Local ARBA Shows</h3>
-                      <p className="text-[10px] opacity-75 mt-0.5">Search sanctioned exhibitions near your rabbitry registry zip code.</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="text-[10px] font-bold text-slate-400">Zip Code</label>
-                        <input 
-                          type="text" 
-                          maxLength="5" 
-                          placeholder="e.g. 97201" 
-                          value={showZipFilter} 
-                          onChange={(e) => setShowZipFilter(e.target.value.replace(/\D/g, ''))}
-                          className="bg-slate-900 border border-white/10 text-xs p-2 text-white rounded-lg text-center font-mono focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="text-[10px] font-bold text-slate-400">Radius</label>
-                        <select 
-                          value={showRadiusFilter}
-                          onChange={(e) => setShowRadiusFilter(e.target.value)}
-                          className="bg-slate-900 border border-white/10 text-xs p-2.5 text-white rounded-lg focus:outline-none"
-                        >
-                          <option value="25">25 Miles</option>
-                          <option value="50">50 Miles</option>
-                          <option value="100">100 Miles</option>
-                          <option value="250">250 Miles</option>
-                          <option value="500">500 Miles</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
-                      {(() => {
-                        const REGIONAL_SHOW_TEMPLATES = [
-                          { 
-                            name: "Portland Breeders Winter Show", 
-                            date: "2026-11-15", 
-                            loc: "Portland, OR", 
-                            zip: "97201", 
-                            notes: "Double youth/open show.",
-                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Mini Rex Specialty"]
-                          },
-                          { 
-                            name: "Washington County Fair Show", 
-                            date: "2026-07-28", 
-                            loc: "Hillsboro, OR", 
-                            zip: "97124", 
-                            notes: "Annual county exhibition. Double show.",
-                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Holland Lop Specialty"]
-                          },
-                          { 
-                            name: "ARBA California Championship", 
-                            date: "2026-08-22", 
-                            loc: "Sacramento, CA", 
-                            zip: "95814", 
-                            notes: "Triple-sanctioned ARBA show.",
-                            showsList: ["Show A (Open)", "Show B (Open)", "Show C (Open)", "Youth Show A/B"]
-                          },
-                          { 
-                            name: "San Joaquin Valley Classic", 
-                            date: "2026-07-20", 
-                            loc: "Stockton, CA", 
-                            zip: "95202", 
-                            notes: "Sanctioned open/youth rabbit & cavy show.",
-                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Cavy Specialty"]
-                          },
-                          { 
-                            name: "Golden State Autumn Classic", 
-                            date: "2026-09-15", 
-                            loc: "Fresno, CA", 
-                            zip: "93721", 
-                            notes: "Pre-national warm-up.",
-                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Flemish Giant Specialty"]
-                          },
-                          { 
-                            name: "Indiana State Fair Exhibition", 
-                            date: "2026-08-10", 
-                            loc: "Indianapolis, IN", 
-                            zip: "46205", 
-                            notes: "Large state exhibition with youth categories.",
-                            showsList: ["Show A (Open)", "Show B (Open)", "4-H Youth Derby"]
-                          },
-                          { 
-                            name: "Midwest Mini Rex Specialty", 
-                            date: "2026-07-12", 
-                            loc: "Fort Wayne, IN", 
-                            zip: "46802", 
-                            notes: "Rex specialty double show.",
-                            showsList: ["Show A (Specialty Only)", "Show B (Specialty Only)"]
-                          },
-                          { 
-                            name: "Ohio State Rabbit Convention", 
-                            date: "2026-09-18", 
-                            loc: "Columbus, OH", 
-                            zip: "43215", 
-                            notes: "Annual state convention.",
-                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Show C (Open/Youth)", "Netherland Dwarf Specialty"]
-                          },
-                          { 
-                            name: "Great Lakes Giant Fair", 
-                            date: "2026-09-02", 
-                            loc: "Grand Rapids, MI", 
-                            zip: "49503", 
-                            notes: "All breeds welcome, specialty in Flemish Giants.",
-                            showsList: ["Show A (Open/Youth)", "Show B (Open/Youth)", "Flemish Giant Specialty"]
-                          }
-                        ];
-
-                        const radiusVal = parseInt(showRadiusFilter || '100', 10);
-                        const userZip = showZipFilter || '97201'; 
-                        
-                        const calculatedShows = REGIONAL_SHOW_TEMPLATES.map(t => {
-                          const diff = Math.abs(parseInt(userZip, 10) - parseInt(t.zip, 10)) || 1;
-                          const distance = (diff % 480) + 12; 
-                          return { ...t, distance };
-                        });
-
-                        let filtered = showZipFilter
-                          ? calculatedShows.filter(t => t.distance <= radiusVal)
-                          : calculatedShows.filter(t => t.loc.toUpperCase().includes(breederState.toUpperCase()));
-
-                        if (filtered.length === 0 && !showZipFilter) {
-                          filtered = calculatedShows;
-                        }
-
-                        if (filtered.length === 0) {
-                          return <div className="text-[10px] text-center text-slate-500 py-4">No ARBA shows found within {radiusVal} miles of "{showZipFilter}". Try broadening your radius.</div>;
-                        }
-
-                        return filtered.map((t, idx) => (
-                          <div key={idx} className="p-2.5 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between gap-3 text-xs text-left relative hover:bg-white/10 transition-all">
-                            <div className="flex flex-col gap-1 min-w-0 flex-1">
-                              <span className="font-bold text-indigo-300 truncate">{t.name}</span>
-                              
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                                <span className="font-mono text-cyan-300 font-semibold">{t.date}</span>
-                                <span>•</span>
-                                <span>{t.loc}</span>
-                                <span>•</span>
-                                <span className="text-emerald-400 font-bold font-mono">{t.distance} mi</span>
-                              </div>
-
-                              {/* Sub-shows mini tags */}
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {t.showsList?.map((sName, sIdx) => (
-                                  <span key={sIdx} className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-slate-305 border border-white/5 font-semibold">
-                                    {sName}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const activeBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
-                                const newShow = {
-                                  id: `show-template-${Date.now()}-${idx}`,
-                                  breederId: activeBreederId,
-                                  name: t.name,
-                                  date: t.date,
-                                  location: t.loc,
-                                  status: 'interested',
-                                  notes: `${t.notes} | Shows: ${t.showsList?.join(', ')} (Distance: ${t.distance} mi)`,
-                                  notifyDays: 14
-                                };
-                                setAllShows(prev => [newShow, ...prev]);
-                                setSuccessMascot({
-                                  title: "Show Imported!",
-                                  message: `"${t.name}" added to calendar. Travel route is approx ${t.distance} miles.`,
-                                  type: 'kiba'
-                                });
-                              }}
-                              className="py-1 px-2.5 bg-emerald-650 hover:bg-emerald-700 border-none rounded-lg text-white font-bold text-[10px] cursor-pointer shrink-0 transition-all shadow self-center"
-                            >
-                              Import
-                            </button>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Shows list column */}
-                <div className="lg:col-span-2 flex flex-col gap-4">
-                  <div className="glass-container p-6">
-                    <h3 className="text-lg font-bold mb-4">Your Exhibition Schedule</h3>
-                    <div className="flex flex-col gap-4">
-                      {shows.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(s => {
-                        const dateObj = new Date(s.date);
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
-                        const diffTime = dateObj - today;
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        
-                        let badgeColor = 'bg-slate-500/20 text-slate-300';
-                        if (s.status === 'attending') badgeColor = 'bg-green-500/20 text-green-300 border border-green-500/30 shadow-lg shadow-green-500/5';
-                        else if (s.status === 'interested') badgeColor = 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
-
-                        return (
-                          <div key={s.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex flex-col gap-4 transition-all hover:bg-white/10">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                              <div className="flex-1 flex flex-col gap-1.5">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h4 className="text-base font-bold text-white">{s.name}</h4>
-                                  <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${badgeColor}`}>{s.status.replace('_', ' ')}</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs opacity-75">
-                                  <span>📅 Date: <strong>{s.date}</strong></span>
-                                  <span>📍 Location: <strong>{s.location || 'Not Specified'}</strong></span>
-                                </div>
-                                <p className="text-xs opacity-70 mt-1 italic">Notes: {s.notes || 'No notes added.'}</p>
-                                {diffDays > 0 ? (
-                                  <span className="text-xs font-bold text-indigo-400">⏱️ {diffDays} days remaining</span>
-                                ) : diffDays === 0 ? (
-                                  <span className="text-xs font-black text-rose-500 animate-pulse">📅 TODAY IS SHOW DAY! Best of luck! 🏆</span>
-                                ) : (
-                                  <span className="text-xs opacity-50">Expired / Passed ({Math.abs(diffDays)} days ago)</span>
-                                )}
-                              </div>
-
-                              <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
-                                <select 
-                                  value={s.status} 
-                                  onChange={(e) => {
-                                    setAllShows(prev => prev.map(item => item.id === s.id ? { ...item, status: e.target.value } : item));
-                                  }}
-                                  className="text-xs font-bold py-1.5 px-3 rounded-xl bg-slate-900 border border-white/10 text-white cursor-pointer w-full sm:w-40"
-                                >
-                                  <option value="attending">Attending</option>
-                                  <option value="interested">Interested</option>
-                                  <option value="not_attending">Not Attending</option>
-                                </select>
-                                {!isAssistantWriteOnly && (
-                                  <div className="flex gap-2 w-full justify-end">
-                                    <button 
-                                      onClick={() => {
-                                        setAllShows(prev => prev.filter(item => item.id !== s.id));
-                                        setAllShowEntries(prev => prev.filter(se => se.showId !== s.id));
-                                      }}
-                                      className="btn-interactive py-1 px-3 bg-red-800/80 text-xs border-none"
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* COLLAPSIBLE SHOW ENTRIES SECTION */}
-                            {s.status !== 'not_attending' && (
-                              <div className="border-t border-white/5 pt-3 mt-1 flex flex-col gap-3">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
-                                    📋 Registered Show Entries ({allShowEntries.filter(se => se.showId === s.id).length})
-                                  </span>
-                                </div>
-
-                                {(() => {
-                                  const registeredEntries = allShowEntries.filter(se => se.showId === s.id);
-                                  const availableRabbitsForShow = rabbits.filter(r => r.status !== 'pedigree_only' && r.status !== 'sold' && !allShowEntries.some(se => se.showId === s.id && se.rabbitId === r.id));
-
-                                  return (
-                                    <>
-                                      {registeredEntries.length > 0 && (
-                                        <div className="overflow-x-auto w-full">
-                                          <table className="w-full text-[11px] text-left border-collapse">
-                                            <thead>
-                                              <tr className="text-slate-450 border-b border-white/5 font-bold">
-                                                <th className="pb-1.5 pr-2">Tattoo</th>
-                                                <th className="pb-1.5 pr-2">Name</th>
-                                                <th className="pb-1.5 pr-2">Breed</th>
-                                                <th className="pb-1.5 pr-2">Calculated Class</th>
-                                                <th className="pb-1.5 pr-2">FDA Clearance</th>
-                                                <th className="pb-1.5 text-right">Action</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-white/5">
-                                              {registeredEntries.map(entry => {
-                                                const r = rabbits.find(rab => rab.id === entry.rabbitId);
-                                                if (!r) return null;
-                                                const computedClass = calculateRabbitShowClass(r.dob, r.breed, r.sex, s.date, r.showClass);
-                                                const fda = isUnderFdaWithdrawal(r.id);
-
-                                                return (
-                                                  <tr key={entry.id} className="hover:bg-white/5">
-                                                    <td className="py-2 font-mono font-bold text-indigo-400">{r.tattooNumber}</td>
-                                                    <td className="py-2 text-white font-semibold">{r.name}</td>
-                                                    <td className="py-2">{r.breed}</td>
-                                                    <td className="py-2 font-bold text-yellow-400">{computedClass}</td>
-                                                    <td className="py-2">
-                                                      {fda.active ? (
-                                                        <span className="text-rose-400 font-extrabold animate-pulse">
-                                                          ⚠️ FDA WITHDRAWAL ({fda.remainingDays}d left: {fda.drugName})
-                                                        </span>
-                                                      ) : (
-                                                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                                                          🛡️ Clear / Safe
-                                                        </span>
-                                                      )}
-                                                    </td>
-                                                    <td className="py-2 text-right">
-                                                      <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                          setAllShowEntries(prev => prev.filter(se => se.id !== entry.id));
-                                                          showToast(`Removed ${r.name} from show.`, "info");
-                                                        }}
-                                                        className="bg-red-900/30 hover:bg-red-900/60 text-red-300 font-bold px-2 py-0.5 rounded border-none cursor-pointer text-[9px]"
-                                                      >
-                                                        Remove
-                                                      </button>
-                                                    </td>
-                                                  </tr>
-                                                );
-                                              })}
-                                            </tbody>
-                                          </table>
-                                        </div>
-                                      )}
-
-                                      {availableRabbitsForShow.length > 0 ? (
-                                        <form 
-                                          onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const rabbitId = e.target.entryRabbitId.value;
-                                            if (!rabbitId) return;
-                                            const entryItem = {
-                                              id: `se-${Date.now()}`,
-                                              showId: s.id,
-                                              rabbitId
-                                            };
-                                            setAllShowEntries(prev => [...prev, entryItem]);
-                                            const selectedRabName = rabbits.find(rab => rab.id === rabbitId)?.name || 'Rabbit';
-                                            showToast(`Registered ${selectedRabName} for this show!`, "success");
-                                          }}
-                                          className="flex items-center gap-2 max-w-sm mt-1"
-                                        >
-                                          <select 
-                                            name="entryRabbitId" 
-                                            className="text-[11px] py-1 px-2 rounded-lg bg-slate-900 border border-white/10 text-white cursor-pointer flex-1"
-                                            required
-                                          >
-                                            <option value="">-- Enter Rabbit in Show --</option>
-                                            {availableRabbitsForShow.map(rab => (
-                                              <option key={rab.id} value={rab.id}>
-                                                {rab.name} ({rab.tattooNumber})
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <button 
-                                            type="submit" 
-                                            className="btn-interactive text-[10px] py-1 px-3 bg-indigo-650 hover:bg-indigo-700 border-none font-bold text-white whitespace-nowrap shrink-0"
-                                          >
-                                            Enter Rabbit
-                                          </button>
-                                        </form>
-                                      ) : (
-                                        <p className="text-[10px] opacity-60">All available rabbits are registered for this show.</p>
-                                      )}
-                                    </>
-                                  );
-                                })()}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {shows.length === 0 && (
-                        <p className="text-sm opacity-60 text-center py-8">No shows in your schedule. Use the forms to create or import some shows!</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
+            <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-60">Loading Show Planner...</div>}>
+              <ShowPlanner
+                shows={shows}
+                allShows={allShows}
+                setAllShows={setAllShows}
+                showEntries={showEntries}
+                allShowEntries={allShowEntries}
+                setAllShowEntries={setAllShowEntries}
+                rabbits={rabbits}
+                currentUser={currentUser}
+                activeBreederContext={activeBreederContext}
+                selectedBreederContext={selectedBreederContext}
+                breederState={breederState}
+                isUnderFdaWithdrawal={isUnderFdaWithdrawal}
+                isAssistantWriteOnly={isAssistantWriteOnly}
+                setSuccessMascot={setSuccessMascot}
+                showToast={showToast}
+              />
+            </React.Suspense>
           )}
 
-          {/* TAB: MEDIA GALLERY */}
-          {activeTab === 'media' && (
-            <div className="flex flex-col gap-4">
-              
-              {/* Media Sub-Tabs Menu */}
-              <div className="flex gap-2 border-b border-white/10 pb-1 flex-wrap">
-                <button
-                  onClick={() => setMediaSubTab('timeline')}
-                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${mediaSubTab === 'timeline' ? 'border-sky-400 text-white' : 'border-transparent text-slate-400 hover:text-white bg-transparent border-none'}`}
-                >
-                  📖 Growth Timelines
-                </button>
-                <button
-                  onClick={() => setMediaSubTab('photos')}
-                  className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${mediaSubTab === 'photos' ? 'border-sky-400 text-white' : 'border-transparent text-slate-400 hover:text-white bg-transparent border-none'}`}
-                >
-                  📸 Virtualized Photo Grid (WebP)
-                </button>
-              </div>
-
-              {mediaSubTab === 'timeline' ? (
-                <ErrorBoundary>
-                  <TimelineGallery 
-                    rabbits={rabbits} 
-                    onUpdateRabbit={(updatedRabbit) => {
-                      setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
-                      if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
-                        setSelectedRabbit(updatedRabbit);
-                      }
-                    }}
-                  />
-                </ErrorBoundary>
-              ) : (
-                <ErrorBoundary>
-                  <PhotoGallery
-                    rabbits={rabbits}
-                    onUpdateRabbit={(updatedRabbit) => {
-                      setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
-                      if (selectedRabbit && selectedRabbit.id === updatedRabbit.id) {
-                        setSelectedRabbit(updatedRabbit);
-                      }
-                    }}
-                  />
-                </ErrorBoundary>
-              )}
-            </div>
-          )}{/* TAB: SALES & TRANSFERS PANEL */}
-          {activeTab === 'sales' && (
-            <div className="flex flex-col gap-6">
-              
-              {/* Header card with summary & stats */}
-              <div className="glass-container p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-                    <ShoppingBag className="w-6 h-6 text-emerald-400" /> Sales, Transfers & Pedigree Exchange
-                  </h3>
-                  <p className="text-xs opacity-75 text-emerald-200">
-                    Manage rabbit registry ownership transfers, track financial ledger sales, and view digital certificates of authenticity.
-                  </p>
-                </div>
-                
-                {/* Stats row */}
-                <div className="flex gap-4 flex-wrap">
-                  <div className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-2xl flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Total Sales Revenue</span>
-                    <span className="text-lg font-black text-emerald-400 font-mono">
-                      ${allTransfers
-                        .filter(t => selectedBreederContext === 'all' || t.breederId === selectedBreederContext)
-                        .reduce((sum, t) => sum + (t.price || 0), 0)
-                        .toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-2xl flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Completed Transfers</span>
-                    <span className="text-lg font-black text-indigo-400">
-                      {allTransfers.filter(t => selectedBreederContext === 'all' || t.breederId === selectedBreederContext).length}
-                    </span>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-2xl flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Active Listings</span>
-                    <span className="text-lg font-black text-purple-400">
-                      {rabbits.filter(r => r.status === 'active' || r.status === 'active_listing').length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content Layout */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                
-                {/* Left Side: Transfer History / Registry Logs */}
-                <div className="glass-container p-6 xl:col-span-7 flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-300">
-                      📜 Verifiable Transfer Log
-                    </h4>
-                    <span className="text-xs opacity-60 font-medium">ARBA-Compliant Records</span>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-white/10 text-xs font-bold uppercase tracking-wider opacity-70">
-                          <th className="pb-3">Certificate ID</th>
-                          <th className="pb-3">Rabbit</th>
-                          <th className="pb-3">Buyer</th>
-                          <th className="pb-3">Date</th>
-                          <th className="pb-3">Price</th>
-                          <th className="pb-3 text-right">Certificate</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5 text-xs">
-                        {allTransfers
-                          .filter(t => selectedBreederContext === 'all' || t.breederId === selectedBreederContext)
-                          .map(t => (
-                            <tr key={t.id} className="hover:bg-white/5 transition-all">
-                              <td className="py-3 font-mono font-bold text-indigo-300">{t.certificateId}</td>
-                              <td className="py-3">
-                                <span className="font-bold block text-white">{t.rabbitName}</span>
-                                <span className="text-[10px] opacity-60">Tat: {t.rabbitTattoo}</span>
-                              </td>
-                              <td className="py-3">
-                                <span className="font-semibold block text-white">{t.buyerName}</span>
-                                <span className="text-[10px] opacity-60">{t.buyerEmail}</span>
-                              </td>
-                              <td className="py-3 opacity-85">{t.date}</td>
-                              <td className="py-3 font-mono font-semibold text-emerald-450">
-                                {t.price > 0 ? `$${t.price.toFixed(2)}` : 'Lease/Gift'}
-                              </td>
-                              <td className="py-3 text-right">
-                                <button
-                                  onClick={() => setSelectedCertificate(t)}
-                                  className="btn-interactive text-[10px] py-1.5 px-3 bg-indigo-600/80 hover:bg-indigo-650 text-white font-bold flex items-center gap-1.5 ml-auto border-none"
-                                >
-                                  <Eye className="w-3.5 h-3.5" /> View Cert
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        {allTransfers.filter(t => selectedBreederContext === 'all' || t.breederId === selectedBreederContext).length === 0 && (
-                          <tr>
-                            <td colSpan="6" className="text-center py-10 opacity-60">
-                              No completed rabbitry transfers logged in this database context.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Right Side: Active Inventory (Initiate transfers) */}
-                <div className="glass-container p-6 xl:col-span-5 flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-purple-300">
-                      🐇 Eligible Hutch Inventory
-                    </h4>
-                    <span className="text-xs opacity-60">Click to Transfer</span>
-                  </div>
-
-                  <p className="text-xs opacity-75 leading-relaxed">
-                    Select an active rabbit from your hutch to begin the guided Sell/Transfer wizard.
-                  </p>
-
-                  <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1">
-                    {rabbits
-                      .filter(r => r.status !== 'sold' && r.status !== 'pedigree_only' && r.status !== 'dead')
-                      .map(r => (
-                        <div key={r.id} className="p-3 bg-white/5 border border-white/5 hover:border-purple-500/30 rounded-xl flex items-center justify-between transition-all group">
-                          <div>
-                            <span className="text-indigo-400 font-mono text-xs font-bold block">{r.tattooNumber}</span>
-                            <span className="font-bold text-sm text-white block">{r.name}</span>
-                            <span className="text-[10px] opacity-65">{r.breed} - {r.variety} | {r.sex}</span>
-                          </div>
-                          {!isAssistantWriteOnly ? (
-                            <button
-                              onClick={() => {
-                                setBuyerDetails({ name: '', email: '', phone: '', price: '', type: 'sale', notes: '' });
-                                setSellerSignature('');
-                                setBuyerSignature('');
-                                setTransferWizardStep(1);
-                                setShowTransferWizard(r);
-                              }}
-                              className="btn-interactive text-[11px] py-1.5 px-3 bg-emerald-600 hover:bg-emerald-650 opacity-90 group-hover:opacity-100 border-none flex items-center gap-1 font-bold text-white shadow"
-                            >
-                              Transfer <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <span className="text-[10px] opacity-50 italic">Read-Only</span>
-                          )}
-                        </div>
-                      ))}
-                    {rabbits.filter(r => r.status !== 'sold').length === 0 && (
-                      <p className="text-center py-10 opacity-60 text-xs">No active rabbits available in this hutch.</p>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-          {/* TAB 4.5: HEALTH & GROWTH MODULE */}
+          {/* TAB: HEALTH & GROWTH MODULE */}
           {activeTab === 'health' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Left Column: Rabbit List Context Selector */}
-              <div className="lg:col-span-1 flex flex-col gap-4">
-                <div className="glass-container p-4 flex flex-col gap-3">
-                  <h3 className="text-base font-bold text-white mb-1">Select Rabbit</h3>
-                  
-                  {/* Search inside Health */}
-                  <input 
-                    type="text" 
-                    placeholder="Filter rabbits..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full text-xs"
-                  />
-
-                  <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
-                    {rabbits.filter(r => 
-                      r.status !== 'pedigree_only' && r.status !== 'sold' && r.status !== 'dead' && (
-                        r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        r.breed.toLowerCase().includes(searchQuery.toLowerCase())
-                      )
-                    ).map(r => {
-                      const isSelected = healthSelectedRabbitId === r.id;
-                      const lastWeight = allWeights
-                        .filter(w => w.rabbitId === r.id)
-                        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                      return (
-                        <button
-                          key={r.id}
-                          onClick={() => setHealthSelectedRabbitId(r.id)}
-                          className={`p-3 rounded-xl text-left border transition-all flex justify-between items-center ${
-                            isSelected 
-                              ? 'bg-emerald-500/20 border-emerald-500/50 shadow-inner' 
-                              : 'bg-white/5 border-white/5 hover:bg-white/10'
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded font-bold ${
-                                r.sex === 'buck' ? 'bg-sky-500/10 text-sky-400' : 'bg-pink-500/10 text-pink-400'
-                              }`}>
-                                {r.tattooNumber}
-                              </span>
-                              <span className="font-bold text-xs text-white line-clamp-1">{r.name}</span>
-                            </div>
-                            <span className="text-[10px] opacity-60 block mt-1">{r.breed} • {r.variety}</span>
-                          </div>
-                          
-                          <div className="text-right">
-                            <span className="text-xs font-bold block text-emerald-400">
-                              {formatWeightShort(lastWeight ? lastWeight.weightOz : r.weightOz || 0)}
-                            </span>
-                            <span className="text-[9px] opacity-50 block uppercase tracking-wider font-mono">Last Weight</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Selected Rabbit Workspace */}
-              <div className="lg:col-span-2 flex flex-col gap-6">
-                {!healthSelectedRabbitId ? (
-                  <div className="glass-container p-12 text-center flex flex-col items-center justify-center gap-4 border border-white/10 min-h-[400px]">
-                    <div className="w-16 h-16 rounded-full bg-emerald-50/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      <HeartPulse className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white mb-1">Health & Growth Workspace</h3>
-                      <p className="text-xs opacity-75 max-w-sm mx-auto">
-                        Please select a rabbit from the list on the left to view growth charts, manage medical/vaccine history, and check ARBA standards compliance.
-                      </p>
-                    </div>
-                  </div>
-                ) : (() => {
-                  const rabbit = rabbits.find(r => r.id === healthSelectedRabbitId);
-                  if (!rabbit) return null;
-                  
-                  const standard = BREED_STANDARDS[rabbit.breed];
-                  const ageMonths = getAgeMonths(rabbit.dob);
-                  const sortedWeights = allWeights
-                    .filter(w => w.rabbitId === rabbit.id)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-                  const currentWeight = sortedWeights.length > 0 ? sortedWeights[sortedWeights.length - 1].weightOz : rabbit.weightOz;
-                  const validation = validateArbaStandard(rabbit);
-
-                  // Medical calculations
-                  const rabbitMedical = allMedical
-                    .filter(m => m.rabbitId === rabbit.id)
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                  return (
-                    <div className="flex flex-col gap-6">
-                      
-                      {/* 1. Rabbit Quick Info Stats Grid */}
-                      <div className="glass-container p-5 grid grid-cols-2 md:grid-cols-4 gap-4 border border-emerald-500/10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                        
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Age & Sex</span>
-                          <span className="text-sm font-bold text-white capitalize flex items-center gap-1">
-                            {rabbit.sex === 'buck' ? '♂ Buck' : '♀ Doe'}
-                            <span className="opacity-75 font-normal">({ageMonths} mos)</span>
-                          </span>
-                        </div>
-                        
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] uppercase opacity-60 font-bold tracking-wider">ARBA Class</span>
-                          <span className="text-sm font-bold text-white">
-                            {standard ? standard.classType : 'Unknown'}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Current Weight</span>
-                          <span className={`text-sm font-bold ${validation.valid ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {formatWeightDisplay(currentWeight)}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Next Routine Check</span>
-                          <span className="text-sm font-bold text-white">
-                            {(() => {
-                              const dewormings = rabbitMedical.filter(m => m.type === 'Prevention');
-                              if (dewormings.length === 0) return 'Immediate';
-                              // Predict 3 months from last deworming date
-                              const lastDate = new Date(dewormings[0].date);
-                              lastDate.setMonth(lastDate.getMonth() + 3);
-                              return lastDate.toISOString().split('T')[0];
-                            })()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* ARBA Standards Check Banner */}
-                      <div className={`p-4 rounded-xl border flex gap-3 items-start text-xs ${
-                        validation.valid 
-                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200' 
-                          : 'bg-amber-500/10 border-amber-500/20 text-amber-200'
-                      }`}>
-                        <ShieldCheck className={`w-5 h-5 shrink-0 ${validation.valid ? 'text-emerald-400' : 'text-amber-400'}`} />
-                        <div>
-                          <h4 className="font-bold">ARBA Standards of Perfection Validation</h4>
-                          <p className="opacity-85 mt-0.5 leading-relaxed">
-                            {validation.valid 
-                              ? `Compliant. ${rabbit.name}'s weight matches ARBA specifications for ${rabbit.breed} ${rabbit.sex}s.` 
-                              : `${validation.reason}`
-                            }
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* 2. Weight Growth Curve & History Card */}
-                      <div className="glass-container p-6 flex flex-col gap-6">
-                        <div>
-                          <h3 className="text-base font-bold text-white mb-1">Weight Growth Curve</h3>
-                          <p className="text-xs opacity-75">Compare historical weight points against ARBA standard weight limits.</p>
-                        </div>
-
-                        {/* Developmental Weight Stages Summary Grid */}
-                        {(() => {
-                          const getLatestWeightForStage = (stageName) => {
-                            const match = [...sortedWeights].reverse().find(w => w.stage === stageName);
-                            return match ? formatWeightDisplay(match.weightOz) : '—';
-                          };
-                          const is6Class = BREED_STANDARDS[rabbit.breed]?.classType === '6-class';
-                          
-                          return (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-900/40 rounded-xl border border-white/5 text-xs">
-                              <div className="flex flex-col gap-1">
-                                <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Pre-Wean (Baby)</span>
-                                <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Pre-Wean (Baby)')}</span>
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Junior</span>
-                                <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Junior')}</span>
-                              </div>
-                              {is6Class ? (
-                                <div className="flex flex-col gap-1">
-                                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Intermediate</span>
-                                  <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Intermediate')}</span>
-                                </div>
-                              ) : (
-                                <div className="flex flex-col gap-1 opacity-40">
-                                  <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Intermediate</span>
-                                  <span className="font-semibold text-slate-400 text-xs italic">N/A (4-Class Breed)</span>
-                                </div>
-                              )}
-                              <div className="flex flex-col gap-1">
-                                <span className="opacity-60 text-[10px] uppercase font-bold tracking-wider">Senior</span>
-                                <span className="font-extrabold text-indigo-300 text-sm">{getLatestWeightForStage('Senior')}</span>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Responsive Interactive SVG Chart */}
-                        <div className="w-full bg-white/5 rounded-xl border border-white/5 p-4 flex flex-col items-center">
-                          {(() => {
-                            const bounds = [];
-                            if (standard) {
-                              const sex = rabbit.sex;
-                              const is4Class = standard.classType === '4-class';
-                              
-                              const jrMax = sex === 'buck' ? standard.buckJrMax : standard.doeJrMax;
-                              const srMin = sex === 'buck' ? standard.buckSrMin : standard.doeSrMin;
-                              const srMax = sex === 'buck' ? standard.buckSrMax : standard.doeSrMax;
-
-                              if (is4Class) {
-                                if (typeof jrMax === 'number' && jrMax > 0) bounds.push({ value: jrMax, label: `Jr Max`, color: 'stroke-amber-500/60' });
-                                if (typeof srMin === 'number' && srMin > 0) bounds.push({ value: srMin, label: `Sr Min`, color: 'stroke-emerald-500/60' });
-                                if (typeof srMax === 'number' && srMax < 9900) bounds.push({ value: srMax, label: `Sr Max`, color: 'stroke-rose-500/60' });
-                              } else {
-                                const intMin = sex === 'buck' ? standard.buckIntMin : standard.doeIntMin;
-                                const intMax = sex === 'buck' ? standard.buckIntMax : standard.doeIntMax;
-                                if (typeof jrMax === 'number' && jrMax > 0) bounds.push({ value: jrMax, label: `Jr Max`, color: 'stroke-amber-500/60' });
-                                if (typeof intMin === 'number' && intMin > 0) bounds.push({ value: intMin, label: `Int Min`, color: 'stroke-cyan-500/60' });
-                                if (typeof intMax === 'number' && intMax < 9900) bounds.push({ value: intMax, label: `Int Max`, color: 'stroke-sky-500/60' });
-                                if (typeof srMin === 'number' && srMin > 0) bounds.push({ value: srMin, label: `Sr Min`, color: 'stroke-emerald-500/60' });
-                                if (typeof srMax === 'number' && srMax < 9900) bounds.push({ value: srMax, label: `Sr Max`, color: 'stroke-rose-500/60' });
-                              }
-                            }
-
-                            const weightVals = sortedWeights.map(w => w.weightOz);
-                            const boundVals = bounds.map(b => b.value);
-                            const allVals = [...weightVals, ...boundVals];
-                            const maxVal = allVals.length > 0 ? Math.max(...allVals) : 100;
-                            const minVal = allVals.length > 0 ? Math.max(0, Math.min(...allVals) - 10) : 0;
-                            const chartMax = maxVal * 1.15;
-                            const chartMin = Math.max(0, minVal * 0.85);
-
-                            const svgW = 500;
-                            const svgH = 260;
-                            const padL = 50;
-                            const padR = 120;
-                            const padT = 30;
-                            const padB = 40;
-                            const gW = svgW - padL - padR;
-                            const gH = svgH - padT - padB;
-
-                            const getX = (idx) => padL + (idx * (gW / Math.max(1, sortedWeights.length - 1)));
-                            const getY = (val) => (padT + gH) - ((val - chartMin) / (chartMax - chartMin || 1)) * gH;
-
-                            // Create path
-                            let dPath = '';
-                            let dArea = '';
-                            if (sortedWeights.length > 0) {
-                              dPath = sortedWeights.map((w, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(idx)} ${getY(w.weightOz)}`).join(' ');
-                              dArea = `${dPath} L ${getX(sortedWeights.length - 1)} ${padT + gH} L ${getX(0)} ${padT + gH} Z`;
-                            }
-
-                            return (
-                              <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full max-w-lg h-auto select-none overflow-visible">
-                                <defs>
-                                  <linearGradient id="areaGlow" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                                  </linearGradient>
-                                </defs>
-
-                                {/* Grid Lines */}
-                                {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
-                                  const val = chartMin + p * (chartMax - chartMin);
-                                  const y = getY(val);
-                                  return (
-                                    <g key={i} className="opacity-20">
-                                      <line x1={padL} y1={y} x2={padL + gW} y2={y} stroke="white" strokeWidth="1" strokeDasharray="3 3" />
-                                      <text x={padL - 10} y={y + 4} fill="white" className="text-[10px] font-mono text-right" textAnchor="end">
-                                        {Math.round(val)}oz
-                                      </text>
-                                    </g>
-                                  );
-                                })}
-
-                                {/* ARBA Target Bounds Dotted Lines */}
-                                {bounds.map((b, i) => {
-                                  const y = getY(b.value);
-                                  return (
-                                    <g key={i}>
-                                      <line 
-                                        x1={padL} 
-                                        y1={y} 
-                                        x2={padL + gW + 15} 
-                                        y2={y} 
-                                        strokeWidth="1.5" 
-                                        strokeDasharray="4 4" 
-                                        className={b.color} 
-                                      />
-                                      <text 
-                                        x={padL + gW + 20} 
-                                        y={y + 3} 
-                                        className="text-[9px] font-semibold fill-white/60 tracking-tight" 
-                                        textAnchor="start"
-                                      >
-                                        {b.label}
-                                      </text>
-                                    </g>
-                                  );
-                                })}
-
-                                {/* Area Under Curve */}
-                                {sortedWeights.length > 1 && (
-                                  <path d={dArea} fill="url(#areaGlow)" />
-                                )}
-
-                                {/* Trendline */}
-                                {sortedWeights.length > 1 && (
-                                  <path d={dPath} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                                )}
-
-                                {/* Data Points */}
-                                {sortedWeights.map((w, idx) => {
-                                  const cx = getX(idx);
-                                  const cy = getY(w.weightOz);
-                                  return (
-                                    <g key={w.id} className="group cursor-pointer">
-                                      <circle cx={cx} cy={cy} r="5" fill="#10b981" className="stroke-slate-950 stroke-2 hover:r-7 transition-all" />
-                                      <text x={cx} y={cy - 10} className="text-[10px] font-bold fill-white text-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950 px-1 py-0.5 rounded" textAnchor="middle">
-                                        {formatWeightShort(w.weightOz)}
-                                      </text>
-                                      
-                                      {/* X-Axis labels */}
-                                      <text x={cx} y={padT + gH + 15} fill="white" className="text-[8px] opacity-65 font-mono" textAnchor="middle">
-                                        {w.date.substring(5)}
-                                      </text>
-                                      <text x={cx} y={padT + gH + 28} fill="white" className="text-[8px] opacity-45 font-bold" textAnchor="middle">
-                                        {w.stage}
-                                      </text>
-                                    </g>
-                                  );
-                                })}
-
-                                {sortedWeights.length === 0 && (
-                                  <text x={padL + gW/2} y={padT + gH/2} fill="white" className="text-xs opacity-50" textAnchor="middle">
-                                    No weight logs recorded yet
-                                  </text>
-                                )}
-                              </svg>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Form: Add Weight Check */}
-                        <form onSubmit={handleAddWeight} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-white/5 border border-white/5 items-end">
-                          <div className="flex flex-col gap-1 md:col-span-2">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Record Weight Check</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="flex flex-col gap-1">
-                                <label className="text-[10px] opacity-75 font-semibold">Date</label>
-                                <input 
-                                  type="date" 
-                                  required 
-                                  value={newWeightEntry.date}
-                                  onChange={(e) => setNewWeightEntry({ ...newWeightEntry, date: e.target.value })}
-                                  className="text-xs py-1.5 bg-slate-900 border-white/10"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <label className="text-[10px] opacity-75 font-semibold">Stage</label>
-                                <select 
-                                  value={newWeightEntry.stage}
-                                  onChange={(e) => setNewWeightEntry({ ...newWeightEntry, stage: e.target.value })}
-                                  className="text-xs py-1.5 bg-slate-900 border-white/10 text-white"
-                                >
-                                  <option value="Pre-Wean (Baby)">Pre-Wean (Baby)</option>
-                                  <option value="Junior">Junior</option>
-                                  <option value="Intermediate">Intermediate</option>
-                                  <option value="Senior">Senior</option>
-                                  <option value="Routine">Routine</option>
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-1 col-span-1">
-                            <label className="text-[10px] opacity-75 font-semibold flex items-center justify-between">
-                              <span>Weight (ounces)</span>
-                              <button
-                                type="button"
-                                onClick={() => handleVoiceInput((val) => setNewWeightEntry(prev => ({ ...prev, weightOz: val })), true)}
-                                className="p-1 text-indigo-400 hover:text-indigo-300 rounded hover:bg-white/5 border-none cursor-pointer flex items-center justify-center"
-                                title="Use hands-free voice input to speak the weight"
-                              >
-                                🎙️ Speak
-                              </button>
-                            </label>
-                            <input 
-                              type="number" 
-                              required 
-                              min="1"
-                              placeholder="E.g. 48"
-                              value={newWeightEntry.weightOz}
-                              onChange={(e) => setNewWeightEntry({ ...newWeightEntry, weightOz: e.target.value })}
-                              className="text-xs py-1.5 bg-slate-900 border-white/10 text-white"
-                            />
-                          </div>
-
-                          <button 
-                            type="submit" 
-                            className="btn-interactive text-xs py-2 bg-emerald-600 hover:bg-emerald-650 h-[38px] flex items-center justify-center font-bold text-white shadow border-none"
-                          >
-                            <Plus className="w-4 h-4 mr-1" /> Log Weight
-                          </button>
-                        </form>
-
-                        {/* Weight Log History List */}
-                        <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
-                          <span className="text-xs font-bold uppercase tracking-wider opacity-65">Historical Weight Logs</span>
-                          {sortedWeights.map(w => (
-                            <div key={w.id} className="p-3 rounded-lg bg-white/5 border border-white/5 flex justify-between items-center text-xs">
-                              <div>
-                                <span className="font-semibold text-white">{formatWeightDisplay(w.weightOz)}</span>
-                                <span className="ml-3 opacity-60 text-[10px]">{w.date} • Stage: {w.stage}</span>
-                              </div>
-                              {!isAssistantWriteOnly ? (
-                                <button 
-                                  onClick={() => handleDeleteWeight(w.id)}
-                                  type="button"
-                                  className="p-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 cursor-pointer"
-                                  title="Delete record"
-                                >
-                                  <Trash className="w-3.5 h-3.5" />
-                                </button>
-                              ) : (
-                                <span className="text-[10px] opacity-40 italic">Read-Only</span>
-                              )}
-                            </div>
-                          ))}
-                          {sortedWeights.length === 0 && (
-                            <p className="text-[11px] opacity-55 py-2 text-center">No weights logged yet.</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 3. Medical, Deworming & Vaccination History Card */}
-                      <div className="glass-container p-6 flex flex-col gap-6">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="text-base font-bold text-white mb-1">Medical & Treatment Records</h3>
-                            <p className="text-xs opacity-75">Deworming logs, RHDV2 vaccination tracking, and veterinary files.</p>
-                          </div>
-                          
-                          <button
-                            onClick={() => setShowMedicalFormModal(true)}
-                            type="button"
-                            className="btn-interactive text-xs py-1.5 px-3 bg-emerald-600 hover:bg-emerald-650 font-bold text-white flex items-center gap-1 shadow border-none"
-                          >
-                            <Plus className="w-4 h-4" /> Log Treatment
-                          </button>
-                        </div>
-
-                        {/* Medical Treatment list */}
-                        <div className="flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
-                          {rabbitMedical.map(m => (
-                            <div key={m.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex justify-between items-start gap-4">
-                              <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
-                                    m.type === 'Vaccination' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' :
-                                    m.type === 'Prevention' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                    m.type === 'Treatment' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
-                                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                  }`}>
-                                    {m.type}
-                                  </span>
-                                  <span className="text-white font-bold text-xs">
-                                    {maskYouthField('treatment', m.treatment, currentUser?.ageGroup)}
-                                  </span>
-                                </div>
-                                
-                                {m.notes && (
-                                  <p className="text-xs opacity-75 leading-relaxed">
-                                    {maskYouthField('notes', m.notes, currentUser?.ageGroup)}
-                                  </p>
-                                )}
-                                
-                                <div className="flex gap-4 text-[10px] opacity-60">
-                                  <span>Date: {m.date}</span>
-                                  {m.cost > 0 && <span>Cost: ${m.cost.toFixed(2)}</span>}
-                                </div>
-                              </div>
-
-                              {!isAssistantWriteOnly ? (
-                                <button 
-                                  onClick={() => handleDeleteMedical(m.id)}
-                                  type="button"
-                                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 shrink-0 cursor-pointer"
-                                  title="Delete treatment log"
-                                >
-                                  <Trash className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <span className="text-[10px] opacity-40 italic shrink-0">Read-Only</span>
-                              )}
-                            </div>
-                          ))}
-
-                          {rabbitMedical.length === 0 && (
-                            <p className="text-xs opacity-60 py-6 text-center">No medical logs registered for this rabbit.</p>
-                          )}
-                        </div>
-
-                      </div>
-
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* List for Sale Modal Dialog */}
-              {showListForSaleModal && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="glass-container p-6 max-w-lg w-full border border-orange-500/25 shadow-2xl relative text-left">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        🛒 Publish Rabbit to Marketplace
-                      </h3>
-                      <button 
-                        onClick={() => setShowListForSaleModal(false)}
-                        type="button"
-                        className="opacity-70 hover:opacity-100 text-white cursor-pointer border-none bg-transparent"
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    <form onSubmit={handleListRabbitForSale} className="flex flex-col gap-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-bold text-indigo-300">Listing Price ($ USD) *</label>
-                          <input 
-                            type="number" step="0.01" required min="0" placeholder="e.g. 45.00"
-                            value={listForSaleForm.price}
-                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, price: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-bold text-indigo-300">Listing Category *</label>
-                          <select
-                            value={listForSaleForm.category}
-                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, category: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          >
-                            <option value="show">🏆 ARBA Show Quality</option>
-                            <option value="utility_breeder">🧬 Utility Breeder</option>
-                            <option value="meat">🥩 Commercial Meat</option>
-                            <option value="pet">🐰 Pet / Companion</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-bold text-indigo-300">Preferred Contact Method *</label>
-                          <select
-                            value={listForSaleForm.contactMethod}
-                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, contactMethod: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          >
-                            <option value="email">📧 Email</option>
-                            <option value="phone">📞 Phone / Text</option>
-                          </select>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <label className="text-xs font-bold text-indigo-300">Contact Details *</label>
-                          <input 
-                            type="text" required placeholder="e.g. breeder@gmail.com"
-                            value={listForSaleForm.contactInfo}
-                            onChange={(e) => setListForSaleForm({ ...listForSaleForm, contactInfo: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold text-indigo-300">Public Sales Notes & Description</label>
-                        <textarea
-                          placeholder="Provide details about temperament, genetics standard, show wins history, or weight class..."
-                          value={listForSaleForm.description}
-                          onChange={(e) => setListForSaleForm({ ...listForSaleForm, description: e.target.value })}
-                          className="bg-slate-900 border-white/10 text-xs py-2 text-white min-h-[80px]"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-2 bg-slate-950/40 p-3.5 border border-white/5 rounded-xl">
-                        <input
-                          type="checkbox"
-                          id="healthCheckMarket"
-                          checked={listForSaleForm.healthCertified}
-                          onChange={(e) => setListForSaleForm({ ...listForSaleForm, healthCertified: e.target.checked })}
-                          className="w-4 h-4 cursor-pointer accent-indigo-650"
-                        />
-                        <label htmlFor="healthCheckMarket" className="text-[10px] text-slate-350 cursor-pointer select-none leading-relaxed text-left">
-                          🌿 <strong>ARBA Compliant Health Attestation:</strong> I certify that this rabbit is active, healthy, and exhibits no symptoms of contagious hutch diseases.
-                        </label>
-                      </div>
-
-                      <div className="flex justify-end gap-2 mt-4">
-                        <button
-                          type="button"
-                          onClick={() => setShowListForSaleModal(false)}
-                          className="btn-interactive text-xs py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="btn-interactive text-xs py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold cursor-pointer"
-                        >
-                          Publish Listing
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
-              {/* Log Medical Record Modal Dialog */}
-              {showMedicalFormModal && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="glass-container p-6 max-w-lg w-full border border-emerald-500/20 shadow-2xl relative">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <HeartPulse className="w-5 h-5 text-emerald-400 animate-pulse" />
-                        Log Health Treatment
-                      </h3>
-                      <button 
-                        onClick={() => setShowMedicalFormModal(false)}
-                        type="button"
-                        className="opacity-70 hover:opacity-100 text-white cursor-pointer"
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    <form onSubmit={(e) => { handleAddMedical(e); setShowMedicalFormModal(false); }} className="flex flex-col gap-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs font-bold text-white">Date</label>
-                          <input 
-                            type="date" 
-                            required 
-                            value={newMedicalEntry.date}
-                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, date: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs font-bold text-white">Record Type</label>
-                          <select 
-                            value={newMedicalEntry.type}
-                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, type: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          >
-                            <option value="Vaccination">Vaccination</option>
-                            <option value="Treatment">Treatment</option>
-                            <option value="Prevention">Prevention (e.g. Deworming)</option>
-                            <option value="Illness">Illness</option>
-                            <option value="Injury">Injury</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex flex-col gap-1 col-span-2">
-                          <label className="text-xs font-bold text-white">Treatment / Vaccine Name *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            placeholder="E.g. RHDV2 Vaccine, Safeguard Dewormer"
-                            value={newMedicalEntry.treatment}
-                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, treatment: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1 col-span-1">
-                          <label className="text-xs font-bold text-white">Cost ($)</label>
-                          <input 
-                            type="number" 
-                            step="0.01"
-                            placeholder="0.00"
-                            value={newMedicalEntry.cost}
-                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, cost: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs font-bold text-white flex items-center gap-1">
-                            🛡️ FDA Approval Classification
-                          </label>
-                          <select 
-                            value={newMedicalEntry.fdaApprovalStatus}
-                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, fdaApprovalStatus: e.target.value })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          >
-                            <option value="FDA Approved for Rabbits">FDA Approved (Rabbits)</option>
-                            <option value="FDA Approved (Extra-label use by Vet)">FDA Approved (Extra-label Vet)</option>
-                            <option value="Unapproved / Homeopathic">Unapproved / Homeopathic</option>
-                            <option value="Not Applicable (Vaccine/Surgical)">Not Applicable (Vaccine/Surgical)</option>
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs font-bold text-white flex items-center gap-1">
-                            ⚠️ FDA Withdrawal Period (Days)
-                          </label>
-                          <input 
-                            type="number"
-                            min="0"
-                            placeholder="0"
-                            value={newMedicalEntry.fdaWithdrawalDays}
-                            onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, fdaWithdrawalDays: Number(e.target.value) })}
-                            className="bg-slate-900 border-white/10 text-xs py-2 text-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-white">Clinical Notes</label>
-                        <textarea 
-                          rows="3"
-                          placeholder="Log reactions, dose sizes (e.g., 0.1ml per lb), next deworming cycle check, etc."
-                          value={newMedicalEntry.notes}
-                          onChange={(e) => setNewMedicalEntry({ ...newMedicalEntry, notes: e.target.value })}
-                          className="bg-slate-900 border-white/10 text-xs p-2.5 rounded-xl w-full text-white"
-                        ></textarea>
-                      </div>
-
-                      <div className="flex justify-end gap-3 mt-2">
-                        <button 
-                          type="button" 
-                          onClick={() => setShowMedicalFormModal(false)}
-                          className="btn-interactive text-xs py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          type="submit" 
-                          className="btn-interactive text-xs py-2 px-6 bg-emerald-600 hover:bg-emerald-650 text-white font-bold cursor-pointer border-none"
-                        >
-                          Save Record
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
-            </div>
+            <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-60">Loading Health Logger...</div>}>
+              <HealthLogger
+                rabbits={rabbits}
+                allWeights={allWeights}
+                allMedical={allMedical}
+                handleAddWeight={handleAddWeight}
+                handleDeleteWeight={handleDeleteWeight}
+                handleAddMedical={handleAddMedical}
+                handleDeleteMedical={handleDeleteMedical}
+                handleVoiceInput={handleVoiceInput}
+                formatWeightDisplay={formatWeightDisplay}
+                formatWeightShort={formatWeightShort}
+                getAgeMonths={getAgeMonths}
+                validateArbaStandard={validateArbaStandard}
+                weightUnit={weightUnit}
+                isAssistantWriteOnly={isAssistantWriteOnly}
+                currentUser={currentUser}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+              />
+            </React.Suspense>
           )}
 
           {/* TAB: CAGE & BARN MAP */}
@@ -10268,7 +8269,7 @@ export default function App() {
                                     className="p-3 rounded-lg bg-slate-900/80 border-2 border-emerald-500/30 flex flex-col gap-2 relative hover:border-emerald-555 transition-all duration-200"
                                   >
                                     <div className="flex justify-between items-center text-[9px] font-black uppercase text-emerald-400 tracking-wider">
-                                      <span>🌾 Grow Out (T{tier})</span>
+                                      <span>ðŸŒ¾ Grow Out (T{tier})</span>
                                       <button
                                         onClick={() => handleToggleGrowOutCage(locationKey)}
                                         disabled={occupyingRabbits.length > 1}
@@ -10284,7 +8285,7 @@ export default function App() {
                                       {occupyingRabbits.map(r => (
                                         <div key={r.id} className="flex justify-between items-center bg-black/40 p-1.5 rounded-lg border border-white/5 text-[10px]">
                                           <div className="truncate max-w-[70%]">
-                                            <span className="font-bold text-white">🐰 {r.name}</span>
+                                            <span className="font-bold text-white">ðŸ° {r.name}</span>
                                             <span className="text-slate-400 ml-1 font-mono font-bold">({r.tattooNumber})</span>
                                           </div>
                                           <div className="flex items-center gap-1.5 shrink-0">
@@ -10296,7 +8297,7 @@ export default function App() {
                                               className="p-0.5 text-red-400 hover:text-red-300 font-bold border-none bg-transparent cursor-pointer"
                                               title="Remove from cage"
                                             >
-                                              ❌
+                                              âŒ
                                             </button>
                                           </div>
                                         </div>
@@ -10399,7 +8400,7 @@ export default function App() {
                                   >
                                     <div className="flex justify-between items-start gap-1">
                                       <div className="font-extrabold text-xs text-white truncate max-w-[70%]" title={occupyingRabbit.name}>
-                                        🐰 {occupyingRabbit.name}
+                                        ðŸ° {occupyingRabbit.name}
                                       </div>
                                       <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${occupyingRabbit.sex === 'buck' ? 'bg-sky-500/20 text-sky-350 border border-sky-500/30' : 'bg-pink-500/20 text-pink-350 border border-pink-500/30'}`}>
                                         {occupyingRabbit.sex}
@@ -10420,13 +8421,13 @@ export default function App() {
                                         onClick={() => setPrintCardRabbit(occupyingRabbit)}
                                         className="flex-1 py-1 rounded bg-slate-850 hover:bg-slate-800 text-[9px] font-bold text-center border-none text-white cursor-pointer"
                                       >
-                                        🖨️ Card
+                                        ðŸ–¨ï¸ Card
                                       </button>
                                       <button
                                         onClick={() => setCageMoveRabbitId(cageMoveRabbitId === occupyingRabbit.id ? null : occupyingRabbit.id)}
                                         className={`flex-1 py-1 rounded text-[9px] font-bold text-center border-none cursor-pointer ${cageMoveRabbitId === occupyingRabbit.id ? 'bg-amber-600 text-white' : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-350'}`}
                                       >
-                                        🔄 Move
+                                        ðŸ”„ Move
                                       </button>
                                       <button
                                         onClick={() => handleUnassignRabbitFromCage(occupyingRabbit.id)}
@@ -10435,7 +8436,7 @@ export default function App() {
                                         Unassign
                                       </button>
                                     </div>
-                                    {/* Move mode — show vacant slot picker */}
+                                    {/* Move mode â€” show vacant slot picker */}
                                     {cageMoveRabbitId === occupyingRabbit.id && (() => {
                                       const MOVE_TIERS = [1, 2];
                                       const vacantSlots = [];
@@ -10474,7 +8475,7 @@ export default function App() {
                                         onClick={() => handleToggleGrowOutCage(locationKey)}
                                         className="text-[9px] text-emerald-450 hover:underline border-none bg-transparent cursor-pointer font-bold flex items-center gap-1"
                                       >
-                                        🌾 Make Grow Out
+                                        ðŸŒ¾ Make Grow Out
                                       </button>
                                     </div>
                                   </div>
@@ -10529,7 +8530,7 @@ export default function App() {
                                         onClick={() => handleToggleGrowOutCage(locationKey)}
                                         className="text-[9px] text-emerald-450 hover:underline border-none bg-transparent cursor-pointer font-bold flex items-center gap-1"
                                       >
-                                        🌾 Make Grow Out
+                                        ðŸŒ¾ Make Grow Out
                                       </button>
                                     </div>
                                   </div>
@@ -10571,7 +8572,7 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/30 p-4 rounded-2xl border border-white/5 items-center">
                 <div>
                   <h4 className="text-sm font-bold text-white mb-1 flex items-center gap-1.5">
-                    📥 Local Database Backup & Restore
+                    ðŸ“¥ Local Database Backup & Restore
                   </h4>
                   <p className="text-[11px] text-slate-400">
                     Export your active rabbitry records as a JSON file or restore from a previously saved backup file.
@@ -10582,10 +8583,10 @@ export default function App() {
                     onClick={handleExportBackup}
                     className="btn-interactive text-xs py-2 px-4 bg-indigo-600/80 hover:bg-indigo-600 border-none text-white font-bold"
                   >
-                    💾 Export Backup
+                    ðŸ’¾ Export Backup
                   </button>
                   <label className="btn-interactive text-xs py-2 px-4 bg-emerald-600 hover:bg-emerald-555 border-none text-white font-bold cursor-pointer flex items-center justify-center">
-                    📂 Restore Backup
+                    ðŸ“‚ Restore Backup
                     <input
                       type="file"
                       accept=".json"
@@ -10646,7 +8647,7 @@ export default function App() {
               {/* Force Re-seed Clean Mock Database Card */}
               <div className="glass-container p-6 border border-emerald-500/20 bg-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-left">
-                  <h3 className="text-sm font-black text-white">🌾 Agricultural Demonstration & Mock Data Seeding</h3>
+                  <h3 className="text-sm font-black text-white">ðŸŒ¾ Agricultural Demonstration & Mock Data Seeding</h3>
                   <p className="text-xs opacity-75 mt-0.5 max-w-xl leading-relaxed">
                     Force re-seed all local tables with comprehensive test data (20+ purebred rabbits, historical growth logs, financial ledger entries, breeder profiles, active breeding schedules, and 4-H Academy streaks) to audit end-to-end workflows.
                   </p>
@@ -10666,7 +8667,7 @@ export default function App() {
                   }}
                   className="btn-interactive shrink-0 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl border-none shadow-md shadow-emerald-900/20"
                 >
-                  ⚡ Seed Full Test Data
+                  âš¡ Seed Full Test Data
                 </button>
               </div>
             </div>
@@ -10828,25 +8829,25 @@ export default function App() {
                   onClick={() => setHelpSubTab('manual')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'manual' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  📖 In-App User Manual
+                  ðŸ“– In-App User Manual
                 </button>
                 <button
                   onClick={() => setHelpSubTab('policy')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'policy' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  🛡️ FDA & HIPAA Policies
+                  ðŸ›¡ï¸ FDA & HIPAA Policies
                 </button>
                 <button
                   onClick={() => setHelpSubTab('disclaimer')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'disclaimer' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  ⚖️ Legal & Trademark Disclaimers
+                  âš–ï¸ Legal & Trademark Disclaimers
                 </button>
                 <button
                   onClick={() => setHelpSubTab('data')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'data' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  📁 Full Data Backup & Restore
+                  ðŸ“ Full Data Backup & Restore
                 </button>
               </div>
 
@@ -10897,11 +8898,11 @@ export default function App() {
                     <p className="opacity-80">
                       WarrenWise Pro offers subscription tiers tailored to your rabbitry's scale:
                       <br />
-                      • <strong>Basic / Free Tier</strong>: Restricted to 25 active rabbits (Juniors, Seniors, and active inventory). Pre-wean kits and pedigree-only background records do not count against this limit.
+                      â€¢ <strong>Basic / Free Tier</strong>: Restricted to 25 active rabbits (Juniors, Seniors, and active inventory). Pre-wean kits and pedigree-only background records do not count against this limit.
                       <br />
-                      • <strong>Pro Tier</strong>: Supports up to 1,000 active rabbit profiles.
+                      â€¢ <strong>Pro Tier</strong>: Supports up to 1,000 active rabbit profiles.
                       <br />
-                      • <strong>Admin Overrides</strong>: If you need custom limits, comped (free) access, or discounted pricing, platforms owners can override these settings. Overrides are manageable via the Owner Control Center.
+                      â€¢ <strong>Admin Overrides</strong>: If you need custom limits, comped (free) access, or discounted pricing, platforms owners can override these settings. Overrides are manageable via the Owner Control Center.
                     </p>
                   </div>
                 </div>
@@ -10910,7 +8911,7 @@ export default function App() {
               {helpSubTab === 'policy' && (
                 <div className="glass-container p-6 flex flex-col gap-5 text-sm leading-relaxed">
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">🛡️ 100% FDA Veterinary Compliance</h4>
+                    <h4 className="text-base font-bold text-white mb-2">ðŸ›¡ï¸ 100% FDA Veterinary Compliance</h4>
                     <p className="opacity-80">
                       In accordance with FDA veterinary guidelines and regulations for animal drug administration:
                       - Breeders must record drug names, dosages, and the manufacturer's **Withdrawal Period** (in days) to ensure no residues enter the exhibition or food chain.
@@ -10919,7 +8920,7 @@ export default function App() {
                   </div>
                   <hr className="border-white/5" />
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">🔒 HIPAA Safe Harbor Data Protection</h4>
+                    <h4 className="text-base font-bold text-white mb-2">ðŸ”’ HIPAA Safe Harbor Data Protection</h4>
                     <p className="opacity-80">
                       This is a veterinary-focused animal management platform. In compliance with Federal HIPAA regulations and local compliance rules:
                       - **Rabbit-Only Veterinary Scope**: All medical logs, treatments, dosages, and questions must concern rabbits exclusively. No human medical details, breeder medical records, or human drug prescriptions may be documented.
@@ -10929,7 +8930,7 @@ export default function App() {
                   </div>
                   <hr className="border-white/5" />
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">⚖️ Terms of Service & Privacy Declarations</h4>
+                    <h4 className="text-base font-bold text-white mb-2">âš–ï¸ Terms of Service & Privacy Declarations</h4>
                     <p className="opacity-80">
                       By utilizing the WarrenWise Pro platform, you agree to safeguard client identities, log veterinary procedures accurately under FDA guidelines, and refrain from uploading human health datasets. All database information is stored locally on-device and transmitted via end-to-end encrypted SQLite databases.
                     </p>
@@ -10940,7 +8941,7 @@ export default function App() {
               {helpSubTab === 'disclaimer' && (
                 <div className="glass-container p-6 flex flex-col gap-5 text-sm leading-relaxed text-left">
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">⚖️ ARBA Trademark Notice & Fair Use Disclaimer</h4>
+                    <h4 className="text-base font-bold text-white mb-2">âš–ï¸ ARBA Trademark Notice & Fair Use Disclaimer</h4>
                     <p className="opacity-80">
                       WarrenWise Pro (RabbitryPedigree Pro) is an independent hutch registry, pedigree manager, and husbandry logging utility. <strong>This software application is not affiliated with, endorsed by, sponsored by, or officially associated with the American Rabbit Breeders Association (ARBA)</strong>.
                     </p>
@@ -10953,13 +8954,13 @@ export default function App() {
                   </div>
                   <hr className="border-white/5" />
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">🛡️ Copyright Compliance & Breeder Data Ownership</h4>
+                    <h4 className="text-base font-bold text-white mb-2">ðŸ›¡ï¸ Copyright Compliance & Breeder Data Ownership</h4>
                     <p className="opacity-80">
                       We respect all intellectual property laws and copyright protections:
                       <br />
-                      • <strong>Pedigree Generation</strong>: The pedigree chart templates generated by this platform are generic, breeder-owned layouts designed to record genetic lineage. We do not copy, distribute, or print protected official ARBA certificates or proprietary materials.
+                      â€¢ <strong>Pedigree Generation</strong>: The pedigree chart templates generated by this platform are generic, breeder-owned layouts designed to record genetic lineage. We do not copy, distribute, or print protected official ARBA certificates or proprietary materials.
                       <br />
-                      • <strong>Exhibition Planning</strong>: Show lists and scheduling calculators are informational organizers. Show catalogs, entry fees, and registration rules remain the intellectual property of their respective sponsoring clubs.
+                      â€¢ <strong>Exhibition Planning</strong>: Show lists and scheduling calculators are informational organizers. Show catalogs, entry fees, and registration rules remain the intellectual property of their respective sponsoring clubs.
                     </p>
                   </div>
                 </div>
@@ -10968,7 +8969,7 @@ export default function App() {
               {helpSubTab === 'data' && (
                 <div className="glass-container p-6 flex flex-col gap-6 text-sm">
                   <div>
-                    <h4 className="text-base font-bold text-white mb-1">📁 Complete Database Backup (Export JSON)</h4>
+                    <h4 className="text-base font-bold text-white mb-1">ðŸ“ Complete Database Backup (Export JSON)</h4>
                     <p className="opacity-75 text-xs">
                       Download a single JSON file containing all rabbits, breedings, litters, ledger, medical history, and account settings. You can use this file to migrate between devices or store historical archives.
                     </p>
@@ -10983,7 +8984,7 @@ export default function App() {
                   <hr className="border-white/5" />
 
                   <div>
-                    <h4 className="text-base font-bold text-white mb-1">📤 Restore Database (Import JSON)</h4>
+                    <h4 className="text-base font-bold text-white mb-1">ðŸ“¤ Restore Database (Import JSON)</h4>
                     <p className="opacity-75 text-xs text-rose-300">
                       WARNING: Importing a backup file will overwrite all current rabbits, litters, breedings, ledger, and settings in this browser. This action cannot be undone.
                     </p>
@@ -11038,14 +9039,14 @@ export default function App() {
                     <input
                       type="password"
                       required
-                      placeholder="••••••••••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       value={adminPasswordInput}
                       onChange={(e) => setAdminPasswordInput(e.target.value)}
                       className="py-2.5 px-4 bg-slate-950/50 border border-white/10 text-white rounded-xl text-center text-sm tracking-widest font-mono focus:border-red-500"
                     />
                     {adminPasswordError && (
                       <span className="text-red-400 font-semibold mt-1 text-[10px] block text-center">
-                        ⚠️ {adminPasswordError}
+                        âš ï¸ {adminPasswordError}
                       </span>
                     )}
                   </div>
@@ -11074,7 +9075,7 @@ export default function App() {
                         className="p-1 px-2.5 bg-slate-855 hover:bg-slate-800 text-[10px] text-slate-400 hover:text-slate-200 border border-white/10 rounded-lg font-mono ml-4"
                         title="Lock access"
                       >
-                        🔒 Lock Tab
+                        ðŸ”’ Lock Tab
                       </button>
                     </h3>
                   <p className="text-xs opacity-75">
@@ -11244,9 +9245,9 @@ export default function App() {
                       <div className="flex flex-col gap-1">
                         <label className="font-bold">Assign Role</label>
                         <select name="breederRole" className="py-1.5 px-3">
-                          <option value="owner">Breeder / Owner 👑</option>
-                          <option value="assistant">Barn Assistant 🌾</option>
-                          <option value="registrar">ARBA Registrar 📜</option>
+                          <option value="owner">Breeder / Owner ðŸ‘‘</option>
+                          <option value="assistant">Barn Assistant ðŸŒ¾</option>
+                          <option value="registrar">ARBA Registrar ðŸ“œ</option>
                         </select>
                       </div>
 
@@ -11340,14 +9341,14 @@ export default function App() {
                             }
                           }}
                         >
-                          📍 {ann.text}
+                          ðŸ“ {ann.text}
                         </div>
                       ))}
 
                       {/* Watermark Overlay Preview */}
                       {editorWatermark && (
                         <span className="absolute bottom-2 right-2 text-[8px] text-white/50 bg-black/40 px-1 py-0.5 rounded pointer-events-none uppercase font-mono tracking-widest">
-                          © {activeBreederContext?.rabbitryName || 'My Rabbitry'}
+                          Â© {activeBreederContext?.rabbitryName || 'My Rabbitry'}
                         </span>
                       )}
                     </div>
@@ -11421,7 +9422,7 @@ export default function App() {
                           onClick={() => setEditorRotation(prev => (prev + 90) % 360)}
                           className="btn-interactive py-1 px-3 bg-indigo-600 text-xs border-none font-bold"
                         >
-                          🔄 Rotate 90°
+                          ðŸ”„ Rotate 90Â°
                         </button>
                       </div>
 
@@ -11533,13 +9534,13 @@ export default function App() {
                       onClick={prevPhoto}
                       className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 p-3 text-white/80 bg-slate-900/50 hover:bg-slate-900 hover:text-white rounded-full transition-all"
                     >
-                      ◀
+                      â—€
                     </button>
                     <button 
                       onClick={nextPhoto}
                       className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 p-3 text-white/80 bg-slate-900/50 hover:bg-slate-900 hover:text-white rounded-full transition-all"
                     >
-                      ▶
+                      â–¶
                     </button>
                   </>
                 )}
@@ -11563,14 +9564,14 @@ export default function App() {
                       style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
                       title={ann.text}
                     >
-                      📍 {ann.text}
+                      ðŸ“ {ann.text}
                     </div>
                   ))}
 
                   {/* Watermark overlay */}
                   {pObj.watermark && (
                     <span className="absolute bottom-2 right-2 text-xs text-white/40 bg-black/40 px-2 py-1 rounded pointer-events-none uppercase tracking-widest font-mono">
-                      © {activeBreederContext?.rabbitryName || 'My Rabbitry'}
+                      Â© {activeBreederContext?.rabbitryName || 'My Rabbitry'}
                     </span>
                   )}
                 </div>
@@ -11644,7 +9645,7 @@ export default function App() {
                       }}
                       className="btn-interactive w-full py-2 bg-indigo-600 hover:bg-indigo-650 text-white font-bold text-xs border-none"
                     >
-                      ⭐ Set as Primary Profile
+                      â­ Set as Primary Profile
                     </button>
 
                     <button 
@@ -11862,8 +9863,8 @@ export default function App() {
                           value={buyerDetails.type}
                           onChange={(e) => setBuyerDetails({ ...buyerDetails, type: e.target.value })}
                         >
-                          <option value="sale">Permanent Ownership Transfer (Sale) 👑</option>
-                          <option value="lease">Temporary Lease Agreement ⏱️</option>
+                          <option value="sale">Permanent Ownership Transfer (Sale) ðŸ‘‘</option>
+                          <option value="lease">Temporary Lease Agreement â±ï¸</option>
                         </select>
                       </div>
                       <div className="flex flex-col gap-1 col-span-2">
@@ -11921,14 +9922,14 @@ export default function App() {
                   return (
                     <div className="flex flex-col gap-4">
                       <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-200">
-                        ⚠️ <strong>Pedigree Integrity Alert:</strong> ARBA registry standards require complete records for all ancestors. Please resolve the missing fields below before signing:
+                        âš ï¸ <strong>Pedigree Integrity Alert:</strong> ARBA registry standards require complete records for all ancestors. Please resolve the missing fields below before signing:
                       </div>
 
                       <div className="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1">
                         {missingFields.map((fieldItem, idx) => (
                           <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2">
                             <span className="text-xs font-bold text-white uppercase block">
-                              👤 {fieldItem.name} ({fieldItem.id === rabbit.id ? 'Self' : 'Ancestor'})
+                              ðŸ‘¤ {fieldItem.name} ({fieldItem.id === rabbit.id ? 'Self' : 'Ancestor'})
                             </span>
                             <div className="flex flex-col gap-1">
                               <label className="text-[11px] opacity-75">Missing Field: <strong>{fieldItem.label}</strong></label>
@@ -12009,7 +10010,7 @@ export default function App() {
                   return (
                     <div className="flex flex-col gap-6">
                       <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-200">
-                        ✍️ Both parties must authorize the ownership transfer. You can draw using your cursor/touchscreen or type a legally binding electronic signature.
+                        âœï¸ Both parties must authorize the ownership transfer. You can draw using your cursor/touchscreen or type a legally binding electronic signature.
                       </div>
 
                       {/* 1. Seller Section */}
@@ -12159,7 +10160,7 @@ export default function App() {
                 {transferWizardStep === 4 && (
                   <div className="flex flex-col gap-5 items-center justify-center py-6 text-center">
                     <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-450 border border-emerald-500 flex items-center justify-center text-4xl animate-bounce-subtle">
-                      🎉
+                      ðŸŽ‰
                     </div>
                     <div>
                       <h4 className="font-extrabold text-white text-base">Ownership Transfer Complete!</h4>
@@ -12239,7 +10240,7 @@ export default function App() {
                 
                 {/* Header Stamp */}
                 <div className="text-center flex flex-col items-center gap-1 pb-4 border-b border-indigo-100">
-                  <div className="text-4xl text-indigo-900">👑</div>
+                  <div className="text-4xl text-indigo-900">ðŸ‘‘</div>
                   <h2 className="font-serif font-black text-2xl uppercase tracking-widest text-indigo-950">
                     Verifiable Transfer Certificate
                   </h2>
@@ -12570,7 +10571,7 @@ export default function App() {
                           }}
                           className="text-[10px] text-indigo-400 font-bold border-none bg-transparent hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer"
                         >
-                          🎨 Color Wizard
+                          ðŸŽ¨ Color Wizard
                         </button>
                       </div>
                       <input
@@ -12603,7 +10604,7 @@ export default function App() {
                           onChange={(e) => setNodeForm({...nodeForm, isCharlie: e.target.checked})}
                           className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-3 h-3"
                         />
-                        ⚠️ Flag as 'Charlie' (En/En)
+                        âš ï¸ Flag as 'Charlie' (En/En)
                       </label>
                     </div>
 
@@ -12732,7 +10733,7 @@ export default function App() {
                 {(pedigreeEditNode.rabbitId || pedigreeEditNode.isOffspring) && (
                   <div className="flex flex-col gap-4 border-t border-white/5 pt-4 mt-2">
                     <h4 className="text-xs font-bold text-yellow-400 flex items-center gap-1">
-                      🏆 Post & Record Show Leg Certificates
+                      ðŸ† Post & Record Show Leg Certificates
                     </h4>
                     
                     {/* List of current legs */}
@@ -12789,10 +10790,10 @@ export default function App() {
                         onChange={(e) => setNewAncestorLeg({...newAncestorLeg, award: e.target.value})}
                         className="text-[11px] py-1 px-2.5 bg-slate-800 border-white/5"
                       >
-                        <option value="1st Class">1st Class 🥇</option>
-                        <option value="Best of Variety">BOV 🏆</option>
-                        <option value="Best of Breed">BOB 🌟</option>
-                        <option value="Best In Show">BIS 👑</option>
+                        <option value="1st Class">1st Class ðŸ¥‡</option>
+                        <option value="Best of Variety">BOV ðŸ†</option>
+                        <option value="Best of Breed">BOB ðŸŒŸ</option>
+                        <option value="Best In Show">BIS ðŸ‘‘</option>
                       </select>
                       <input
                         type="number" placeholder="Class Size"
@@ -12805,7 +10806,7 @@ export default function App() {
                         onClick={handleAddAncestorLeg}
                         className="col-span-2 md:col-span-4 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold rounded-lg border border-yellow-500/35 transition-all text-xs"
                       >
-                        ➕ Post Show Leg Certificate
+                        âž• Post Show Leg Certificate
                       </button>
                     </div>
                   </div>
@@ -12833,7 +10834,7 @@ export default function App() {
                                 className="btn-interactive text-xs bg-rose-900 hover:bg-rose-950 font-bold py-2 px-4 border-none text-white"
                                 title="Permanently deletes this saved pedigree-only ancestor record from your database."
                               >
-                                🗑️ Delete Ancestor Record
+                                ðŸ—‘ï¸ Delete Ancestor Record
                               </button>
                             );
                           }
@@ -12929,7 +10930,7 @@ export default function App() {
                 <div className="leading-none">
                   <div className="flex justify-between items-start gap-1">
                     <span className="text-[5.5px] print:text-[8px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
-                    {winsText && <span className="text-[5.5px] print:text-[8px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[100px]" title={winsText}>🏆 {winsText}</span>}
+                    {winsText && <span className="text-[5.5px] print:text-[8px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[100px]" title={winsText}>ðŸ† {winsText}</span>}
                   </div>
                   <h5 className="font-serif font-bold text-[8.5px] print:text-[11.5px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px] print:max-w-[220px]">
                     {namePrefix}{ancestor.name}
@@ -12945,7 +10946,7 @@ export default function App() {
                     ) : ancestor.gcNumber ? (
                       <span className="text-yellow-700">GC: <strong>{ancestor.gcNumber}</strong></span>
                     ) : (
-                      <span className="opacity-40">Reg: —</span>
+                      <span className="opacity-40">Reg: â€”</span>
                     )}
                   </div>
                 </div>
@@ -12958,7 +10959,7 @@ export default function App() {
               <div>
                 <div className="flex justify-between items-start gap-1 leading-none">
                   <span className="text-[7px] print:text-[10px] uppercase font-bold text-slate-500">{roleLabel}</span>
-                  {winsText && <span className="text-[7px] print:text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[140px]">🏆 {winsText}</span>}
+                  {winsText && <span className="text-[7px] print:text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[140px]">ðŸ† {winsText}</span>}
                 </div>
                 <h5 className="font-serif font-bold text-[10px] print:text-[14px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px] print:max-w-[240px]">
                   {namePrefix}{ancestor.name}
@@ -12988,7 +10989,7 @@ export default function App() {
                   onClick={() => window.print()}
                   className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5"
                 >
-                  🖨️ Print Certificate
+                  ðŸ–¨ï¸ Print Certificate
                 </button>
                 <button 
                   onClick={() => setShowPrintPedigreeModal(null)}
@@ -13021,7 +11022,7 @@ export default function App() {
 
                   {/* Center: Title (Hidden on Print, merged to the left) */}
                   <div className="text-center flex flex-col items-center gap-1.5 print:gap-0.5 print:hidden">
-                    <span className="text-3xl filter drop-shadow">🐇</span>
+                    <span className="text-3xl filter drop-shadow">ðŸ‡</span>
                     <h2 className="font-cinzel font-black text-2xl uppercase tracking-widest text-slate-900 leading-none">
                       Pedigree Certificate
                     </h2>
@@ -13034,7 +11035,7 @@ export default function App() {
                   <div className="bg-slate-50 p-3 print:p-2 rounded-xl print:rounded-lg border border-slate-200 text-xs print:text-[10px] text-left grid grid-cols-2 gap-1 print:gap-x-2 print:gap-y-0.5 text-slate-700 font-lora">
                     <div className="col-span-2 border-b border-slate-200 pb-1 print:pb-0.5 mb-1 print:mb-0.5 flex justify-between items-center">
                       <strong className="font-cinzel font-black text-sm print:text-[11.5px] text-slate-900 uppercase leading-none">{rabbit.name}</strong>
-                      {rabbit.gcNumber && <span className="text-[8px] print:text-[7.5px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">🏆 CHAMP</span>}
+                      {rabbit.gcNumber && <span className="text-[8px] print:text-[7.5px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">ðŸ† CHAMP</span>}
                     </div>
                     <div>{rabbit.species === 'cavy' ? 'Ear Tag:' : 'Tattoo:'} <strong className="font-sans">{rabbit.tattooNumber}</strong></div>
                     <div>Sex: <strong className="capitalize">{rabbit.sex}</strong></div>
@@ -13171,7 +11172,7 @@ export default function App() {
                   onClick={() => window.print()}
                   className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5 cursor-pointer"
                 >
-                  🖨️ Print Cage Card
+                  ðŸ–¨ï¸ Print Cage Card
                 </button>
                 <button 
                   onClick={() => setPrintCardRabbit(null)}
@@ -13233,6 +11234,116 @@ export default function App() {
           </div>
         );
       })()}
+      {/* Marketplace Listing Modal */}
+      {showListForSaleModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="glass-container p-6 max-w-lg w-full border border-orange-500/25 shadow-2xl relative text-left">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                🛒 Publish Rabbit to Marketplace
+              </h3>
+              <button 
+                onClick={() => setShowListForSaleModal(false)}
+                type="button"
+                className="opacity-70 hover:opacity-100 text-white cursor-pointer border-none bg-transparent"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleListRabbitForSale} className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-indigo-300">Listing Price ($ USD) *</label>
+                  <input 
+                    type="number" step="0.01" required min="0" placeholder="e.g. 45.00"
+                    value={listForSaleForm.price}
+                    onChange={(e) => setListForSaleForm({ ...listForSaleForm, price: e.target.value })}
+                    className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-indigo-300">Listing Category *</label>
+                  <select
+                    value={listForSaleForm.category}
+                    onChange={(e) => setListForSaleForm({ ...listForSaleForm, category: e.target.value })}
+                    className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                  >
+                    <option value="show">🏆 ARBA Show Quality</option>
+                    <option value="utility_breeder">🧬 Utility Breeder</option>
+                    <option value="meat">🥩 Commercial Meat</option>
+                    <option value="pet">🐰 Pet / Companion</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-indigo-300">Preferred Contact Method *</label>
+                  <select
+                    value={listForSaleForm.contactMethod}
+                    onChange={(e) => setListForSaleForm({ ...listForSaleForm, contactMethod: e.target.value })}
+                    className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                  >
+                    <option value="email">📧 Email</option>
+                    <option value="phone">📞 Phone / Text</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-indigo-300">Contact Details *</label>
+                  <input 
+                    type="text" required placeholder="e.g. breeder@gmail.com"
+                    value={listForSaleForm.contactInfo}
+                    onChange={(e) => setListForSaleForm({ ...listForSaleForm, contactInfo: e.target.value })}
+                    className="bg-slate-900 border-white/10 text-xs py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-indigo-300">Public Sales Notes & Description</label>
+                <textarea
+                  placeholder="Provide details about temperament, genetics standard, show wins history, or weight class..."
+                  value={listForSaleForm.description}
+                  onChange={(e) => setListForSaleForm({ ...listForSaleForm, description: e.target.value })}
+                  className="bg-slate-900 border-white/10 text-xs py-2 text-white min-h-[80px]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 mt-2 bg-slate-950/40 p-3.5 border border-white/5 rounded-xl">
+                <input
+                  type="checkbox"
+                  id="healthCheckMarket"
+                  checked={listForSaleForm.healthCertified}
+                  onChange={(e) => setListForSaleForm({ ...listForSaleForm, healthCertified: e.target.checked })}
+                  className="w-4 h-4 cursor-pointer accent-indigo-650"
+                />
+                <label htmlFor="healthCheckMarket" className="text-[10px] text-slate-350 cursor-pointer select-none leading-relaxed text-left">
+                  🌿 <strong>ARBA Compliant Health Attestation:</strong> I certify that this rabbit is active, healthy, and exhibits no symptoms of contagious hutch diseases.
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowListForSaleModal(false)}
+                  className="btn-interactive text-xs py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-interactive text-xs py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-bold cursor-pointer"
+                >
+                  Publish Listing
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Email / Text Import Wizard Modal */}
       {showEmailImportModal && (
@@ -13243,7 +11354,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b border-white/10 pb-3">
               <div>
                 <h3 className="font-extrabold text-lg text-indigo-400">
-                  ✉️ Email / Text Import Wizard
+                  âœ‰ï¸ Email / Text Import Wizard
                 </h3>
                 <p className="text-xs opacity-70">
                   Paste the show leg email report or Verifiable Transfer Certificate JSON below.
@@ -13329,10 +11440,10 @@ export default function App() {
                         onChange={(e) => setEmailImportPreview({...emailImportPreview, award: e.target.value})}
                         className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
                       >
-                        <option value="1st Class">1st Class Ribbon 🥇</option>
-                        <option value="Best of Variety">Best of Variety (BOV) 🏆</option>
-                        <option value="Best of Breed">Best of Breed (BOB) 🌟</option>
-                        <option value="Best In Show">Best In Show (BIS) 👑</option>
+                        <option value="1st Class">1st Class Ribbon ðŸ¥‡</option>
+                        <option value="Best of Variety">Best of Variety (BOV) ðŸ†</option>
+                        <option value="Best of Breed">Best of Breed (BOB) ðŸŒŸ</option>
+                        <option value="Best In Show">Best In Show (BIS) ðŸ‘‘</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -13360,7 +11471,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 bg-black/25 p-4 rounded-xl border border-white/5 text-xs text-slate-300">
-                    <p className="text-[11px] text-green-400 font-bold mb-2">✓ Valid Verifiable Transfer Certificate Detected!</p>
+                    <p className="text-[11px] text-green-400 font-bold mb-2">âœ“ Valid Verifiable Transfer Certificate Detected!</p>
                     <div>Rabbit Name: <strong>{emailImportPreview.name}</strong></div>
                     <div>Tattoo Number: <strong>{emailImportPreview.tattooNumber}</strong></div>
                     <div>Breed / Variety: <strong>{emailImportPreview.breed} - {emailImportPreview.variety}</strong></div>
@@ -13411,7 +11522,7 @@ export default function App() {
           <div className="w-full max-w-sm bg-slate-900 border-2 border-orange-500/35 rounded-t-3xl sm:rounded-3xl p-6 flex flex-col gap-4 shadow-2xl text-slate-100 no-print">
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
               <h3 className="font-extrabold text-base text-orange-400">
-                ⚖️ Touch Weight Log
+                âš–ï¸ Touch Weight Log
               </h3>
               <button 
                 onClick={() => setShowQuickWeightModal(false)}
@@ -13481,7 +11592,7 @@ export default function App() {
                     }, true)}
                     className="text-[10px] text-indigo-400 font-bold hover:underline border-none bg-transparent cursor-pointer"
                   >
-                    🎙️ Speak Weight
+                    ðŸŽ™ï¸ Speak Weight
                   </button>
                 </label>
                 <input 
@@ -13512,7 +11623,7 @@ export default function App() {
           <div className="w-full max-w-md bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="text-center">
               <h3 className="font-extrabold text-xl text-indigo-400 flex items-center justify-center gap-2">
-                🛡️ {currentUser?.ageGroup === 'teen' ? '🧑 Teen Breeder Approval' : '💳 Parent Identity Verification'}
+                ðŸ›¡ï¸ {currentUser?.ageGroup === 'teen' ? 'ðŸ§‘ Teen Breeder Approval' : 'ðŸ’³ Parent Identity Verification'}
               </h3>
               <p className="text-xs opacity-70 mt-1">
                 {currentUser?.ageGroup === 'teen' 
@@ -13628,7 +11739,7 @@ export default function App() {
               ) : (
                 <div className="border-t border-white/5 pt-3 mt-1 flex flex-col gap-3">
                   <span className="text-[10px] uppercase font-bold text-orange-400 tracking-wider flex items-center gap-1">
-                    💳 Adult Credit Card / Bank Verification
+                    ðŸ’³ Adult Credit Card / Bank Verification
                   </span>
                   <p className="text-[9px] opacity-75 leading-relaxed">
                     In compliance with FTC COPPA rules, we verify adult guardian status using a credit or debit card. A temporary micro-authorization of $0.50 will be processed (instantly voided).
@@ -13786,7 +11897,7 @@ export default function App() {
           >
             <div className="flex items-center gap-3">
               <span className="text-base">
-                {toast.type === 'error' ? '❌' : toast.type === 'info' ? '⚡' : '✅'}
+                {toast.type === 'error' ? 'âŒ' : toast.type === 'info' ? 'âš¡' : 'âœ…'}
               </span>
               <div className="flex flex-col">
                 <span className="text-xs font-black text-white">{toast.message}</span>
@@ -13798,7 +11909,7 @@ export default function App() {
               className="text-xs font-bold hover:text-white bg-transparent border-none text-slate-400 cursor-pointer self-start p-1"
               aria-label="Dismiss Toast"
             >
-              ✕
+              âœ•
             </button>
           </div>
         ))}
