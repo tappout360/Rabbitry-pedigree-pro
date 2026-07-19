@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle, RefreshCw, Sparkles, HelpCircle, ArrowRight, Zap } from 'lucide-react';
 import { db } from '../../db/registryDb';
 
-export default function SyncIssues({ onClose, currentUser }) {
+const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+
+export default function SyncIssues({ onClose, currentUser, onResolve }) {
   const [conflicts, setConflicts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState(null);
@@ -28,7 +30,7 @@ export default function SyncIssues({ onClose, currentUser }) {
     const token = localStorage.getItem('rp_auth_token');
     if (token && currentUser) {
       try {
-        const response = await fetch(`http://localhost:5000/api/conflicts/${currentUser.id}`, {
+        const response = await fetch(`${API_ROOT}/conflicts/${currentUser.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -56,7 +58,7 @@ export default function SyncIssues({ onClose, currentUser }) {
     // 1. Update server if online
     if (token) {
       try {
-        const res = await fetch(`http://localhost:5000/api/conflicts/resolve/${conflictId}`, {
+        const res = await fetch(`${API_ROOT}/conflicts/resolve/${conflictId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -97,6 +99,17 @@ export default function SyncIssues({ onClose, currentUser }) {
         }
         // Remove from local conflicts table
         await db.conflicts.delete(conflictId);
+        
+        // Remove resolving operations from sync queue in Dexie to avoid re-upload loops
+        try {
+          await db.syncQueue.where('payload.id').equals(conflict.recordId).delete();
+        } catch (queueErr) {
+          console.warn("Queue item delete warning:", queueErr);
+        }
+
+        if (onResolve) {
+          onResolve(conflict.recordId);
+        }
       }
       
       // Update UI list

@@ -4,7 +4,7 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2
+  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
@@ -42,6 +42,9 @@ import { BREED_COLORS, BREED_VARIETY_GROUPS } from './db/breedColors';
 import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from './db/breedStandards';
 import { calculateRabbitShowClass, calculateArbaDivision } from './db/helpers';
 import ColorSelector from './components/ColorSelector';
+import { crossRabbitsGenetics, inferGenotypeFromVariety } from './utils/LocusEngine';
+import { schedulePregnancyAlerts, checkPendingAlerts, requestNotificationPermission } from './utils/LocalNotificationManager';
+import VisualBarnMap from './components/barn/VisualBarnMap';
 
 const LOGO_OPTIONS = [
   { id: 'logo-meadow', label: 'Meadow Bunny 🐇', emoji: '🐇' },
@@ -1416,6 +1419,7 @@ export default function App() {
         setAllApprovals(data.approvals || []);
         setAdminBreeders(data.adminBreeders || []);
         setDbLoaded(true);
+        checkPendingAlerts();
 
         // Load pending conflicts count
         if (data.conflicts && data.conflicts.length > 0) {
@@ -1434,6 +1438,12 @@ export default function App() {
       }
     }
     loadData();
+  }, []);
+
+  useEffect(() => {
+    checkPendingAlerts();
+    const interval = setInterval(checkPendingAlerts, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const [showArchived, setShowArchived] = useState(false);
@@ -1826,6 +1836,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('rp_draft_new_breeding', JSON.stringify(newBreeding));
   }, [newBreeding]);
+
+  const [sandboxBuckId, setSandboxBuckId] = useState('');
+  const [sandboxDoeId, setSandboxDoeId] = useState('');
 
   // New Ledger Form State with Draft Recovery
   const [newTx, setNewTx] = useState(() => {
@@ -2877,10 +2890,17 @@ export default function App() {
       return;
     }
 
+    const doe = rabbits.find(r => r.id === newBreeding.doeId);
+    const doeName = doe ? doe.name : 'Unknown Doe';
+    const doeLocation = doe ? doe.location : 'N/A';
+
     const breedDateObj = new Date(newBreeding.breedDate);
     const palpateDate = new Date(breedDateObj.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const nestBoxDate = new Date(breedDateObj.getTime() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const kindleDate = new Date(breedDateObj.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Trigger local offline alert scheduling
+    schedulePregnancyAlerts(doeName, doeLocation, newBreeding.breedDate);
 
     const createdBreeding = {
       ...newBreeding,
@@ -4341,7 +4361,21 @@ export default function App() {
             console.warn("Failed to cache conflicts locally:", e);
           }
 
+          // Filter sync queue: keep only conflicting actions
+          const conflictingRecordIds = new Set(newConflicts.map(c => c.recordId));
+          const remainingQueue = syncQueue.filter(item => conflictingRecordIds.has(item.payload?.id));
+          
+          setSyncQueue(remainingQueue);
+          await db.syncQueue.clear();
+          if (remainingQueue.length > 0) {
+            await db.syncQueue.bulkAdd(remainingQueue);
+          }
+
           showToast(`⚠️ ${newConflicts.length} sync conflict(s) require your review. Open the Sync Issues panel.`, "info");
+          
+          // Pull and merge anyway so we get other successful updates
+          await handlePullAndMerge(token, currentUser);
+          return; // STOP execution so we don't clear the remaining queue!
         } else if (!response.ok) {
           throw new Error("Sync upload failed");
         }
@@ -5716,6 +5750,12 @@ export default function App() {
               <Rabbit className="w-5 h-5" /> Rabbits & Lineage
             </button>
             <button 
+              onClick={() => setActiveTab('barn_map')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'barn_map' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <Map className="w-5 h-5 text-indigo-400" /> Barn Map Canvas
+            </button>
+            <button 
               onClick={() => setActiveTab('breeding')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'breeding' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
             >
@@ -6109,7 +6149,7 @@ export default function App() {
                 <div className="relative shrink-0">
                   {(() => {
                     let src = '/assets/mascot.png';
-                    if (activeTab === 'breeding') src = '/assets/holland_lop.png';
+                    if (activeTab === 'breeding' || activeTab === 'barn_map') src = '/assets/holland_lop.png';
                     else if (activeTab === 'health') src = '/assets/netherland_dwarf.png';
                     else if (activeTab === 'shows') src = '/assets/main_show_judge.png';
                     return (
@@ -6134,6 +6174,7 @@ export default function App() {
                       {(() => {
                         if (activeTab === 'dashboard') return "Welcome back! Need help? Log a breeding schedule or check show preps!";
                         if (activeTab === 'rabbits') return "Browse your lineage history. Click 'Register Rabbit' to add to active stock!";
+                        if (activeTab === 'barn_map') return "Drag and drop cards to reassign hutch locations. A pulsing gold glow means gestation is underway!";
                         if (activeTab === 'breeding') return "Track gestating does closely. Nest boxes should be placed on Day 28!";
                         if (activeTab === 'health') return "Dosages and withdrawal dates are automatically scanned for FDA compliance.";
                         if (activeTab === 'ledger') return "Every carrot counts! Record income from sales and feed expenses regularly.";
@@ -7960,6 +8001,33 @@ export default function App() {
           </ErrorBoundary>
         )}
 
+          {/* TAB: BARN MAP PLANNER */}
+          {activeTab === 'barn_map' && (
+            <ErrorBoundary>
+              <VisualBarnMap 
+                rabbits={rabbits}
+                breedings={breedings}
+                onUpdateRabbitLocation={(rabbitId, newLocation) => {
+                  const updatedRabbits = rabbits.map(r => {
+                    if (r.id === rabbitId) {
+                      const updated = { ...r, location: newLocation };
+                      if (isOffline) {
+                        addSyncAction('UPDATE', 'rabbits', updated);
+                      } else {
+                        db.rabbits.update(rabbitId, { location: newLocation })
+                          .catch(err => console.error("Failed to update rabbit hutch location:", err));
+                      }
+                      return updated;
+                    }
+                    return r;
+                  });
+                  setAllRabbits(updatedRabbits);
+                  showToast("Hutch assignment updated successfully!");
+                }}
+              />
+            </ErrorBoundary>
+          )}
+
           {/* TAB 3: BREEDING & REPRODUCTION */}
           {activeTab === 'breeding' && (
             <div className="flex flex-col gap-6">
@@ -8323,6 +8391,134 @@ export default function App() {
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* ARBA Genetic Loci Sandbox & Punnett Simulator */}
+              <div className="glass-container p-6 border border-indigo-500/20 bg-slate-900/40">
+                <div className="flex justify-between items-center flex-wrap gap-4 border-b border-white/5 pb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-indigo-400" /> ARBA Genetic Loci Sandbox
+                    </h3>
+                    <p className="text-xs text-slate-350 mt-0.5 font-medium">Predict kit variety percentages and explore genotype crosses using standard Punnett calculations.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                  {/* Selectors Column */}
+                  <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="flex flex-col gap-1 text-left">
+                        <label className="font-bold text-blue-400">Select Sire (Buck)</label>
+                        <select 
+                          value={sandboxBuckId}
+                          onChange={(e) => setSandboxBuckId(e.target.value)}
+                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
+                        >
+                          <option value="">Select Buck</option>
+                          {rabbits.filter(r => r.sex === 'buck' && r.status !== 'pedigree_only' && r.status !== 'sold').map(r => (
+                            <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber} - {r.variety})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1 text-left">
+                        <label className="font-bold text-pink-400">Select Dam (Doe)</label>
+                        <select 
+                          value={sandboxDoeId}
+                          onChange={(e) => setSandboxDoeId(e.target.value)}
+                          className="bg-slate-950 text-white border border-white/10 rounded-xl p-2.5"
+                        >
+                          <option value="">Select Doe</option>
+                          {rabbits.filter(r => r.sex === 'doe' && r.status !== 'pedigree_only' && r.status !== 'sold').map(r => (
+                            <option key={r.id} value={r.id}>{r.name} ({r.tattooNumber} - {r.variety})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Educational Tip Bubble */}
+                    <div className="p-4 bg-indigo-950/20 border border-indigo-500/10 rounded-2xl text-left text-xs">
+                      <span className="text-[11px] font-bold text-indigo-300 block mb-1">WarrenWise Genetics Coach says:</span>
+                      <p className="opacity-80 leading-normal text-[11px] text-slate-350">
+                        "Every standard rabbit variety contains gene pairings at 5 key loci (A, B, C, D, E). Self colors like Black (aa) are recessive to Agouti (A). If both parents carry a hidden recessive gene, it can pop up in their offspring!"
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Prediction Results Column */}
+                  <div className="text-left">
+                    {!sandboxBuckId || !sandboxDoeId ? (
+                      <div className="h-full flex items-center justify-center border border-dashed border-white/10 rounded-2xl py-12 text-slate-500 text-xs italic">
+                        Select a Sire and Dam to analyze genetic crossing probabilities.
+                      </div>
+                    ) : (() => {
+                      const buck = rabbits.find(r => r.id === sandboxBuckId);
+                      const doe = rabbits.find(r => r.id === sandboxDoeId);
+                      if (!buck || !doe) return null;
+
+                      const buckGen = inferGenotypeFromVariety(buck.variety, buck.breed);
+                      const doeGen = inferGenotypeFromVariety(doe.variety, doe.breed);
+
+                      // Helper to show genotype string
+                      const showGen = (g) => {
+                        return `${g.A.join('')} ${g.B.join('')} ${g.C.join('')} ${g.D.join('')} ${g.E.join('')}`;
+                      };
+
+                      const results = crossRabbitsGenetics(buckGen, doeGen);
+
+                      return (
+                        <div className="flex flex-col gap-4 text-xs">
+                          {/* Genotypes Cards */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                              <span className="text-[10px] font-bold text-blue-300 block">Sire Genotype</span>
+                              <span className="font-mono text-sm font-black text-white">{showGen(buckGen)}</span>
+                            </div>
+                            <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl">
+                              <span className="text-[10px] font-bold text-pink-300 block">Dam Genotype</span>
+                              <span className="font-mono text-sm font-black text-white">{showGen(doeGen)}</span>
+                            </div>
+                          </div>
+
+                          {/* Variety Distributions */}
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-slate-450 block mb-2">Predicted Kit Color Variety Probabilities</span>
+                            <div className="flex flex-col gap-2">
+                              {results.varieties.map(v => (
+                                <div key={v.name} className="flex flex-col gap-1 bg-white/5 p-2 rounded-lg border border-white/5">
+                                  <div className="flex justify-between items-center text-[11px] font-bold">
+                                    <span>{v.name}</span>
+                                    <span className="text-indigo-300">{v.percent}%</span>
+                                  </div>
+                                  <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
+                                      style={{ width: `${v.percent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Cross Grid Sample */}
+                          <div className="bg-slate-950/40 p-3.5 rounded-xl border border-white/5">
+                            <span className="text-[10px] uppercase font-bold text-slate-450 block mb-1.5">Punnett Cross Grid Samples</span>
+                            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                              {results.grid.slice(0, 8).map((entry, idx) => (
+                                <div key={idx} className="bg-white/5 p-1.5 rounded flex justify-between border border-white/5">
+                                  <span className="text-slate-450">{entry.childGenotype}</span>
+                                  <span className="font-bold text-indigo-200 truncate max-w-[55%]">{entry.varietyName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
 
             </div>
@@ -10432,6 +10628,9 @@ export default function App() {
                 onClose={() => {
                   setConflictsCount(0);
                 }} 
+                onResolve={(recordId) => {
+                  setSyncQueue(prev => prev.filter(item => item.payload.id !== recordId));
+                }}
               />
             </ErrorBoundary>
             </>
