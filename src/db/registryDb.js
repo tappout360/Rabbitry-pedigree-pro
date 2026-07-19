@@ -186,8 +186,8 @@ db.version(8).stores({
 });
 
 // Version 9: Public Social Sharing Feed and Clocks Tracking
-db.version(9).stores({
-  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized, vectorClock',
+db.version(10).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized, userRestriction, vectorClock',
   conflicts: 'id, recordId, tbl, fieldName, resolved',
   rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex], vectorClock',
   breedings: 'id, breederId, buckId, doeId, breedDate, status, vectorClock',
@@ -210,7 +210,8 @@ db.version(9).stores({
   photoThumbnails: 'id, rabbitId, date',
   offlinePhotos: 'id, rabbitId, status',
   marketplaceListings: 'id, rabbitId, breederId, category, status',
-  socialPosts: 'id, breederId, title, status, timestamp, parentApproved'
+  socialPosts: 'id, breederId, title, status, timestamp, parentApproved, aiFlagged',
+  socialComments: 'id, postId, breederId, timestamp, parentApproved, aiFlagged'
 });
 
 let migrationPromise = null;
@@ -571,6 +572,7 @@ export async function performMigrationAndLoad() {
     const offlinePhotos = await migrateOrLoadTable('rp_offline_photos', db.offlinePhotos, []);
     const marketplaceListings = await migrateOrLoadTable('rp_marketplace_listings', db.marketplaceListings, []);
     const socialPosts = await migrateOrLoadTable('rp_social_posts', db.socialPosts, []);
+    const socialComments = await migrateOrLoadTable('rp_social_comments', db.socialComments, []);
 
     // Mark migration as done
     if (!isMigrated) {
@@ -601,7 +603,8 @@ export async function performMigrationAndLoad() {
       photoThumbnails,
       offlinePhotos,
       marketplaceListings,
-      socialPosts
+      socialPosts,
+      socialComments
     };
   })().catch(err => {
     migrationPromise = null;

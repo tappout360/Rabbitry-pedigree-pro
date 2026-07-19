@@ -111,14 +111,18 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
     }
   };
 
-  const handleRoleChange = (newRole) => {
-    setAdminBreeders(prev => prev.map(item => 
-      item.id === b.id ? { ...item, role: newRole } : item
-    ));
+  const handleUserRestrictionChange = (newRestriction) => {
+    setAdminBreeders(prev => {
+      const next = prev.map(item => 
+        item.id === b.id ? { ...item, userRestriction: newRestriction } : item
+      );
+      localStorage.setItem('rp_admin_breeders', JSON.stringify(next));
+      return next;
+    });
   };
 
   return (
-    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-4">
+    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-4 text-left">
       {/* Breeder top info bar */}
       <div className="flex justify-between items-start flex-wrap gap-2">
         <div>
@@ -171,21 +175,39 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
       </div>
 
       {/* Credentials & Role Action Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/5 pt-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-white/5 pt-3">
         {/* Role Selection */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Assign Breeder Role</label>
           {b.isSuperAdmin ? (
-            <div className="text-xs font-bold text-indigo-300 py-1.5">App Owner / Super Admin ðŸ‘‘</div>
+            <div className="text-xs font-bold text-indigo-300 py-1.5">App Owner / Super Admin 👑</div>
           ) : (
             <select
               value={b.role}
               onChange={(e) => handleRoleChange(e.target.value)}
-              className="text-xs py-1.5 px-3"
+              className="text-xs py-1.5 px-3 bg-slate-900 border border-white/10 text-white rounded"
             >
-              <option value="owner">Breeder / Owner ðŸ‘‘</option>
-              <option value="assistant">Barn Assistant ðŸŒ¾</option>
-              <option value="registrar">ARBA Registrar ðŸ“œ</option>
+              <option value="owner">Breeder / Owner 🏆</option>
+              <option value="assistant">Barn Assistant 🌾</option>
+              <option value="registrar">ARBA Registrar 📜</option>
+            </select>
+          )}
+        </div>
+
+        {/* User Restriction Status */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">AI Moderation Status</label>
+          {b.isSuperAdmin ? (
+            <div className="text-xs font-bold text-emerald-400 py-1.5">Unrestricted (App Owner)</div>
+          ) : (
+            <select
+              value={b.userRestriction || 'none'}
+              onChange={(e) => handleUserRestrictionChange(e.target.value)}
+              className="text-xs py-1.5 px-3 bg-slate-900 border border-white/10 text-white rounded"
+            >
+              <option value="none">🟢 Normal (Clean)</option>
+              <option value="auto_flag">🚩 Auto-Flag All Comments</option>
+              <option value="disabled">⛔ Comments & Posting Disabled</option>
             </select>
           )}
         </div>
@@ -10183,13 +10205,46 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => {
-                          const mockUrl = `${window.location.origin}/transfer-verification/${rabbit.id}?cert=TX-SIMULATED`;
-                          navigator.clipboard.writeText(mockUrl);
-                          alert("Shareable digital verification link copied to clipboard!");
+                          const buildAncestor = (id) => {
+                            if (!id) return null;
+                            const anc = allRabbits.find(r => r.id === id);
+                            if (!anc) return null;
+                            return {
+                              name: anc.name,
+                              tattooNumber: anc.tattooNumber,
+                              breed: anc.breed,
+                              variety: anc.variety,
+                              sex: anc.sex,
+                              dob: anc.dob,
+                              weightOz: anc.weightOz,
+                              registrationNumber: anc.registrationNumber,
+                              gcNumber: anc.gcNumber,
+                              notes: anc.notes,
+                              sire: buildAncestor(anc.sireId),
+                              dam: buildAncestor(anc.damId)
+                            };
+                          };
+
+                          const fullPacket = {
+                            type: 'certificate',
+                            certificateId: 'TX-' + Math.floor(1000 + Math.random() * 9000),
+                            rabbitName: rabbit.name,
+                            tattooNumber: rabbit.tattooNumber,
+                            breed: rabbit.breed,
+                            variety: rabbit.variety,
+                            sex: rabbit.sex,
+                            dob: rabbit.dob,
+                            weightOz: rabbit.weightOz,
+                            sire: buildAncestor(rabbit.sireId),
+                            dam: buildAncestor(rabbit.damId)
+                          };
+
+                          navigator.clipboard.writeText(JSON.stringify(fullPacket, null, 2));
+                          alert(`Full Pedigree Transfer Certificate for "${rabbit.name}" copied to clipboard! The buyer can paste this into their Import Wizard to automatically import the rabbit and all lineage ancestors.`);
                         }}
-                        className="btn-interactive py-2 text-xs bg-slate-800 text-slate-200"
+                        className="btn-interactive py-2 text-xs bg-indigo-600 text-white font-bold"
                       >
-                        Copy Shareable Certificate Link
+                        📋 Copy Full-Pedigree Transfer Packet (JSON)
                       </button>
                       <button
                         type="button"
