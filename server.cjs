@@ -148,6 +148,7 @@ db.serialize(() => {
     )
   `);
   db.run('CREATE INDEX IF NOT EXISTS idx_conflicts_breeder ON conflicts(breeder_id)');
+  db.run("ALTER TABLE conflicts ADD COLUMN causality_explanation TEXT", () => {});
 
   db.run(`
     CREATE TABLE IF NOT EXISTS marketplace_listings (
@@ -486,11 +487,11 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
     });
   };
 
-  const insertConflict = (conflictId, breederId, recordId, tbl, fieldName, serverVal, clientVal, clientDevice, timestamp) => {
+  const insertConflict = (conflictId, breederId, recordId, tbl, fieldName, serverVal, clientVal, clientDevice, timestamp, causalityExplanation) => {
     return new Promise((resolve) => {
       db.run(
-        'INSERT OR REPLACE INTO conflicts (id, breeder_id, record_id, tbl, field_name, server_value, client_value, client_device, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [conflictId, breederId, recordId, tbl, fieldName, serverVal, clientVal, clientDevice, timestamp],
+        'INSERT OR REPLACE INTO conflicts (id, breeder_id, record_id, tbl, field_name, server_value, client_value, client_device, timestamp, causality_explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [conflictId, breederId, recordId, tbl, fieldName, serverVal, clientVal, clientDevice, timestamp, causalityExplanation],
         () => resolve()
       );
     });
@@ -523,8 +524,16 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
       // If concurrent (clockComparison === null) or fallback to timestamp LWW if no clocks are provided
       const isConcurrent = clockComparison === null;
       const isServerNewerTimestamp = new Date(serverTimestamp) > new Date(clientTimestamp);
+      const isCriticalTable = ['rabbits', 'cavies', 'litters'].includes(table);
       
-      if (isConcurrent || (Object.keys(clientClock).length === 0 && isServerNewerTimestamp)) {
+      if (isConcurrent && !isCriticalTable) {
+        // Auto-merge non-critical tables (weights/health logs/chores) via Last-Write-Wins (LWW)
+        if (isServerNewerTimestamp) {
+          // Keep server version, discard obsolete client concurrent change
+          continue;
+        }
+        // Proceed to overwrite server
+      } else if (isConcurrent || (Object.keys(clientClock).length === 0 && isServerNewerTimestamp)) {
         let hasConflict = false;
         const criticalFields = {
           rabbits: ['sireId', 'damId', 'registrationNumber', 'ownershipStatus', 'earNumber'],
@@ -540,6 +549,15 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
           if (clientVal !== undefined && serverVal !== undefined && String(clientVal) !== String(serverVal)) {
             hasConflict = true;
             const conflictId = `conflict-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+            
+            // Vector Clock Causality explanation
+            let causalityExplanation = `Concurrent updates: Device '${clientDevice || "Offline Device"}' and Server updated '${field}' independently.`;
+            if (payload.timestamp && serverPayload.timestamp) {
+              const diffMs = Math.abs(new Date(payload.timestamp) - new Date(serverPayload.timestamp));
+              const diffMin = Math.round(diffMs / 60000);
+              causalityExplanation += ` Server was modified at ${new Date(serverPayload.timestamp).toLocaleTimeString()} and Client at ${new Date(payload.timestamp).toLocaleTimeString()} (${diffMin} min difference).`;
+            }
+
             conflictsList.push({
               id: conflictId,
               recordId,
@@ -548,9 +566,10 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
               serverValue: serverVal,
               clientValue: clientVal,
               clientDevice: clientDevice || 'Offline Device',
-              timestamp: clientTimestamp
+              timestamp: clientTimestamp,
+              causalityExplanation
             });
-            await insertConflict(conflictId, req.user.id, recordId, table, field, String(serverVal), String(clientVal), clientDevice || 'Offline Device', clientTimestamp);
+            await insertConflict(conflictId, req.user.id, recordId, table, field, String(serverVal), String(clientVal), clientDevice || 'Offline Device', clientTimestamp, causalityExplanation);
           }
         }
 
@@ -560,17 +579,22 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
       }
     }
 
+    // Merge vector clocks (element-wise maximum) before saving to server
+    if (existing) {
+      const serverPayload = JSON.parse(existing.payload);
+      const serverClock = serverPayload.vectorClock || {};
+      const clientClock = payload.vectorClock || {};
+      const mergedClock = { ...serverClock, ...clientClock };
+      for (const k of Object.keys(mergedClock)) {
+        mergedClock[k] = Math.max(serverClock[k] || 0, clientClock[k] || 0);
+      }
+      payload.vectorClock = mergedClock;
+    } else {
+      if (!payload.vectorClock) payload.vectorClock = {};
+    }
+
     processedActions.push(item);
   }
-
-  processedActions.forEach(item => {
-    // Merge client's vector clock with server's vector clock or initialize it
-    // Ensure all vector clock fields are preserved and incremented correctly
-    const { payload } = item;
-    if (payload && !payload.vectorClock) {
-      payload.vectorClock = {};
-    }
-  });
 
   db.serialize(() => {
     const stmtLog = db.prepare('INSERT INTO audit_logs (id, action, target_table, record_id, user_id, checksum) VALUES (?, ?, ?, ?, ?, ?)');
@@ -615,7 +639,8 @@ app.get('/api/conflicts/:breederId', authenticateToken, (req, res) => {
       serverValue: r.server_value,
       clientValue: r.client_value,
       clientDevice: r.client_device,
-      timestamp: r.timestamp
+      timestamp: r.timestamp,
+      causalityExplanation: r.causality_explanation
     }));
     res.json(mapped);
   });

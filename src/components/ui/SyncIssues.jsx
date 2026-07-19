@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, CheckCircle, RefreshCw, Sparkles, HelpCircle } from 'lucide-react';
+import { ShieldAlert, CheckCircle, RefreshCw, Sparkles, HelpCircle, ArrowRight, Zap } from 'lucide-react';
 import { db } from '../../db/registryDb';
 
 export default function SyncIssues({ onClose, currentUser }) {
@@ -107,10 +107,23 @@ export default function SyncIssues({ onClose, currentUser }) {
     setResolvingId(null);
   };
 
+  const handleAutoResolveSimple = async () => {
+    const nonCritical = conflicts.filter(c => !['rabbits', 'cavies', 'litters'].includes(c.tbl));
+    if (nonCritical.length === 0) {
+      alert("All remaining conflicts are critical pedigree parameters and require manual breeder review.");
+      return;
+    }
+    setLoading(true);
+    for (const c of nonCritical) {
+      await resolveConflict(c.id, 'server');
+    }
+    setLoading(false);
+  };
+
   if (loading) {
     return (
-      <div className="glass-container p-6 text-center max-w-xl mx-auto">
-        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-indigo-400 mb-2" />
+      <div className="glass-container p-8 text-center max-w-xl mx-auto flex flex-col items-center justify-center gap-3">
+        <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
         <span className="text-xs font-semibold opacity-75">Analyzing data sync collisions...</span>
       </div>
     );
@@ -160,6 +173,20 @@ export default function SyncIssues({ onClose, currentUser }) {
         </div>
       ) : (
         <div className="flex flex-col gap-5">
+          <div className="flex justify-between items-center bg-indigo-950/10 p-3 rounded-xl border border-white/5">
+            <span className="text-xs font-bold text-indigo-200">
+              {conflicts.length} unresolved collision(s) detected.
+            </span>
+            {conflicts.some(c => !['rabbits', 'cavies', 'litters'].includes(c.tbl)) && (
+              <button 
+                onClick={handleAutoResolveSimple}
+                className="py-1 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold border-none flex items-center gap-1 cursor-pointer"
+              >
+                <Zap className="w-3 h-3" /> Auto-Resolve Non-Critical
+              </button>
+            )}
+          </div>
+
           {conflicts.map(c => (
             <div key={c.id} className="p-4 bg-slate-900/40 border border-white/5 rounded-2xl flex flex-col gap-3">
               <div className="flex justify-between items-center text-[10px] border-b border-white/5 pb-2">
@@ -169,8 +196,19 @@ export default function SyncIssues({ onClose, currentUser }) {
                 <span className="opacity-60 font-mono">Field: <strong className="text-white">{c.fieldName}</strong></span>
               </div>
 
+              {/* Causality Analysis Timeline */}
+              {c.causalityExplanation && (
+                <div className="p-3 bg-slate-950/80 border border-indigo-500/10 rounded-xl text-[10px] text-indigo-300 leading-relaxed font-sans">
+                  <div className="font-bold flex items-center gap-1.5 mb-1 text-indigo-200 text-[11px]">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    Causality Analysis
+                  </div>
+                  <p>{c.causalityExplanation}</p>
+                </div>
+              )}
+
               {/* Diffs Side-by-Side Comparison */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mt-1">
                 {/* Server Column */}
                 <div className="p-3.5 bg-slate-950/60 border border-indigo-500/10 rounded-xl text-left flex flex-col gap-2 relative">
                   <span className="absolute top-2 right-2 text-[8px] uppercase font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">Cloud Server</span>
@@ -197,14 +235,14 @@ export default function SyncIssues({ onClose, currentUser }) {
                 <button
                   onClick={() => resolveConflict(c.id, 'server')}
                   disabled={resolvingId === c.id}
-                  className="btn-interactive py-1.5 px-3 bg-slate-800 text-white hover:bg-slate-700 text-[11px] font-bold border-none rounded-lg disabled:opacity-50"
+                  className="btn-interactive py-1.5 px-3 bg-slate-800 text-white hover:bg-slate-700 text-[11px] font-bold border-none rounded-lg disabled:opacity-50 cursor-pointer"
                 >
                   Keep Cloud Version
                 </button>
                 <button
                   onClick={() => resolveConflict(c.id, 'client')}
                   disabled={resolvingId === c.id}
-                  className="btn-interactive py-1.5 px-3 bg-indigo-650 text-white hover:bg-indigo-700 text-[11px] font-bold border-none rounded-lg disabled:opacity-50"
+                  className="btn-interactive py-1.5 px-3 bg-indigo-650 text-white hover:bg-indigo-700 text-[11px] font-bold border-none rounded-lg disabled:opacity-50 cursor-pointer"
                 >
                   Keep Offline Version
                 </button>
