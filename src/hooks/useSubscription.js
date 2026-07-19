@@ -11,6 +11,7 @@ export const useSubscription = create((set, get) => ({
   trialEnd: '',
   cancelledAt: '',
   evansVerified: false,
+  additionalHutches: 0,
   invoices: [],
   isLoading: true,
 
@@ -30,6 +31,7 @@ export const useSubscription = create((set, get) => ({
           trialEnd: localSub.trialEnd || '',
           cancelledAt: localSub.cancelledAt || '',
           evansVerified: !!localSub.evansVerified,
+          additionalHutches: parseInt(localSub.additionalHutches) || 0,
           isLoading: false
         });
       } else {
@@ -45,6 +47,7 @@ export const useSubscription = create((set, get) => ({
           trialEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           cancelledAt: null,
           evansVerified: false,
+          additionalHutches: 0,
           createdAt: new Date().toISOString()
         };
         await db.subscriptions.add(defaultSub);
@@ -57,6 +60,7 @@ export const useSubscription = create((set, get) => ({
           trialEnd: defaultSub.trialEnd,
           cancelledAt: '',
           evansVerified: false,
+          additionalHutches: 0,
           isLoading: false
         });
       }
@@ -77,14 +81,15 @@ export const useSubscription = create((set, get) => ({
       const updatedRecord = {
         id: existing?.id || `sub-${Date.now()}`,
         breederId,
-        tier: subData.tier || 'basic',
-        status: subData.status || 'active',
-        stripeCustomerId: subData.stripeCustomerId || '',
-        stripeSubscriptionId: subData.stripeSubscriptionId || '',
-        currentPeriodEnd: subData.currentPeriodEnd || '',
-        trialEnd: subData.trialEnd || null,
-        cancelledAt: subData.cancelledAt || null,
-        evansVerified: !!subData.evansVerified,
+        tier: subData.tier || existing?.tier || 'basic',
+        status: subData.status || existing?.status || 'active',
+        stripeCustomerId: subData.stripeCustomerId || existing?.stripeCustomerId || '',
+        stripeSubscriptionId: subData.stripeSubscriptionId || existing?.stripeSubscriptionId || '',
+        currentPeriodEnd: subData.currentPeriodEnd || existing?.currentPeriodEnd || '',
+        trialEnd: subData.trialEnd || existing?.trialEnd || null,
+        cancelledAt: subData.cancelledAt || existing?.cancelledAt || null,
+        evansVerified: subData.evansVerified !== undefined ? !!subData.evansVerified : !!existing?.evansVerified,
+        additionalHutches: subData.additionalHutches !== undefined ? parseInt(subData.additionalHutches) : (parseInt(existing?.additionalHutches) || 0),
         updatedAt: new Date().toISOString()
       };
 
@@ -103,7 +108,8 @@ export const useSubscription = create((set, get) => ({
         currentPeriodEnd: updatedRecord.currentPeriodEnd,
         trialEnd: updatedRecord.trialEnd,
         cancelledAt: updatedRecord.cancelledAt,
-        evansVerified: updatedRecord.evansVerified
+        evansVerified: updatedRecord.evansVerified,
+        additionalHutches: updatedRecord.additionalHutches
       });
 
       // Queue sync action
@@ -126,6 +132,13 @@ export const useSubscription = create((set, get) => ({
     }
   },
 
+  buyHutches: async (breederId, count) => {
+    const current = get().additionalHutches || 0;
+    await get().updateSubscription(breederId, {
+      additionalHutches: current + count
+    });
+  },
+
   clearSubscription: () => {
     set({
       tier: 'basic',
@@ -136,6 +149,7 @@ export const useSubscription = create((set, get) => ({
       trialEnd: '',
       cancelledAt: '',
       evansVerified: false,
+      additionalHutches: 0,
       invoices: []
     });
   },
@@ -157,27 +171,27 @@ export const useSubscription = create((set, get) => ({
   },
 
   getLimits: () => {
-    const { tier, status } = get();
+    const { tier, status, additionalHutches } = get();
     const isTrial = status === 'trialing';
 
     if (isTrial) {
       if (tier === 'basic') {
         return {
-          animalLimit: 40,
+          animalLimit: 40 + (additionalHutches || 0),
           photoLimit: 100,
           isTrial: true
         };
       }
       if (tier === 'pro') {
         return {
-          animalLimit: 100,
+          animalLimit: 100 + (additionalHutches || 0),
           photoLimit: 250,
           isTrial: true
         };
       }
       if (tier === 'youth_academy') {
         return {
-          animalLimit: 50,
+          animalLimit: 50 + (additionalHutches || 0),
           photoLimit: 150,
           isTrial: true
         };
@@ -186,7 +200,7 @@ export const useSubscription = create((set, get) => ({
 
     const limits = getTierLimits(tier);
     return {
-      animalLimit: limits.animalLimit,
+      animalLimit: limits.animalLimit + (additionalHutches || 0),
       photoLimit: limits.photoLimit,
       isTrial: false
     };

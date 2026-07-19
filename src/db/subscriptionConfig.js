@@ -29,7 +29,6 @@ export const SUBSCRIPTION_TIERS = {
       '14-Day Free Trial (Age Verify CC required)',
       'Large herd inventory (max 500 active profiles)',
       'All Basic Plan hutch registry features',
-      'Evans Software one-click import engine',
       'Multi-breeder/assistant hutch permissions',
       'Advanced financial profit/loss analytics',
       'Exhibitor registry bulk prep reports'
@@ -53,15 +52,16 @@ export const SUBSCRIPTION_TIERS = {
   },
   evans_lifetime: {
     id: 'evans_lifetime',
-    name: 'Evans Migrant Lifetime',
-    priceLabel: '$249.00 one-time, or 3 monthly payments of $85.00',
+    name: 'Evans Migrant Lifetime Offer',
+    priceLabel: '$249.00 one-time for first 5 years',
     limit: 500,
     maxPhotos: 9999,
     features: [
-      'Verified Evans Migrant Lifetime account',
-      'All Pro tier features & 5 years major updates',
-      'No standard recurring hutch subscription bills',
-      'Installment payment plans available'
+      'Special Verified Evans Software switcher rate',
+      'Includes 5 years of all major updates & features',
+      'Pay only for optional major version upgrades after 5 years',
+      'No standard monthly or yearly recurring hutch bills',
+      'All Pro Plan commercial tools and imports included'
     ]
   }
 };
@@ -74,7 +74,7 @@ export const FEATURE_TIER_ELIGIBILITY = {
   cloud_sync: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
   genetics_calc: ['basic', 'pro', 'youth_academy', 'evans_lifetime'],
   
-  evans_import: ['pro', 'evans_lifetime'],
+  evans_import: ['evans_lifetime'],
   multi_breeder: ['pro', 'evans_lifetime'],
   commercial_analytics: ['pro', 'evans_lifetime'],
   registrar_bulk_prep: ['pro', 'evans_lifetime'],

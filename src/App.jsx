@@ -802,6 +802,13 @@ export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [dbError, setDbError] = useState(null);
   const { execute: runAsync } = useAsyncAction();
+  const sub = useSubscription();
+
+  useEffect(() => {
+    if (dbLoaded && currentUser) {
+      useSubscription.getState().fetchStatus(currentUser.id);
+    }
+  }, [currentUser, dbLoaded]);
 
   const matchLocationKey = (locValue, locKey) => {
     if (!locValue || !locKey) return false;
@@ -5753,12 +5760,14 @@ export default function App() {
             >
               <FileText className="w-5 h-5 text-indigo-400" /> 📜 Registrar Prep
             </button>
-            <button 
-              onClick={() => setActiveTab('evansMigrator')}
-              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'evansMigrator' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
-            >
-              <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
-            </button>
+            {(sub.evansVerified || sub.tier === 'evans_lifetime') && (
+              <button 
+                onClick={() => setActiveTab('evansMigrator')}
+                className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'evansMigrator' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+              >
+                <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
+              </button>
+            )}
             <button 
               onClick={() => setActiveTab('billing')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'billing' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}

@@ -215,6 +215,52 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
         </div>
       </div>
 
+      {/* Hutch Storage Expansion Purchases */}
+      <div className="glass-container p-6 border border-indigo-500/10 bg-slate-900/25 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="flex items-start gap-4">
+          <div className="text-3xl">🏡</div>
+          <div className="text-left">
+            <h4 className="font-black text-sm text-indigo-300 uppercase tracking-wider">Hutch Storage Expansion Upgrades</h4>
+            <p className="text-[11px] opacity-75 mt-1 leading-relaxed max-w-md">
+              Need extra rabbit space? Expand your capacity beyond your plan limit. Purchase a one-time hutch storage pack to permanently house more active rabbit profiles.
+            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <span className="text-xs bg-slate-800 px-3 py-1 rounded border border-white/10 text-slate-200">
+                Plan Limit: <strong className="text-white">{getLimits().animalLimit - (useSubscription.getState().additionalHutches || 0)}</strong>
+              </span>
+              <span className="text-xs bg-indigo-500/10 px-3 py-1 rounded border border-indigo-500/20 text-indigo-300 font-bold">
+                Purchased Additions: <strong className="text-indigo-200">+{useSubscription.getState().additionalHutches || 0} hutches</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+          <button
+            onClick={async () => {
+              if (!currentUser?.id) return;
+              await useSubscription.getState().buyHutches(currentUser.id, 25);
+              triggerConfetti();
+              alert("Successfully purchased +25 Hutch Storage Expansion!");
+            }}
+            className="btn-interactive py-2 px-4 bg-indigo-650 hover:bg-indigo-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1"
+          >
+            +25 Hutches ($15.00)
+          </button>
+          <button
+            onClick={async () => {
+              if (!currentUser?.id) return;
+              await useSubscription.getState().buyHutches(currentUser.id, 100);
+              triggerConfetti();
+              alert("Successfully purchased +100 Hutch Storage Expansion!");
+            }}
+            className="btn-interactive py-2 px-4 bg-purple-650 hover:bg-purple-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1"
+          >
+            +100 Hutches ($50.00)
+          </button>
+        </div>
+      </div>
+
       {/* 2. UPGRADE PLANS & TARIFF FLOW */}
       <div className="flex flex-col gap-6 mt-4">
         <div className="flex justify-between items-center flex-wrap gap-3">
@@ -311,7 +357,7 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
         </div>
 
         <p className="text-xs opacity-85 leading-relaxed text-slate-300">
-          Transitioning from Evans Software? Upload your Evans database file to verify your formatting. Once successfully analyzed, you will unlock a transition purchase option to get Evans Migrant Special Lifetime with zero recurring monthly hutch dues.
+          Transitioning from Evans Software? Upload your Evans database file to verify your formatting. Once successfully analyzed, you will unlock a transition purchase option to get the **Evans Migrant Lifetime Offer** for a special switcher price: **$249.00 for the first 5 years (includes all major updates & features)**. After 5 years, you can keep using your software forever without recurring bills, paying only for optional major version upgrades.
         </p>
 
         {evansVerified ? (
@@ -330,14 +376,14 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
                   disabled={checkoutLoading}
                   className="py-2.5 px-5 bg-amber-600 hover:bg-amber-700 border-none rounded-xl text-white font-extrabold cursor-pointer text-xs shadow-md uppercase tracking-wider transition-all"
                 >
-                  Pay One-Time ($249)
+                  Pay One-Time ($249 for 5 Years)
                 </button>
                 <button
                   onClick={() => handleCheckout('evans_lifetime', 'installments')}
                   disabled={checkoutLoading}
                   className="py-2.5 px-5 bg-indigo-650 hover:bg-indigo-700 border-none rounded-xl text-white font-extrabold cursor-pointer text-xs shadow-md uppercase tracking-wider transition-all"
                 >
-                  3 Monthly Installments ($85/mo)
+                  3 Installments of $85
                 </button>
               </div>
             ) : (
