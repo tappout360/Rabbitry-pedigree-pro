@@ -830,17 +830,14 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        let filtered = parsed.filter(b => b.email.toLowerCase() !== 'admin@rabbitrypedigree.pro' && b.id !== 'ab-admin');
+        const defaultIds = defaultList.map(d => d.id);
+        // Filter out old default seeded accounts to force overwrite with fresh credentials
+        let filtered = parsed.filter(b => !defaultIds.includes(b.id));
         
-        // Merge missing default mock accounts
+        // Add fresh default accounts
         defaultList.forEach(def => {
-          if (def.id !== 'ab-admin' && !filtered.some(b => b.id === def.id)) {
-            filtered.push(def);
-          }
+          filtered.push(def);
         });
-        
-        // Always prepend clean App Owner account
-        filtered.unshift(defaultList[0]);
         list = filtered;
       } catch (e) {
         list = defaultList;
