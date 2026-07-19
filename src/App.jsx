@@ -1029,7 +1029,8 @@ export default function App() {
     parentEmail: '',
     agreeHipaa: false,
     employerAccountNumber: '',
-    employerStatus: 'pending'
+    employerStatus: 'pending',
+    betaInviteCode: ''
   });
 
   // Theme state
@@ -2296,6 +2297,11 @@ export default function App() {
   // Onboarding Form Submit Handler (Sign Up)
   const handleCreateProfile = (e) => {
     e.preventDefault();
+    const validCodes = ['BETA-2026-WARREN', '4H-GROW-WISE', 'GRANDVIEW-VIP', 'WARREN-WISE-PRO-TEST'];
+    if (!profileForm.betaInviteCode || !validCodes.includes(profileForm.betaInviteCode.trim().toUpperCase())) {
+      alert("Registration is currently restricted to beta invitees. Please enter a valid Beta Invite Code.");
+      return;
+    }
     if (!profileForm.name || !profileForm.email || !profileForm.username || !profileForm.password) {
       alert("Name, Email, Username, and Password are required!");
       return;
@@ -4897,6 +4903,20 @@ export default function App() {
                       )}
                     </div>
 
+                    {/* Beta Invite Code */}
+                    <div className="flex flex-col gap-1 border-t border-white/5 pt-2 text-left">
+                      <label className="text-[11px] font-bold text-indigo-300">Beta Invitation Code *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="E.g. BETA-2026-WARREN"
+                        value={profileForm.betaInviteCode || ''}
+                        onChange={(e) => setProfileForm({...profileForm, betaInviteCode: e.target.value})}
+                        className="bg-white/5 border border-white/10 text-xs py-2 px-3 text-white rounded-xl focus:outline-none focus:border-indigo-500"
+                      />
+                      <p className="text-[9px] opacity-60">WarrenWise Pro registration is currently restricted to beta invitees. Enter your invitation code to unlock registration.</p>
+                    </div>
+
                     {/* HIPAA Compliance Consent */}
                     <div className="flex flex-col gap-1.5 border-t border-white/5 pt-2 bg-indigo-500/5 p-3 rounded-xl border border-indigo-500/10">
                       <div className="flex gap-2 items-start">
@@ -6360,6 +6380,9 @@ export default function App() {
                       <h3 className="text-3xl font-black mt-1 text-white">
                         {rabbits.filter(r => r.status !== 'pedigree_only').length}
                       </h3>
+                      <div className="text-[10px] text-indigo-200 mt-1.5 font-bold">
+                        Hutches: {rabbits.filter(r => r.status !== 'pedigree_only').length} / {sub.getLimits().animalLimit}
+                      </div>
                     </div>
                     <div className="p-3 bg-indigo-500/25 rounded-2xl text-indigo-300 shadow-lg shadow-indigo-500/30">
                       <Rabbit className="w-8 h-8 animate-wiggle" style={{ animationDuration: '3s' }} />

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'warrenwise-pro-v2';
+const CACHE_NAME = 'warrenwise-pro-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -31,32 +31,53 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch Event: Cache-First for static assets, Network-First fallback
+// Fetch Event: Network-First for code/navigation, Cache-First for static assets
 self.addEventListener('fetch', (e) => {
   if (!e.request.url.startsWith('http')) return;
 
-  e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(e.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
-          }
-        }).catch(() => {/* Ignore network failures while offline */});
-        return cachedResponse;
-      }
+  const isStaticAsset = 
+    e.request.url.includes('/assets/') || 
+    e.request.url.includes('fonts.googleapis.com') ||
+    e.request.url.includes('fonts.gstatic.com') ||
+    e.request.url.match(/\.(png|jpg|jpeg|gif|svg|webp|ico)$/i);
 
-      return fetch(e.request).then((response) => {
-        if (response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+  if (isStaticAsset) {
+    // Cache-First (Fast load for static media)
+    e.respondWith(
+      caches.match(e.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return response;
-      }).catch(() => {
-        if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
-    })
-  );
+        return fetch(e.request).then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return networkResponse;
+        });
+      })
+    );
+  } else {
+    // Network-First (Ensures instant updates for index.html / JS / CSS)
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(e.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            if (e.request.mode === 'navigate') {
+              return caches.match('/index.html');
+            }
+          });
+        })
+    );
+  }
 });
