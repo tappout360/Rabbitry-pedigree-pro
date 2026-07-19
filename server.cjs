@@ -166,14 +166,27 @@ db.serialize(() => {
   `);
   db.run('CREATE INDEX IF NOT EXISTS idx_marketplace_breeder ON marketplace_listings(breeder_id)');
 
-  // Mock Data Seeding for the Marketplace
-  db.get("SELECT COUNT(*) as count FROM breeders WHERE id = 'ab-1'", (err, row) => {
-    if (row && row.count === 0) {
-      db.run(`
-        INSERT INTO breeders (id, name, email, role, status, password, account_number, parental_consent_verified)
-        VALUES ('ab-1', 'Jason Miller', 'jason@grandview.com', 'owner', 'active', 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', 'RAB-123456', 1)
-      `);
-    }
+  // Mock Data Seeding for Breeders
+  const defaultMockBreeders = [
+    { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', role: 'owner', status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', account_number: 'RAB-000000', parental_consent_verified: 1 },
+    { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', account_number: 'RAB-123456', parental_consent_verified: 1 },
+    { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032', account_number: 'RAB-654321', parental_consent_verified: 1 },
+    { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', role: 'assistant', status: 'active', password: '60281b3793df67117865cbb6db58b43ad835c24e73f88f01b15c92c813f02ad1', account_number: 'RAB-111111', parental_consent_verified: 1 },
+    { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', role: 'owner', status: 'active', password: '6dcd317c244c4fae2e66cc48abfc4e24eb2fb1fa546bf1d7de6dfd0f8a846c1b', account_number: 'RAB-222222', parental_consent_verified: 1 },
+    { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', role: 'assistant', status: 'pending', password: 'b3a726ea7bd7ca164e29780512871146c86a34cd8c2184d081f2621183cf9e96', account_number: 'RAB-333333', parental_consent_verified: 1 },
+    { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', role: 'owner', status: 'active', password: 'dcf22dfa640102cd8b28ef94c03cc56c80c65538e1215ee54c0e6cfec0c99df3', account_number: 'RAB-444444', parental_consent_verified: 1 },
+    { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', account_number: 'RAB-555555', parental_consent_verified: 1 }
+  ];
+
+  defaultMockBreeders.forEach(b => {
+    db.get("SELECT COUNT(*) as count FROM breeders WHERE id = ?", [b.id], (err, row) => {
+      if (row && row.count === 0) {
+        db.run(`
+          INSERT INTO breeders (id, name, email, role, status, password, account_number, parental_consent_verified)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [b.id, b.name, b.email, b.role, b.status, b.password, b.account_number, b.parental_consent_verified]);
+      }
+    });
   });
 
   db.get("SELECT COUNT(*) as count FROM marketplace_listings", (err, row) => {
