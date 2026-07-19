@@ -802,13 +802,6 @@ export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [dbError, setDbError] = useState(null);
   const { execute: runAsync } = useAsyncAction();
-  const sub = useSubscription();
-
-  useEffect(() => {
-    if (dbLoaded && currentUser) {
-      useSubscription.getState().fetchStatus(currentUser.id);
-    }
-  }, [currentUser, dbLoaded]);
 
   const matchLocationKey = (locValue, locKey) => {
     if (!locValue || !locKey) return false;
@@ -1381,6 +1374,14 @@ export default function App() {
       console.error("Merge error:", err);
     }
   };
+
+  const sub = useSubscription();
+
+  useEffect(() => {
+    if (dbLoaded && currentUser) {
+      useSubscription.getState().fetchStatus(currentUser.id);
+    }
+  }, [currentUser, dbLoaded]);
 
   useEffect(() => {
     async function loadData() {
