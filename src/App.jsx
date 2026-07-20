@@ -158,42 +158,6 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
                 Reject
               </button>
             </>
-          ) : b.isDemo ? (
-            <button
-              onClick={() => {
-                if (window.confirm(`Reset all demo data for ${b.name}? This will restore the original sample rabbits, breedings, litters, and financial records for this demo account.`)) {
-                  // Import and re-seed demo data for this breeder from defaults
-                  import('./db/defaults.js').then(({ DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS, DEFAULT_LEDGER, DEFAULT_SHOWS, DEFAULT_CHORES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS }) => {
-                    // Remove existing data for this breeder
-                    setAllRabbits(prev => prev.filter(r => r.breederId !== b.id));
-                    setAllBreedings(prev => prev.filter(br => br.breederId !== b.id));
-                    setAllLitters(prev => prev.filter(l => l.breederId !== b.id));
-                    setAllLedger(prev => prev.filter(le => le.breederId !== b.id));
-                    setAllShows(prev => prev.filter(s => s.breederId !== b.id));
-                    setAllChores(prev => prev.filter(c => c.breederId !== b.id));
-                    setAllMedical(prev => prev.filter(m => DEFAULT_RABBITS.filter(dr => dr.breederId === b.id).some(dr => dr.id === m.rabbitId) ? false : true));
-                    setAllWeights(prev => prev.filter(w => DEFAULT_RABBITS.filter(dr => dr.breederId === b.id).some(dr => dr.id === w.rabbitId) ? false : true));
-                    
-                    // Re-seed with default data for this breeder
-                    setTimeout(() => {
-                      setAllRabbits(prev => [...prev, ...DEFAULT_RABBITS.filter(r => r.breederId === b.id)]);
-                      setAllBreedings(prev => [...prev, ...DEFAULT_BREEDINGS.filter(br => br.breederId === b.id)]);
-                      setAllLitters(prev => [...prev, ...DEFAULT_LITTERS.filter(l => l.breederId === b.id)]);
-                      setAllLedger(prev => [...prev, ...DEFAULT_LEDGER.filter(le => le.breederId === b.id)]);
-                      setAllShows(prev => [...prev, ...DEFAULT_SHOWS.filter(s => s.breederId === b.id)]);
-                      setAllChores(prev => [...prev, ...DEFAULT_CHORES.filter(c => c.breederId === b.id)]);
-                      const demoRabbitIds = DEFAULT_RABBITS.filter(r => r.breederId === b.id).map(r => r.id);
-                      setAllMedical(prev => [...prev, ...DEFAULT_MEDICAL.filter(m => demoRabbitIds.includes(m.rabbitId))]);
-                      setAllWeights(prev => [...prev, ...DEFAULT_WEIGHTS.filter(w => demoRabbitIds.includes(w.rabbitId))]);
-                      showToast(`Demo data for ${b.name} has been reset to original sample data.`, 'success');
-                    }, 100);
-                  });
-                }
-              }}
-              className="text-cyan-400 hover:text-cyan-300 text-xs py-1 font-semibold"
-            >
-              ♻️ Reset Demo Data
-            </button>
           ) : (
             !b.isSuperAdmin && !b.isProtected && (
               <button
@@ -1522,6 +1486,10 @@ export default function App() {
   const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
   const [editProfileMode, setEditProfileMode] = useState(false);
   const [editProfileData, setEditProfileData] = useState({});
+
+  // Database Reset Danger Zone: two-step confirmation state
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
   const [showListForSaleModal, setShowListForSaleModal] = useState(false);
   const [listForSaleForm, setListForSaleForm] = useState({
     price: '',
@@ -2191,11 +2159,9 @@ export default function App() {
   };
 
   // Clear Demo Data & Reset Database for Real Rabbitry Stock
+  // Two-step confirmation: opens a modal that requires typing "RESET" to proceed
   const handleClearDemoData = async () => {
-    if (!window.confirm("Are you sure you want to clear all demo rabbits, mock breedings, test litters, and sample financial records? Your account profile will stay active, and your database will be reset to a clean state for your real rabbitry stock.")) {
-      return;
-    }
-
+    // This function is only called AFTER the user has typed RESET in the confirmation modal
     try {
       // Clear Dexie tables except adminBreeders & subscriptions
       if (db.rabbits) await db.rabbits.clear();
@@ -2225,7 +2191,7 @@ export default function App() {
       localStorage.removeItem('rp_auto_backup_latest');
 
       triggerConfetti();
-      showToast("Demo data cleared! Your database is clean and ready for real stock.", "success");
+      showToast("Database cleared! Your account is clean and ready for real stock.", "success");
 
       setSuccessMascot({
         type: 'usagi',
@@ -5597,6 +5563,76 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* DATABASE RESET DANGER ZONE CONFIRMATION MODAL */}
+      {resetConfirmOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setResetConfirmOpen(false)}>
+          <div className="glass-container max-w-md w-full p-8 text-center relative border-2 border-red-500/50 shadow-2xl shadow-red-900/30" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setResetConfirmOpen(false)}
+              className="absolute top-3 right-3 text-white/50 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-red-500/15 border-2 border-red-500/40 flex items-center justify-center mx-auto mb-4">
+              <Trash className="w-8 h-8 text-red-400" />
+            </div>
+
+            <h3 className="text-xl font-black text-red-400 mb-2">⚠️ Permanent Database Reset</h3>
+            
+            <div className="text-left bg-red-950/40 border border-red-500/20 rounded-xl p-4 mb-4 text-xs text-red-200 leading-relaxed">
+              <p className="font-bold text-red-300 mb-2">This action will PERMANENTLY DELETE:</p>
+              <ul className="list-disc list-inside space-y-1 opacity-90">
+                <li>All rabbits & cavies in your herd</li>
+                <li>All breeding records & litter histories</li>
+                <li>All financial ledger entries</li>
+                <li>All medical & weight logs</li>
+                <li>All show plans & chore lists</li>
+                <li>All timeline photos & growth data</li>
+              </ul>
+              <p className="mt-3 text-red-300 font-bold">Your account profile and subscription will remain active, but ALL animal data will be gone forever.</p>
+            </div>
+
+            <p className="text-sm text-slate-300 mb-3">Type <strong className="text-red-400 font-mono bg-red-500/10 px-2 py-0.5 rounded">RESET</strong> below to confirm:</p>
+            
+            <input
+              type="text"
+              value={resetConfirmText}
+              onChange={e => setResetConfirmText(e.target.value)}
+              placeholder="Type RESET to confirm"
+              className="w-full text-center text-sm py-3 px-4 bg-slate-900 border-2 border-red-500/30 rounded-xl text-white font-mono tracking-widest placeholder:text-slate-600 focus:border-red-500 focus:outline-none mb-4"
+              autoFocus
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setResetConfirmOpen(false); setResetConfirmText(''); }}
+                className="flex-1 btn-interactive py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold text-sm border-none rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (resetConfirmText.trim().toUpperCase() === 'RESET') {
+                    setResetConfirmOpen(false);
+                    setResetConfirmText('');
+                    handleClearDemoData();
+                  }
+                }}
+                disabled={resetConfirmText.trim().toUpperCase() !== 'RESET'}
+                className={`flex-1 py-3 font-bold text-sm border-none rounded-xl transition-all ${
+                  resetConfirmText.trim().toUpperCase() === 'RESET'
+                    ? 'bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow-lg shadow-red-900/40'
+                    : 'bg-red-900/30 text-red-400/40 cursor-not-allowed'
+                }`}
+              >
+                🗑️ Permanently Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
  
       {/* Top Banner Navigation */}
       <header className="glass-container mx-6 mt-6 mb-4 p-4 flex flex-wrap items-center justify-between gap-4 z-10 relative">
@@ -8924,7 +8960,7 @@ export default function App() {
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
                   <button
-                    onClick={handleClearDemoData}
+                    onClick={() => { setResetConfirmOpen(true); setResetConfirmText(''); }}
                     className="btn-interactive py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none shadow-md cursor-pointer"
                   >
                     🧹 Clear Demo Stock
@@ -9289,16 +9325,19 @@ export default function App() {
                   <hr className="border-white/5" />
 
                   <div>
-                    <h4 className="text-base font-bold text-white mb-1">🧹 Clear Demo Stock & Reset for Live Registry</h4>
-                    <p className="opacity-75 text-xs text-amber-200">
-                      Wipe sample demo rabbits, test litters, and mock financial entries to begin registering your official real-world rabbitry stock. Your account profile and subscription will remain active.
+                    <h4 className="text-base font-bold text-white mb-1">⚠️ Danger Zone — Reset Database</h4>
+                    <p className="opacity-75 text-xs text-rose-300 leading-relaxed">
+                      <strong>WARNING:</strong> This will permanently delete ALL rabbits, breedings, litters, financial records, medical logs, weight records, show plans, and chores from your account. Your breeder profile and subscription will remain active, but <strong>all animal data will be gone forever</strong>. This cannot be undone.
                     </p>
-                    <button
-                      onClick={handleClearDemoData}
-                      className="btn-interactive text-xs py-2 px-4 bg-rose-600 hover:bg-rose-650 text-white font-bold mt-3 border-none flex items-center gap-1.5 cursor-pointer inline-flex"
-                    >
-                      🧹 Clear Demo Stock & Reset Database
-                    </button>
+                    <div className="mt-3 p-4 rounded-xl bg-red-950/40 border-2 border-red-500/30">
+                      <p className="text-xs text-red-300 font-bold mb-2">🔒 Before you proceed, we strongly recommend exporting a backup above.</p>
+                      <button
+                        onClick={() => { setResetConfirmOpen(true); setResetConfirmText(''); }}
+                        className="btn-interactive text-xs py-2 px-4 bg-red-700 hover:bg-red-600 text-white font-bold border-none flex items-center gap-1.5 cursor-pointer inline-flex"
+                      >
+                        ⚠️ Begin Database Reset...
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
