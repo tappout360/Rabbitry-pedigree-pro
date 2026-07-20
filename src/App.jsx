@@ -51,10 +51,10 @@ import { schedulePregnancyAlerts, checkPendingAlerts, requestNotificationPermiss
 import VisualBarnMap from './components/barn/VisualBarnMap';
 
 const LOGO_OPTIONS = [
-  { id: 'logo-meadow', label: 'Meadow Bunny ðŸ‡', emoji: 'ðŸ‡' },
-  { id: 'logo-cyber', label: 'Cyber Rabbit âš¡', emoji: 'âš¡ðŸ‡' },
-  { id: 'logo-crown', label: 'Royal Crown ðŸ‘‘', emoji: 'ðŸ‘‘ðŸ‡' },
-  { id: 'logo-orchard', label: 'Orchard Apple ðŸ', emoji: 'ðŸðŸ‡' }
+  { id: 'logo-meadow', label: 'Meadow Bunny 🐇', emoji: '🐇' },
+  { id: 'logo-cyber', label: 'Cyber Rabbit ⚡', emoji: '⚡🐇' },
+  { id: 'logo-crown', label: 'Royal Crown 👑', emoji: '👑🐇' },
+  { id: 'logo-orchard', label: 'Orchard Apple 🍏', emoji: '🍏🐇' }
 ];
 
 const ONBOARDING_RABBITS = [
@@ -111,18 +111,14 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
     }
   };
 
-  const handleUserRestrictionChange = (newRestriction) => {
-    setAdminBreeders(prev => {
-      const next = prev.map(item => 
-        item.id === b.id ? { ...item, userRestriction: newRestriction } : item
-      );
-      localStorage.setItem('rp_admin_breeders', JSON.stringify(next));
-      return next;
-    });
+  const handleRoleChange = (newRole) => {
+    setAdminBreeders(prev => prev.map(item => 
+      item.id === b.id ? { ...item, role: newRole } : item
+    ));
   };
 
   return (
-    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-4 text-left">
+    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-4">
       {/* Breeder top info bar */}
       <div className="flex justify-between items-start flex-wrap gap-2">
         <div>
@@ -175,7 +171,7 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
       </div>
 
       {/* Credentials & Role Action Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-white/5 pt-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/5 pt-3">
         {/* Role Selection */}
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Assign Breeder Role</label>
@@ -185,29 +181,11 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
             <select
               value={b.role}
               onChange={(e) => handleRoleChange(e.target.value)}
-              className="text-xs py-1.5 px-3 bg-slate-900 border border-white/10 text-white rounded"
+              className="text-xs py-1.5 px-3"
             >
-              <option value="owner">Breeder / Owner 🏆</option>
+              <option value="owner">Breeder / Owner 👑</option>
               <option value="assistant">Barn Assistant 🌾</option>
               <option value="registrar">ARBA Registrar 📜</option>
-            </select>
-          )}
-        </div>
-
-        {/* User Restriction Status */}
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">AI Moderation Status</label>
-          {b.isSuperAdmin ? (
-            <div className="text-xs font-bold text-emerald-400 py-1.5">Unrestricted (App Owner)</div>
-          ) : (
-            <select
-              value={b.userRestriction || 'none'}
-              onChange={(e) => handleUserRestrictionChange(e.target.value)}
-              className="text-xs py-1.5 px-3 bg-slate-900 border border-white/10 text-white rounded"
-            >
-              <option value="none">🟢 Normal (Clean)</option>
-              <option value="auto_flag">🚩 Auto-Flag All Comments</option>
-              <option value="disabled">⛔ Comments & Posting Disabled</option>
             </select>
           )}
         </div>
@@ -621,7 +599,7 @@ const parsePedigreeText = (text) => {
         currentBlock.name = isName[1].trim();
       } else if (isEarNo) {
         const earLine = isEarNo[1].trim();
-        const weightInEar = earLine.match(/^([a-z0-9\-\_\/\\\ÃŸ]+)(?:\s+(?:Wt\.?|Weight)\s*(.+))?/i);
+        const weightInEar = earLine.match(/^([a-z0-9\-\_\/\\\ß]+)(?:\s+(?:Wt\.?|Weight)\s*(.+))?/i);
         if (weightInEar) {
           currentBlock.tattooNumber = weightInEar[1].trim();
           if (weightInEar[2]) {
@@ -1049,7 +1027,7 @@ export default function App() {
     password: '',
     rabbitryName: 'Grandview Rabbitry',
     role: 'owner', // 'owner' or 'assistant'
-    logo: 'ðŸ‡',
+    logo: '🐇',
     theme: 'dark', // Defaults to Midnight Obsidian Dark Theme
     ageGroup: 'adult',
     isYouth: false,
@@ -1082,7 +1060,7 @@ export default function App() {
   }, []);
   
   // Customization settings
-  const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || 'ðŸ‡');
+  const [rabbitryLogo, setRabbitryLogo] = useState(() => localStorage.getItem('rp_logo') || '🐇');
   const [rabbitryName, setRabbitryName] = useState(() => localStorage.getItem('rp_rabbitry_name') || 'Grandview Rabbitry');
   const [breederZip, setBreederZip] = useState(() => localStorage.getItem('rp_breeder_zip') || '97201');
   const [breederState, setBreederState] = useState(() => localStorage.getItem('rp_breeder_state') || 'OR');
@@ -1500,7 +1478,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRabbit, setSelectedRabbit] = useState(null);
   const [prepRabbitId, setPrepRabbitId] = useState('');
-
+  const [healthSelectedRabbitId, setHealthSelectedRabbitId] = useState('');
   const [printCardRabbit, setPrintCardRabbit] = useState(null);
   const [selectedCageRabbits, setSelectedCageRabbits] = useState({});
   const [editProfileMode, setEditProfileMode] = useState(false);
@@ -1516,7 +1494,10 @@ export default function App() {
   });
   const [cageMoveRabbitId, setCageMoveRabbitId] = useState(null); // rabbit id being moved on cage map
   
-
+  // Health & Growth Form States
+  const [newWeightEntry, setNewWeightEntry] = useState({ date: new Date().toISOString().split('T')[0], weightOz: '', stage: 'Routine' });
+  const [newMedicalEntry, setNewMedicalEntry] = useState({ date: new Date().toISOString().split('T')[0], type: 'Vaccination', treatment: '', notes: '', cost: '', fdaWithdrawalDays: 0, fdaApprovalStatus: 'FDA Approved for Rabbits' });
+  const [showMedicalFormModal, setShowMedicalFormModal] = useState(false);
   const [showQuickWeightModal, setShowQuickWeightModal] = useState(false);
   const [rabbitPage, setRabbitPage] = useState(1);
   const [mediaPage, setMediaPage] = useState(1);
@@ -1699,7 +1680,7 @@ export default function App() {
       setBreederName(currentUser.name || '');
       setBreederPhone(currentUser.phone || '');
       setRabbitryName(currentUser.rabbitryName || '');
-      setRabbitryLogo(currentUser.logo || 'ðŸ‡');
+      setRabbitryLogo(currentUser.logo || '🐇');
       setTheme(currentUser.theme || 'dark');
       setArbaMemberNumber(currentUser.arbaMemberNumber || '');
       if (currentUser.zip) setBreederZip(currentUser.zip);
@@ -2148,7 +2129,7 @@ export default function App() {
           const newXp = (member.xp || 0) + 15;
           const newLevel = Math.floor(newXp / 100) + 1;
           db.youthProgress.update(chore.assignedTo, { xp: newXp, currentLevel: newLevel }).then(() => {
-            showToast(`â­ ${member.memberName} earned 15 XP! (New total: ${newXp} XP)`, 'info');
+            showToast(`⭐ ${member.memberName} earned 15 XP! (New total: ${newXp} XP)`, 'info');
           });
         }
       });
@@ -2243,11 +2224,11 @@ export default function App() {
         localStorage.setItem('rp_selected_context', user.id);
       }
       setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
-      setRabbitryLogo(user.logo || 'ðŸ‡');
+      setRabbitryLogo(user.logo || '🐇');
       setTheme(user.theme || 'dark');
       localStorage.setItem('rp_logged_in_email', user.email);
       localStorage.setItem('rp_rabbitry_name', user.rabbitryName || 'Grandview Rabbitry');
-      localStorage.setItem('rp_logo', user.logo || 'ðŸ‡');
+      localStorage.setItem('rp_logo', user.logo || '🐇');
       localStorage.setItem('rp_theme', user.theme || 'dark');
 
       triggerConfetti();
@@ -2280,11 +2261,11 @@ export default function App() {
         }
         
         setRabbitryName(serverUser.rabbitryName || 'Grandview Rabbitry');
-        setRabbitryLogo(serverUser.logo || 'ðŸ‡');
+        setRabbitryLogo(serverUser.logo || '🐇');
         setTheme(serverUser.theme || 'dark');
         localStorage.setItem('rp_logged_in_email', serverUser.email);
         localStorage.setItem('rp_rabbitry_name', serverUser.rabbitryName || 'Grandview Rabbitry');
-        localStorage.setItem('rp_logo', serverUser.logo || 'ðŸ‡');
+        localStorage.setItem('rp_logo', serverUser.logo || '🐇');
         localStorage.setItem('rp_theme', serverUser.theme || 'dark');
         
         triggerConfetti();
@@ -2783,7 +2764,7 @@ export default function App() {
     // Trigger Success Mascot Pop-up (Clean popup, not overlaying inputs!)
     setSuccessMascot({
       type: 'usagi',
-      emoji: 'ðŸ‡',
+      emoji: '🐇',
       title: 'Rabbit Registered!',
       message: `Your Registrar has verified that "${createdRabbit.name}" fits breed limits and is successfully saved to the local database!`
     });
@@ -2950,7 +2931,7 @@ export default function App() {
     // Trigger Success Mascot Pop-up for breeding
     setSuccessMascot({
       type: 'kiba',
-      emoji: 'ðŸ¥•',
+      emoji: '🥕',
       title: 'Breeding Mating Logged!',
       message: `Your Barn Assistant scheduled the gestation calendar! Palpation check set for ${palpateDate}. Let's hope for a successful kindling!`
     });
@@ -3854,7 +3835,7 @@ export default function App() {
     // Trigger Success Mascot Pop-up for Show Leg registration
     setSuccessMascot({
       type: 'gen',
-      emoji: 'ðŸ†',
+      emoji: '🏆',
       title: 'Grand Champion Leg Logged!',
       message: `Your Genetics Sage registered the show leg certificate! This award moves ${selectedRabbit.name} closer to grand champion status!`
     });
@@ -4081,7 +4062,7 @@ export default function App() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    showToast("Listening... Speak now ðŸŽ™ï¸", "info");
+    showToast("Listening... Speak now 🎙️", "info");
 
     recognition.onresult = (event) => {
       let speechToText = event.results[0][0].transcript;
@@ -4133,7 +4114,7 @@ export default function App() {
     if (forbiddenTerms.test(data.treatment) || forbiddenTerms.test(data.notes)) {
       setSuccessMascot({
         type: 'usagi',
-        emoji: 'ðŸ›¡ï¸',
+        emoji: '🛡️',
         title: 'HIPAA Security Warning!',
         message: 'Human medical details, prescription information, physician names, or Social Security references are strictly prohibited in veterinary files to maintain federal Safe Harbor compliance.'
       });
@@ -4351,7 +4332,7 @@ export default function App() {
         });
 
         if (response.status === 409) {
-          // Sync conflicts detected â€” parse them and alert the user
+          // Sync conflicts detected — parse them and alert the user
           const conflictData = await response.json();
           const newConflicts = conflictData.conflicts || [];
           setConflictsCount(newConflicts.length);
@@ -4376,7 +4357,7 @@ export default function App() {
             await db.syncQueue.bulkAdd(remainingQueue);
           }
 
-          showToast(`âš ï¸ ${newConflicts.length} sync conflict(s) require your review. Open the Sync Issues panel.`, "info");
+          showToast(`⚠️ ${newConflicts.length} sync conflict(s) require your review. Open the Sync Issues panel.`, "info");
           
           // Pull and merge anyway so we get other successful updates
           await handlePullAndMerge(token, currentUser);
@@ -4434,7 +4415,7 @@ export default function App() {
         <div className="flex flex-col items-center gap-4 relative z-10 animate-fade-in">
           <div className="animate-spin rounded-full h-14 w-14 border-t-2 border-b-2 border-indigo-500"></div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl animate-bounce">ðŸ‡</span>
+            <span className="text-2xl animate-bounce">🐇</span>
             <p className="text-lg font-bold bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
               RabbitryPedigree Pro
             </p>
@@ -4453,7 +4434,7 @@ export default function App() {
         <div className="theme-dark min-h-screen bg-slate-950 text-slate-100 flex flex-col">
           <header className="w-full p-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-2xl animate-bounce">ðŸ‡ðŸ‘‘</span>
+              <span className="text-2xl animate-bounce">🐇👑</span>
               <div>
                 <h1 className="text-lg font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
                   WarrenWise Marketplace
@@ -4488,7 +4469,7 @@ export default function App() {
           {/* Custom Header Navigation Bar */}
           <header className="w-full max-w-6xl mx-auto flex items-center justify-between border-b border-white/10 pb-4">
             <div className="flex items-center gap-2">
-              <span className="text-3xl animate-hop-bounce">ðŸ‡ðŸ‘‘</span>
+              <span className="text-3xl animate-hop-bounce">🐇👑</span>
               <div>
                 <h1 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
                   Rabbitry Pedigree Pro
@@ -4499,10 +4480,10 @@ export default function App() {
             
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-[10px] font-black uppercase tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-full text-slate-300">
-                ðŸŒ Web3 Offline-First
+                🌐 Web3 Offline-First
               </span>
               <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full text-indigo-300">
-                ðŸ›¡ï¸ FDA & HIPAA Secure
+                🛡️ FDA & HIPAA Secure
               </span>
             </div>
           </header>
@@ -4525,28 +4506,28 @@ export default function App() {
               {/* Showcase highlights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">ðŸ“œ</span>
+                  <span className="text-lg">📜</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">Interactive Pedigrees</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Design three-generation family trees with automated digital signatures.</p>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">âš”ï¸</span>
+                  <span className="text-lg">⚔️</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">4-H Youth Academy</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Gamified learning and adaptive quizzes tailored to youth age divisions.</p>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">ðŸšœ</span>
+                  <span className="text-lg">🚜</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">Visual Barn Map</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Allocate cages, track gestating pairs, and organize hutch lists.</p>
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-2.5">
-                  <span className="text-lg">â˜ï¸</span>
+                  <span className="text-lg">☁️</span>
                   <div>
                     <h4 className="font-bold text-white text-[11px]">Secure Offline Sync</h4>
                     <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Record weights off-grid; edits queue locally and sync chronologically.</p>
@@ -4556,7 +4537,7 @@ export default function App() {
 
               {/* Mascot Welcome Message Banner */}
               <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/25 flex gap-3.5 items-center">
-                <span className="text-2xl shrink-0">ðŸ§™â€â™‚ï¸</span>
+                <span className="text-2xl shrink-0">🧙‍♂️</span>
                 <div className="flex-1">
                   <span className="text-[10px] font-black text-pink-400 font-mono uppercase tracking-wider">Genetics Sage Mascot</span>
                   <p className="text-[10px] opacity-90 leading-relaxed text-indigo-150 mt-0.5 font-semibold">
@@ -4613,7 +4594,7 @@ export default function App() {
                         </div>
                         <div className="relative">
                           <input 
-                            type={showLoginPassword ? "text" : "password"} required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                            type={showLoginPassword ? "text" : "password"} required placeholder="••••••••"
                             value={loginPassword}
                             onChange={(e) => setLoginPassword(e.target.value)}
                             className="bg-white/5 border-white/10 w-full pr-10"
@@ -4656,7 +4637,7 @@ export default function App() {
                           onClick={() => setAuthView('marketplace')}
                           className="text-indigo-450 hover:text-indigo-350 font-black uppercase text-[10px] tracking-wider flex items-center justify-center gap-1.5 mx-auto border border-indigo-500/30 px-4.5 py-2 rounded-xl hover:bg-indigo-500/5 transition-all cursor-pointer"
                         >
-                          ðŸ›’ Browse Public Marketplace
+                          🛒 Browse Public Marketplace
                         </button>
                       </div>
                     </div>
@@ -4762,8 +4743,8 @@ export default function App() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { id: 'owner', label: 'Breeder / Owner ðŸ‘‘', text: 'Own registry with ARBA abilities', restricted: profileForm.ageGroup === 'junior' },
-                          { id: 'assistant', label: 'Barn Assistant ðŸŒ¾', text: 'Document data for an employer', restricted: false }
+                          { id: 'owner', label: 'Breeder / Owner 👑', text: 'Own registry with ARBA abilities', restricted: profileForm.ageGroup === 'junior' },
+                          { id: 'assistant', label: 'Barn Assistant 🌾', text: 'Document data for an employer', restricted: false }
                         ].map(role => (
                           <button
                             type="button" key={role.id}
@@ -4822,10 +4803,10 @@ export default function App() {
                         <label className="text-[11px] font-bold text-indigo-300">Theme</label>
                         <div className="grid grid-cols-2 gap-1.5">
                           {[
-                            { id: 'forest', name: 'Forest ðŸŒ¿' },
-                            { id: 'kawaii', name: 'Kawaii ðŸŒ¸' },
-                            { id: 'cyber', name: 'Cyber âš¡' },
-                            { id: 'dark', name: 'Dark ðŸŒ™' }
+                            { id: 'forest', name: 'Forest 🌿' },
+                            { id: 'kawaii', name: 'Kawaii 🌸' },
+                            { id: 'cyber', name: 'Cyber ⚡' },
+                            { id: 'dark', name: 'Dark 🌙' }
                           ].map(t => (
                             <button
                               type="button" key={t.id}
@@ -4902,12 +4883,12 @@ export default function App() {
                             </div>
                             {isTooYoung && (
                               <p className="text-red-400 text-[10px] leading-snug mt-1">
-                                âš ï¸ Under ARBA rules, youth must be at least 5 years old to show and register animals. You may still use the app under supervision!
+                                ⚠️ Under ARBA rules, youth must be at least 5 years old to show and register animals. You may still use the app under supervision!
                               </p>
                             )}
                             {profileForm.isYouth && !isTooYoung && (
                               <p className="text-pink-300 text-[10px] leading-snug mt-1">
-                                ðŸŽ“ <strong>ARBA Youth Rule:</strong> Youth members must present and handle their own animals in youth classes. Long-sleeved show shirts or coats are required at the table!
+                                🎓 <strong>ARBA Youth Rule:</strong> Youth members must present and handle their own animals in youth classes. Long-sleeved show shirts or coats are required at the table!
                               </p>
                             )}
                           </div>
@@ -5163,7 +5144,7 @@ export default function App() {
                         // Reset form
                         setProfileForm({
                           name: '', email: '', phone: '', password: '', rabbitryName: 'Grandview Rabbitry',
-                          role: 'owner', logo: 'ðŸ‡', theme: 'dark', ageGroup: 'adult', isYouth: false, parentName: '', parentEmail: '', agreeHipaa: false
+                          role: 'owner', logo: '🐇', theme: 'dark', ageGroup: 'adult', isYouth: false, parentName: '', parentEmail: '', agreeHipaa: false
                         });
                       }}
                       className="btn-interactive py-3 bg-indigo-600 font-bold text-white text-sm mx-4"
@@ -5213,7 +5194,7 @@ export default function App() {
               title: `Cavy Palpation & Weight Check`,
               description: `Pregnancy check & weight check due for cavy sow "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
               type: 'palpate',
-              icon: 'ðŸ©º',
+              icon: '🩺',
               badge: '15-20 Days Gestation',
               execute: (result) => {
                 logPalpation(b.id, result);
@@ -5228,7 +5209,7 @@ export default function App() {
               title: `Palpation Recommended`,
               description: `Pregnancy check due for "${dam}" (mated with "${sire}" ${diffDays} days ago).`,
               type: 'palpate',
-              icon: 'ðŸ©º',
+              icon: '🩺',
               badge: '12-22 Days Gestation',
               execute: (result) => {
                 logPalpation(b.id, result);
@@ -5258,7 +5239,7 @@ export default function App() {
               title: `Isolate Cavy Sow`,
               description: `Move cavy sow "${dam}" to an isolated farrowing pen (Day ${diffDays} of gestation). Farrowing expected in ~8 days.`,
               type: 'nestbox',
-              icon: 'ðŸ ',
+              icon: '🏠',
               badge: 'Day 60 Gestation',
               execute: () => {
                 setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Farrowing Pen Isolation Confirmed]' } : item));
@@ -5273,7 +5254,7 @@ export default function App() {
               title: `Nest Box Insertion`,
               description: `Place the nest box in "${dam}"'s cage (Day ${diffDays} of gestation). Kindle expected in ~3 days.`,
               type: 'nestbox',
-              icon: 'ðŸ“¦',
+              icon: '📦',
               badge: 'Day 28 Gestation',
               execute: () => {
                 setAllBreedings(prev => prev.map(item => item.id === b.id ? { ...item, notes: (item.notes ? item.notes + ' ' : '') + '[Nest Box Confirmed Placed]' } : item));
@@ -5351,7 +5332,7 @@ export default function App() {
               ? `Wean cavy sow "${damName}"'s pups (Litter is ${diffWeeks} weeks old). Weaning is critical for pup development.`
               : `Wean "${damName}"'s litter (Litter is ${diffWeeks} weeks old). Weaning is critical for kit growth.`,
             type: 'wean',
-            icon: 'ðŸ¥›',
+            icon: '🥛',
             litterId: l.id,
             kitsBornAlive: l.kitsBornAlive,
             badge: `${diffWeeks} Weeks Old`,
@@ -5373,7 +5354,7 @@ export default function App() {
           title: `FDA Withdrawal Active`,
           description: `Rabbit "${r.name}" is under drug withdrawal period for "${fda.drugName}" (${fda.remainingDays} days remaining).`,
           type: 'fda_warning',
-          icon: 'âš ï¸',
+          icon: '⚠️',
           badge: 'RESTRICTED',
           execute: () => {
             setSelectedRabbit(r);
@@ -5395,7 +5376,7 @@ export default function App() {
             title: `Junior Weight Check`,
             description: `Rabbit "${r.name}" (Age: ${ageMonths} mo) is ready for its official Junior weight logging.`,
             type: 'weight_check',
-            icon: 'âš–ï¸',
+            icon: '⚖️',
             rabbitId: r.id,
             badge: 'Stage: Junior',
             execute: (weightOz) => {
@@ -5426,7 +5407,7 @@ export default function App() {
         title: 'Upgrade Subscription Plan',
         description: `You are using ${activeCount} of your ${limit} active rabbit profiles limit. Upgrade to Pro to prevent registration blocks.`,
         type: 'upgrade',
-        icon: 'ðŸš€',
+        icon: '🚀',
         badge: `${activeCount}/${limit} Profiles`,
         execute: () => {
           alert("To upgrade your subscription, please contact administration or open the Help tab.");
@@ -5487,7 +5468,7 @@ export default function App() {
           </div>
         )}
         <div className="flex items-center gap-3">
-          <div className="text-4xl">{activeBreederContext?.logo || 'ðŸ‡'}</div>
+          <div className="text-4xl">{activeBreederContext?.logo || '🐇'}</div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">{activeBreederContext?.rabbitryName || 'Configure Rabbitry'}</h1>
@@ -5496,7 +5477,7 @@ export default function App() {
                 const divisionInfo = calculateArbaDivision(activeBreederContext.birthdate);
                 return (
                   <span className="text-xs bg-pink-500/20 text-pink-400 font-extrabold px-2 py-0.5 rounded animate-pulse" title={`Youth Exhibitor - ${divisionInfo.division}`}>
-                    ðŸŽ“ {divisionInfo.division.split(' ')[0]}
+                    🎓 {divisionInfo.division.split(' ')[0]}
                   </span>
                 );
               })()}
@@ -5567,7 +5548,7 @@ export default function App() {
               className={`btn-interactive text-xs py-2 px-4 bg-indigo-600 border border-indigo-400 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 animate-pulse ${isOffline ? 'opacity-50 cursor-not-allowed animate-none' : ''}`}
               title={isOffline ? "Cannot push changes while offline!" : "Push local modifications to PostgreSQL server"}
             >
-              â˜ï¸ Push Sync ({syncQueue.length})
+              ☁️ Push Sync ({syncQueue.length})
             </button>
           )}
 
@@ -5577,7 +5558,7 @@ export default function App() {
             className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold ${designMode === 'fun' ? 'bg-gradient-to-r from-pink-500 to-indigo-500 text-white shadow-md' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
             title="Toggle between Fun Mode (illustrations & guides) and Pro Mode (clean registrar view)"
           >
-            {designMode === 'fun' ? 'ðŸ° Fun Mode' : 'ðŸ“œ Pro Mode'}
+            {designMode === 'fun' ? '🐰 Fun Mode' : '📜 Pro Mode'}
           </button>
 
           {/* Species Context Switcher */}
@@ -5590,7 +5571,7 @@ export default function App() {
               }}
               className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'rabbit' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
             >
-              ðŸ° Rabbits
+              🐰 Rabbits
             </button>
             <button
               onClick={() => {
@@ -5600,7 +5581,7 @@ export default function App() {
               }}
               className={`text-[10px] py-1.5 px-2.5 rounded font-bold border-none transition-all cursor-pointer ${selectedSpecies === 'cavy' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-slate-200 bg-transparent'}`}
             >
-              ðŸ¹ Cavies
+              🐹 Cavies
             </button>
             <button
               onClick={() => {
@@ -5625,7 +5606,7 @@ export default function App() {
             className="btn-interactive text-xs py-2 px-3 border border-white/10 bg-slate-800 text-slate-300 font-bold flex items-center gap-1"
             title="Switch primary weight unit between Ounces (oz) and Pounds (lbs)"
           >
-            âš–ï¸ Unit: {weightUnit.toUpperCase()}
+            ⚖️ Unit: {weightUnit.toUpperCase()}
           </button>
 
           {/* Barn Mode Switcher (Scoped to Cages tab) */}
@@ -5635,7 +5616,7 @@ export default function App() {
               className={`btn-interactive text-xs py-2 px-3 border-none flex items-center gap-1.5 font-bold transition-all ${barnMode ? 'bg-orange-600 text-white shadow-md ring-2 ring-orange-400' : 'bg-slate-800 text-slate-300 border border-white/10 shadow-sm'}`}
               title="Toggle high-contrast, large touch-target Barn Mode for farm-ready use"
             >
-              {barnMode ? 'ðŸšœ Barn Mode ON' : 'ðŸšœ Barn Mode OFF'}
+              {barnMode ? '🚜 Barn Mode ON' : '🚜 Barn Mode OFF'}
             </button>
           )}
 
@@ -5645,16 +5626,16 @@ export default function App() {
             onChange={(e) => setTheme(e.target.value)}
             className="text-xs font-semibold py-2 px-3 border rounded-xl"
           >
-            <option value="forest">Forest Meadows ðŸŒ¿</option>
-            <option value="kawaii">Kawaii Garden ðŸŒ¸</option>
-            <option value="cyber">Neon Cyber-Barn âš¡</option>
-            <option value="ghibli">Ghibli Orchard ðŸŽ</option>
-            <option value="dark">Midnight Obsidian ðŸŒ™</option>
-            <option value="spring">Spring Meadow ðŸŒ·</option>
-            <option value="rainbow">Rainbow Hutch ðŸŒˆ</option>
-            <option value="golden">Golden Lop ðŸŒ¾</option>
-            <option value="sparkle">Showtime Sparkle âœ¨</option>
-            <option value="pastel">Pastel Paradise ðŸ¦„</option>
+            <option value="forest">Forest Meadows 🌿</option>
+            <option value="kawaii">Kawaii Garden 🌸</option>
+            <option value="cyber">Neon Cyber-Barn ⚡</option>
+            <option value="ghibli">Ghibli Orchard 🍎</option>
+            <option value="dark">Midnight Obsidian 🌙</option>
+            <option value="spring">Spring Meadow 🌷</option>
+            <option value="rainbow">Rainbow Hutch 🌈</option>
+            <option value="golden">Golden Lop 🌾</option>
+            <option value="sparkle">Showtime Sparkle ✨</option>
+            <option value="pastel">Pastel Paradise 🦄</option>
           </select>
         </div>
       </header>
@@ -5664,7 +5645,7 @@ export default function App() {
         <div className="mx-6 mb-4 p-5 glass-container border-2 border-red-500/50 bg-gradient-to-br from-slate-900 via-slate-900/95 to-red-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-red-650"></div>
           <div className="flex items-center gap-3.5 pl-2">
-            <span className="text-3xl shrink-0 animate-pulse">âš ï¸</span>
+            <span className="text-3xl shrink-0 animate-pulse">⚠️</span>
             <div className="text-left">
               <h4 className="text-sm font-black text-red-400 tracking-wide uppercase">Local Database Conflict Detected</h4>
               <p className="text-xs opacity-90 leading-relaxed mt-1">
@@ -5697,7 +5678,7 @@ export default function App() {
         <div className="mx-6 mb-4 glass-container p-5 border-2 border-orange-500/40 bg-gradient-to-br from-slate-900 via-slate-900/95 to-orange-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-600"></div>
           <div className="flex items-center gap-3.5 pl-2">
-            <span className="text-3xl shrink-0 animate-pulse">ðŸŒ¾</span>
+            <span className="text-3xl shrink-0 animate-pulse">🌾</span>
             <div>
               <h4 className="text-sm font-black text-orange-400 tracking-wide uppercase">Offline Performance Tip</h4>
               <p className="text-xs opacity-90 leading-relaxed mt-1">
@@ -5818,20 +5799,20 @@ export default function App() {
               onClick={() => setActiveTab('academy')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'academy' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <Award className="w-5 h-5 text-yellow-400" /> ðŸŽ“ 4-H Academy
+              <Award className="w-5 h-5 text-yellow-400" /> 🎓 4-H Academy
             </button>
             <button 
               onClick={() => setActiveTab('registrarPrep')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'registrarPrep' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <FileText className="w-5 h-5 text-indigo-400" /> ðŸ“œ Registrar Prep
+              <FileText className="w-5 h-5 text-indigo-400" /> 📜 Registrar Prep
             </button>
             {(sub.evansVerified || sub.tier === 'evans_lifetime') && (
               <button 
                 onClick={() => setActiveTab('evansMigrator')}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'evansMigrator' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
               >
-                <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> ðŸ“¦ Evans Migrator
+                <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
               </button>
             )}
             <button 
@@ -5852,13 +5833,13 @@ export default function App() {
               onClick={() => setActiveTab('marketplace')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'marketplace' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <ShoppingBag className="w-5 h-5 text-orange-450 font-bold" /> ðŸ›’ Marketplace
+              <ShoppingBag className="w-5 h-5 text-orange-450 font-bold" /> 🛒 Marketplace
             </button>
             <button 
               onClick={() => setActiveTab('social')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'social' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <Share2 className="w-5 h-5 text-indigo-400 font-bold" /> ðŸŒ Community Feed
+              <Share2 className="w-5 h-5 text-indigo-400 font-bold" /> 🌐 Community Feed
             </button>
             <button 
               onClick={() => setActiveTab('help')}
@@ -5988,7 +5969,7 @@ export default function App() {
             {/* Custom Accent Color Picker */}
             <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3">
               <label className="text-xs font-bold flex items-center gap-1.5 text-indigo-300">
-                ðŸŽ¨ Custom Accent Color Picker
+                🎨 Custom Accent Color Picker
               </label>
               <div className="flex items-center gap-2">
                 <input 
@@ -6055,7 +6036,7 @@ export default function App() {
             {/* My Credentials Viewer / Editor */}
             <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
               <span className="text-xs font-bold flex items-center gap-1.5 text-indigo-300">
-                ðŸ”‘ My Security Credentials
+                🔑 My Security Credentials
               </span>
               <div className="flex flex-col gap-1 mt-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-70">Email Address</label>
@@ -6145,7 +6126,7 @@ export default function App() {
               }}
               className="btn-interactive w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-bold text-white border-none rounded-xl mt-2 flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30"
             >
-              ðŸ’¾ Save Barn Settings
+              💾 Save Barn Settings
             </button>
 
             {/* WarrenWise AI Mascot Dialogue (Fun Mode Only) */}
@@ -6213,7 +6194,7 @@ export default function App() {
               {deferredPrompt && showInstallBanner && (
                 <div className="glass-container p-4 border border-indigo-500/30 bg-indigo-950/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-fade-slide">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">ðŸ“±</span>
+                    <span className="text-3xl">📱</span>
                     <div>
                       <h4 className="font-bold text-white text-xs">Install Rabbitry Pedigree Pro App</h4>
                       <p className="text-[10px] text-slate-300 mt-0.5">Add to your home screen for rapid offline hutch logging and zero lag.</p>
@@ -6248,7 +6229,7 @@ export default function App() {
                 <div className="glass-container p-4 border border-orange-500/30 bg-orange-950/15 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-indigo-500"></div>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">âš¡</span>
+                    <span className="text-2xl">⚡</span>
                     <div>
                       <h4 className="font-bold text-orange-300 text-xs">Sync Conflicts Detected</h4>
                       <p className="text-[10px] text-slate-300 mt-0.5">{conflictsCount} pedigree update(s) from another device require your review before they can be merged.</p>
@@ -6268,7 +6249,7 @@ export default function App() {
                 <div className="glass-container p-6 border-2 border-amber-500/25 relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900/95 to-amber-950/15">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600"></div>
                   <h3 className="text-base font-bold text-amber-400 flex items-center gap-1.5 mb-4">
-                    ðŸŒ¾ Assistant Review Center ({allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length} pending)
+                    🌾 Assistant Review Center ({allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').length} pending)
                   </h3>
                   <div className="flex flex-col gap-3">
                     {allApprovals.filter(a => a.breederId === currentUser.id && a.status === 'pending').map(item => (
@@ -6330,13 +6311,13 @@ export default function App() {
                                   onClick={() => action.execute(true)}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                                 >
-                                  Positive ðŸ¤°
+                                  Positive 🤰
                                 </button>
                                 <button 
                                   onClick={() => action.execute(false)}
                                   className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                                 >
-                                  Negative âŒ
+                                  Negative ❌
                                 </button>
                               </div>
                             )}
@@ -6346,7 +6327,7 @@ export default function App() {
                                 onClick={() => action.execute()}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                               >
-                                Confirm Box Placed ðŸ“¦
+                                Confirm Box Placed 📦
                               </button>
                             )}
 
@@ -6364,7 +6345,7 @@ export default function App() {
                                 <input name="kitsAlive" type="number" min="0" placeholder="Kits Alive" required className="w-20 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <input name="kitsDead" type="number" min="0" placeholder="Kits Dead" defaultValue="0" className="w-20 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <button type="submit" className="bg-pink-650 hover:bg-pink-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
-                                  Kindle ðŸŽ‚
+                                  Kindle 🎂
                                 </button>
                               </form>
                             )}
@@ -6380,7 +6361,7 @@ export default function App() {
                               >
                                 <input name="weanCount" type="number" min="0" max={action.kitsBornAlive} placeholder="Kits Weaned" required className="w-24 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
-                                  Wean ðŸ¥›
+                                  Wean 🥛
                                 </button>
                               </form>
                             )}
@@ -6390,7 +6371,7 @@ export default function App() {
                                 onClick={() => action.execute()}
                                 className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-1.5 rounded-lg border-none cursor-pointer text-[11px]"
                               >
-                                View Profile ðŸ‡
+                                View Profile 🐇
                               </button>
                             )}
 
@@ -6405,7 +6386,7 @@ export default function App() {
                               >
                                 <input name="weightOz" type="number" min="1" placeholder="Weight (oz)" required className="w-24 text-[10px] py-1 bg-slate-900 border-white/10 rounded px-1.5 text-white" />
                                 <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer text-[10px]">
-                                  Save Weight âš–ï¸
+                                  Save Weight ⚖️
                                 </button>
                               </form>
                             )}
@@ -6614,7 +6595,7 @@ export default function App() {
                             <h4 className="font-bold mt-2 text-white">{s.name}</h4>
                             <p className="text-xs opacity-85 mt-1">Location: {s.location || 'TBD'} | Date: {s.date}</p>
                             <p className="text-xs text-yellow-400 font-bold mt-1">
-                              âš ï¸ {diffDays === 0 ? "TODAY IS SHOW DAY!" : `${diffDays} days remaining.`} 
+                              ⚠️ {diffDays === 0 ? "TODAY IS SHOW DAY!" : `${diffDays} days remaining.`} 
                               {s.status === 'attending' && " Prepare pedigrees, weigh rabbits, and check tattoos!"}
                             </p>
                           </div>
@@ -6650,7 +6631,7 @@ export default function App() {
                         triggerConfetti();
                         setSuccessMascot({
                           type: 'usagi',
-                          emoji: 'ðŸ§¼',
+                          emoji: '🧼',
                           title: 'Barn Cleaned!',
                           message: 'Your Registrar partner reports that all cages have been recorded as cleaned and sanitized. 10XP points awarded!'
                         });
@@ -6670,7 +6651,7 @@ export default function App() {
                   <div className="glass-container p-6 flex flex-col gap-4">
                     <div className="flex justify-between items-center border-b border-white/5 pb-2">
                       <h3 className="text-base font-bold flex items-center gap-1.5 text-indigo-300">
-                        ðŸ“‹ Daily Hutch Chores
+                        📋 Daily Hutch Chores
                       </h3>
                       <span className="text-[10px] bg-green-500/20 text-green-300 px-2 py-0.5 rounded font-bold font-mono">
                         {chores.filter(c => c.completed).length} / {chores.length} Done
@@ -6747,10 +6728,10 @@ export default function App() {
                   <div className="glass-container p-6 flex flex-col gap-4">
                     <h3 className="text-base font-bold text-indigo-300">Show Prep Checklist</h3>
                     <ul className="text-sm space-y-2 opacity-90">
-                      <li className="flex items-center gap-2">ðŸŸ¢ Check senior weights fit breed thresholds</li>
-                      <li className="flex items-center gap-2">ðŸŸ¢ Print ARBA-compliant 3-generation pedigrees</li>
-                      <li className="flex items-center gap-2">ðŸŸ¢ Verify tattoo matches registration paper</li>
-                      <li className="flex items-center gap-2">ðŸŸ¢ Scan cage cards to audit hutch list</li>
+                      <li className="flex items-center gap-2">🟢 Check senior weights fit breed thresholds</li>
+                      <li className="flex items-center gap-2">🟢 Print ARBA-compliant 3-generation pedigrees</li>
+                      <li className="flex items-center gap-2">🟢 Verify tattoo matches registration paper</li>
+                      <li className="flex items-center gap-2">🟢 Scan cage cards to audit hutch list</li>
                     </ul>
                   </div>
 
@@ -6788,7 +6769,7 @@ export default function App() {
                       
                       {/* Badge 1: Pedigree Builder */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${hasPedigree ? 'bg-white/5 border-pink-500/35 shadow-lg shadow-pink-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">ðŸ†</span>
+                        <span className="text-2xl">🏆</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Pedigree Builder</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${hasPedigree ? 'bg-pink-500/20 text-pink-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {hasPedigree ? 'UNLOCKED' : 'LOCKED'}
@@ -6797,7 +6778,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-pink-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-pink-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {hasPedigree ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
+                            {hasPedigree ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {hasPedigree 
@@ -6810,7 +6791,7 @@ export default function App() {
 
                       {/* Badge 2: Hutch Hero */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${hutchHero ? 'bg-white/5 border-yellow-500/35 shadow-lg shadow-yellow-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">ðŸ¥•</span>
+                        <span className="text-2xl">🥕</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Hutch Hero</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${hutchHero ? 'bg-yellow-500/20 text-yellow-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {hutchHero ? 'UNLOCKED' : 'LOCKED'}
@@ -6819,7 +6800,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-yellow-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-yellow-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {hutchHero ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
+                            {hutchHero ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {hutchHero 
@@ -6832,7 +6813,7 @@ export default function App() {
 
                       {/* Badge 3: Litter Legend */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${litterLegend ? 'bg-white/5 border-emerald-500/35 shadow-lg shadow-emerald-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">ðŸ°</span>
+                        <span className="text-2xl">🐰</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Litter Legend</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${litterLegend ? 'bg-green-500/20 text-green-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {litterLegend ? 'UNLOCKED' : 'LOCKED'}
@@ -6841,7 +6822,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-emerald-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-emerald-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {litterLegend ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
+                            {litterLegend ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {litterLegend 
@@ -6854,7 +6835,7 @@ export default function App() {
 
                       {/* Badge 4: Show Champion */}
                       <div className={`relative group p-3 rounded-2xl flex flex-col items-center text-center gap-1.5 border transition-all ${showChamp ? 'bg-white/5 border-sky-500/35 shadow-lg shadow-sky-500/5 animate-bounce-subtle' : 'bg-black/30 border-white/5 opacity-50'}`}>
-                        <span className="text-2xl">ðŸ…</span>
+                        <span className="text-2xl">🏅</span>
                         <span className="text-[10px] font-bold text-white leading-tight">Show Champion</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${showChamp ? 'bg-sky-500/20 text-sky-300 font-bold' : 'bg-slate-500/20 text-slate-400'}`}>
                           {showChamp ? 'UNLOCKED' : 'LOCKED'}
@@ -6863,7 +6844,7 @@ export default function App() {
                         {/* Premium Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 w-52 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-200 pointer-events-none z-30 bg-slate-950/95 border border-sky-500/40 rounded-xl p-3 shadow-2xl text-[10px] text-sky-100 leading-normal font-sans text-center">
                           <div className="font-extrabold text-white mb-1 flex items-center justify-center gap-1">
-                            {showChamp ? 'âœ¨ Badge Unlocked! âœ¨' : 'ðŸ”’ Unlock Requirement'}
+                            {showChamp ? '✨ Badge Unlocked! ✨' : '🔒 Unlock Requirement'}
                           </div>
                           <p className="opacity-90">
                             {showChamp 
@@ -6884,7 +6865,7 @@ export default function App() {
                 <div className="glass-container p-6 flex flex-col gap-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-base font-bold flex items-center gap-1.5 text-indigo-300">
-                      ðŸŒ¾ Barn Assistants & Workers
+                      🌾 Barn Assistants & Workers
                     </h3>
                     <span className="text-[10px] bg-indigo-500/20 px-2 py-0.5 rounded font-mono text-indigo-300">
                       My ID: {currentUser?.accountNumber || 'Pending'}
@@ -6996,7 +6977,7 @@ export default function App() {
               {currentUser?.role === 'assistant' && (
                 <div className="glass-container p-6 flex flex-col gap-4">
                   <h3 className="text-base font-bold flex items-center gap-1.5 text-indigo-300">
-                    ðŸŒ¾ Assistant Workspace
+                    🌾 Assistant Workspace
                   </h3>
                   <p className="text-xs opacity-85">
                     You are registered as a Barn Assistant. You have your own private hutch registry by default. 
@@ -7013,11 +6994,11 @@ export default function App() {
                       </p>
                       {currentUser.employerStatus === 'active' ? (
                         <p className="text-[11px] opacity-70 mt-2">
-                          ðŸ’¡ <strong>Use the Context Switcher</strong> in the top header to toggle between your own hutch and your employer's hutch registry to document their data.
+                          💡 <strong>Use the Context Switcher</strong> in the top header to toggle between your own hutch and your employer's hutch registry to document their data.
                         </p>
                       ) : (
                         <p className="text-[11px] opacity-70 mt-2">
-                          â³ Please ask your employer to log in and approve your worker association request from their dashboard to grant you documenting abilities.
+                          ⏳ Please ask your employer to log in and approve your worker association request from their dashboard to grant you documenting abilities.
                         </p>
                       )}
                     </div>
@@ -7057,7 +7038,7 @@ export default function App() {
                         onChange={(e) => setShowArchived(e.target.checked)}
                         className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
                       />
-                      ðŸ“ Show Sold / Archived
+                      📁 Show Sold / Archived
                     </label>
                   </div>
 
@@ -7120,8 +7101,8 @@ export default function App() {
                           });
                         }}
                       >
-                        <option value="rabbit">ðŸ° Rabbit</option>
-                        <option value="cavy">ðŸ¹ Guinea Pig (Cavy)</option>
+                        <option value="rabbit">🐰 Rabbit</option>
+                        <option value="cavy">🐹 Guinea Pig (Cavy)</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -7182,7 +7163,7 @@ export default function App() {
                           }}
                           className="text-[10px] text-indigo-400 font-bold border-none bg-transparent hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer"
                         >
-                          ðŸŽ¨ Color Wizard
+                          🎨 Color Wizard
                         </button>
                       </div>
                       <input 
@@ -7213,7 +7194,7 @@ export default function App() {
                           onChange={(e) => setNewRabbit({...newRabbit, isCharlie: e.target.checked})}
                           className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-3 h-3"
                         />
-                        âš ï¸ Flag as 'Charlie' (Homozygous En/En)
+                        ⚠️ Flag as 'Charlie' (Homozygous En/En)
                       </label>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -7479,23 +7460,23 @@ export default function App() {
                         onClick={() => setSelectedRabbit(null)}
                         className="btn-interactive text-xs py-1.5 px-3 bg-slate-800 hover:bg-slate-700 font-bold text-white border-none flex items-center gap-1"
                       >
-                        â† Back to Registry
+                        ← Back to Registry
                       </button>
                       <h2 className="text-xl font-black text-white flex items-center gap-2">
-                        ðŸ‡ {selectedRabbit.name} <span className="opacity-55 text-sm">({selectedRabbit.tattooNumber})</span>
+                        🐇 {selectedRabbit.name} <span className="opacity-55 text-sm">({selectedRabbit.tattooNumber})</span>
                       </h2>
                       {(() => {
                         const fda = isUnderFdaWithdrawal(selectedRabbit.id);
                         if (fda.active) {
                           return (
                             <span className="bg-rose-500/20 text-rose-300 border border-rose-500/35 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1.5 animate-pulse uppercase tracking-wider">
-                              âš ï¸ FDA Withdrawal Active ({fda.remainingDays} days left: {fda.drugName})
+                              ⚠️ FDA Withdrawal Active ({fda.remainingDays} days left: {fda.drugName})
                             </span>
                           );
                         } else {
                           return (
                             <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider">
-                              ðŸ›¡ï¸ FDA Safe / Clear
+                              🛡️ FDA Safe / Clear
                             </span>
                           );
                         }
@@ -7504,11 +7485,11 @@ export default function App() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {selectedRabbit.ownershipStatus === 'for_sale' ? (
                         <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1.5 rounded-lg uppercase animate-pulse">
-                          ðŸ›’ Active Sale Listing
+                          🛒 Active Sale Listing
                         </span>
                       ) : selectedRabbit.status === 'sold' ? (
                         <span className="text-xs font-bold text-emerald-450 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg uppercase">
-                          ðŸ¤ Sold
+                          🤝 Sold
                         </span>
                       ) : (
                         <button
@@ -7525,7 +7506,7 @@ export default function App() {
                           }}
                           className="btn-interactive text-xs py-1.5 px-3 bg-orange-650 hover:bg-orange-700 text-white font-bold rounded-lg border-none cursor-pointer flex items-center gap-1"
                         >
-                          ðŸ›’ List for Sale
+                          🛒 List for Sale
                         </button>
                       )}
                       <span className="text-xs font-bold text-indigo-350 bg-indigo-500/15 border border-indigo-500/25 px-2.5 py-1.5 rounded-lg uppercase">
@@ -7545,7 +7526,7 @@ export default function App() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <h3 className="text-base font-bold flex items-center gap-2">
-                          ðŸ“‹ Profile Details
+                          📋 Profile Details
                         </h3>
                         {!editProfileMode && (
                           <button
@@ -7557,7 +7538,7 @@ export default function App() {
                             }}
                             className="btn-interactive text-[10px] py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold border border-white/10 rounded-lg flex items-center gap-1 cursor-pointer"
                           >
-                            ðŸ“œ Registrar Prep Packet
+                            📜 Registrar Prep Packet
                           </button>
                         )}
                       </div>
@@ -7590,7 +7571,7 @@ export default function App() {
                           }}
                           className="btn-interactive text-xs py-1.5 px-4 bg-indigo-600 hover:bg-indigo-700 font-bold text-white border-none flex items-center gap-1.5"
                         >
-                          âœï¸ Edit Profile
+                          ✏️ Edit Profile
                         </button>
                       ) : (
                         <div className="flex gap-2">
@@ -7604,7 +7585,7 @@ export default function App() {
                             onClick={handleSaveProfile}
                             className="btn-interactive text-xs py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 font-bold text-white border-none flex items-center gap-1.5"
                           >
-                            ðŸ’¾ Save Changes
+                            💾 Save Changes
                           </button>
                         </div>
                       )}
@@ -7627,7 +7608,7 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Variety</span>
-                          <span className="font-semibold">{selectedRabbit.variety || 'â€”'}</span>
+                          <span className="font-semibold">{selectedRabbit.variety || '—'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Sex</span>
@@ -7635,7 +7616,7 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Date of Birth</span>
-                          <span className="font-semibold">{selectedRabbit.dob || 'â€”'}</span>
+                          <span className="font-semibold">{selectedRabbit.dob || '—'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Show Class</span>
@@ -7656,11 +7637,11 @@ export default function App() {
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">ARBA Reg #</span>
-                          <span className="font-mono font-semibold text-indigo-300">{selectedRabbit.registrationNumber || 'â€”'}</span>
+                          <span className="font-mono font-semibold text-indigo-300">{selectedRabbit.registrationNumber || '—'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Grand Champion #</span>
-                          <span className="font-mono font-semibold text-yellow-400">{selectedRabbit.gcNumber || 'â€”'}</span>
+                          <span className="font-mono font-semibold text-yellow-400">{selectedRabbit.gcNumber || '—'}</span>
                         </div>
                         <div className="flex flex-col gap-0.5 col-span-2">
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Notes</span>
@@ -7668,7 +7649,7 @@ export default function App() {
                         </div>
                         {selectedRabbit.isCharlie && (
                           <div className="col-span-2 md:col-span-3 lg:col-span-4 mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-start gap-2.5">
-                            <span className="text-base leading-none">âš ï¸</span>
+                            <span className="text-base leading-none">⚠️</span>
                             <div>
                               <strong className="text-amber-200 block">Charlie Spotting Pattern (Homozygous En/En)</strong>
                               <p className="mt-0.5 opacity-90">Disqualified from ARBA show competition due to insufficient color coverage. Charlies carry homozygous dominant spotting genes and are prone to genetic megacolon, making them unsuitable for show-quality breeding programs.</p>
@@ -7717,7 +7698,7 @@ export default function App() {
                               onChange={(e) => setEditProfileData({...editProfileData, isCharlie: e.target.checked})}
                               className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-2.5 h-2.5"
                             />
-                            âš ï¸ Charlie Pattern (En/En)
+                            ⚠️ Charlie Pattern (En/En)
                           </label>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -7938,10 +7919,10 @@ export default function App() {
                           onChange={(e) => setNewLeg({...newLeg, award: e.target.value})}
                           className="text-xs py-1.5 px-3"
                         >
-                          <option value="1st Class">1st Class Ribbon ðŸ¥‡</option>
-                          <option value="Best of Variety">Best of Variety (BOV) ðŸ†</option>
-                          <option value="Best of Breed">Best of Breed (BOB) ðŸŒŸ</option>
-                          <option value="Best In Show">Best In Show (BIS) ðŸ‘‘</option>
+                          <option value="1st Class">1st Class Ribbon 🥇</option>
+                          <option value="Best of Variety">Best of Variety (BOV) 🏆</option>
+                          <option value="Best of Breed">Best of Breed (BOB) 🌟</option>
+                          <option value="Best In Show">Best In Show (BIS) 👑</option>
                         </select>
                         <input 
                           type="number" placeholder="Class Size" required
@@ -8035,7 +8016,7 @@ export default function App() {
 
           {/* TAB 3: BREEDING & REPRODUCTION */}
           {activeTab === 'breeding' && (
-            <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-60">Loading Breeding Schedulerâ€¦</div>}>
+            <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-60">Loading Breeding Scheduler…</div>}>
               <BreedingScheduler
                 rabbits={rabbits}
                 breedings={breedings}
@@ -8291,7 +8272,7 @@ export default function App() {
                                     className="p-3 rounded-lg bg-slate-900/80 border-2 border-emerald-500/30 flex flex-col gap-2 relative hover:border-emerald-555 transition-all duration-200"
                                   >
                                     <div className="flex justify-between items-center text-[9px] font-black uppercase text-emerald-400 tracking-wider">
-                                      <span>ðŸŒ¾ Grow Out (T{tier})</span>
+                                      <span>🌾 Grow Out (T{tier})</span>
                                       <button
                                         onClick={() => handleToggleGrowOutCage(locationKey)}
                                         disabled={occupyingRabbits.length > 1}
@@ -8307,7 +8288,7 @@ export default function App() {
                                       {occupyingRabbits.map(r => (
                                         <div key={r.id} className="flex justify-between items-center bg-black/40 p-1.5 rounded-lg border border-white/5 text-[10px]">
                                           <div className="truncate max-w-[70%]">
-                                            <span className="font-bold text-white">ðŸ° {r.name}</span>
+                                            <span className="font-bold text-white">🐰 {r.name}</span>
                                             <span className="text-slate-400 ml-1 font-mono font-bold">({r.tattooNumber})</span>
                                           </div>
                                           <div className="flex items-center gap-1.5 shrink-0">
@@ -8319,7 +8300,7 @@ export default function App() {
                                               className="p-0.5 text-red-400 hover:text-red-300 font-bold border-none bg-transparent cursor-pointer"
                                               title="Remove from cage"
                                             >
-                                              âŒ
+                                              ❌
                                             </button>
                                           </div>
                                         </div>
@@ -8422,7 +8403,7 @@ export default function App() {
                                   >
                                     <div className="flex justify-between items-start gap-1">
                                       <div className="font-extrabold text-xs text-white truncate max-w-[70%]" title={occupyingRabbit.name}>
-                                        ðŸ° {occupyingRabbit.name}
+                                        🐰 {occupyingRabbit.name}
                                       </div>
                                       <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${occupyingRabbit.sex === 'buck' ? 'bg-sky-500/20 text-sky-350 border border-sky-500/30' : 'bg-pink-500/20 text-pink-350 border border-pink-500/30'}`}>
                                         {occupyingRabbit.sex}
@@ -8443,13 +8424,13 @@ export default function App() {
                                         onClick={() => setPrintCardRabbit(occupyingRabbit)}
                                         className="flex-1 py-1 rounded bg-slate-850 hover:bg-slate-800 text-[9px] font-bold text-center border-none text-white cursor-pointer"
                                       >
-                                        ðŸ–¨ï¸ Card
+                                        🖨️ Card
                                       </button>
                                       <button
                                         onClick={() => setCageMoveRabbitId(cageMoveRabbitId === occupyingRabbit.id ? null : occupyingRabbit.id)}
                                         className={`flex-1 py-1 rounded text-[9px] font-bold text-center border-none cursor-pointer ${cageMoveRabbitId === occupyingRabbit.id ? 'bg-amber-600 text-white' : 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-350'}`}
                                       >
-                                        ðŸ”„ Move
+                                        🔄 Move
                                       </button>
                                       <button
                                         onClick={() => handleUnassignRabbitFromCage(occupyingRabbit.id)}
@@ -8458,7 +8439,7 @@ export default function App() {
                                         Unassign
                                       </button>
                                     </div>
-                                    {/* Move mode â€” show vacant slot picker */}
+                                    {/* Move mode — show vacant slot picker */}
                                     {cageMoveRabbitId === occupyingRabbit.id && (() => {
                                       const MOVE_TIERS = [1, 2];
                                       const vacantSlots = [];
@@ -8497,7 +8478,7 @@ export default function App() {
                                         onClick={() => handleToggleGrowOutCage(locationKey)}
                                         className="text-[9px] text-emerald-450 hover:underline border-none bg-transparent cursor-pointer font-bold flex items-center gap-1"
                                       >
-                                        ðŸŒ¾ Make Grow Out
+                                        🌾 Make Grow Out
                                       </button>
                                     </div>
                                   </div>
@@ -8552,7 +8533,7 @@ export default function App() {
                                         onClick={() => handleToggleGrowOutCage(locationKey)}
                                         className="text-[9px] text-emerald-450 hover:underline border-none bg-transparent cursor-pointer font-bold flex items-center gap-1"
                                       >
-                                        ðŸŒ¾ Make Grow Out
+                                        🌾 Make Grow Out
                                       </button>
                                     </div>
                                   </div>
@@ -8594,7 +8575,7 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/30 p-4 rounded-2xl border border-white/5 items-center">
                 <div>
                   <h4 className="text-sm font-bold text-white mb-1 flex items-center gap-1.5">
-                    ðŸ“¥ Local Database Backup & Restore
+                    📥 Local Database Backup & Restore
                   </h4>
                   <p className="text-[11px] text-slate-400">
                     Export your active rabbitry records as a JSON file or restore from a previously saved backup file.
@@ -8605,10 +8586,10 @@ export default function App() {
                     onClick={handleExportBackup}
                     className="btn-interactive text-xs py-2 px-4 bg-indigo-600/80 hover:bg-indigo-600 border-none text-white font-bold"
                   >
-                    ðŸ’¾ Export Backup
+                    💾 Export Backup
                   </button>
                   <label className="btn-interactive text-xs py-2 px-4 bg-emerald-600 hover:bg-emerald-555 border-none text-white font-bold cursor-pointer flex items-center justify-center">
-                    ðŸ“‚ Restore Backup
+                    📂 Restore Backup
                     <input
                       type="file"
                       accept=".json"
@@ -8669,7 +8650,7 @@ export default function App() {
               {/* Force Re-seed Clean Mock Database Card */}
               <div className="glass-container p-6 border border-emerald-500/20 bg-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-left">
-                  <h3 className="text-sm font-black text-white">ðŸŒ¾ Agricultural Demonstration & Mock Data Seeding</h3>
+                  <h3 className="text-sm font-black text-white">🌾 Agricultural Demonstration & Mock Data Seeding</h3>
                   <p className="text-xs opacity-75 mt-0.5 max-w-xl leading-relaxed">
                     Force re-seed all local tables with comprehensive test data (20+ purebred rabbits, historical growth logs, financial ledger entries, breeder profiles, active breeding schedules, and 4-H Academy streaks) to audit end-to-end workflows.
                   </p>
@@ -8689,7 +8670,7 @@ export default function App() {
                   }}
                   className="btn-interactive shrink-0 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl border-none shadow-md shadow-emerald-900/20"
                 >
-                  âš¡ Seed Full Test Data
+                  ⚡ Seed Full Test Data
                 </button>
               </div>
             </div>
@@ -8851,25 +8832,25 @@ export default function App() {
                   onClick={() => setHelpSubTab('manual')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'manual' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  ðŸ“– In-App User Manual
+                  📖 In-App User Manual
                 </button>
                 <button
                   onClick={() => setHelpSubTab('policy')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'policy' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  ðŸ›¡ï¸ FDA & HIPAA Policies
+                  🛡️ FDA & HIPAA Policies
                 </button>
                 <button
                   onClick={() => setHelpSubTab('disclaimer')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'disclaimer' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  âš–ï¸ Legal & Trademark Disclaimers
+                  ⚖️ Legal & Trademark Disclaimers
                 </button>
                 <button
                   onClick={() => setHelpSubTab('data')}
                   className={`px-4 py-2 text-xs font-bold transition-all border-b-2 ${helpSubTab === 'data' ? 'border-sky-400 text-white' : 'border-transparent text-slate-450 hover:text-white bg-transparent border-none'}`}
                 >
-                  ðŸ“ Full Data Backup & Restore
+                  📁 Full Data Backup & Restore
                 </button>
               </div>
 
@@ -8920,11 +8901,11 @@ export default function App() {
                     <p className="opacity-80">
                       WarrenWise Pro offers subscription tiers tailored to your rabbitry's scale:
                       <br />
-                      â€¢ <strong>Basic / Free Tier</strong>: Restricted to 25 active rabbits (Juniors, Seniors, and active inventory). Pre-wean kits and pedigree-only background records do not count against this limit.
+                      • <strong>Basic / Free Tier</strong>: Restricted to 25 active rabbits (Juniors, Seniors, and active inventory). Pre-wean kits and pedigree-only background records do not count against this limit.
                       <br />
-                      â€¢ <strong>Pro Tier</strong>: Supports up to 1,000 active rabbit profiles.
+                      • <strong>Pro Tier</strong>: Supports up to 1,000 active rabbit profiles.
                       <br />
-                      â€¢ <strong>Admin Overrides</strong>: If you need custom limits, comped (free) access, or discounted pricing, platforms owners can override these settings. Overrides are manageable via the Owner Control Center.
+                      • <strong>Admin Overrides</strong>: If you need custom limits, comped (free) access, or discounted pricing, platforms owners can override these settings. Overrides are manageable via the Owner Control Center.
                     </p>
                   </div>
                 </div>
@@ -8933,7 +8914,7 @@ export default function App() {
               {helpSubTab === 'policy' && (
                 <div className="glass-container p-6 flex flex-col gap-5 text-sm leading-relaxed">
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">ðŸ›¡ï¸ 100% FDA Veterinary Compliance</h4>
+                    <h4 className="text-base font-bold text-white mb-2">🛡️ 100% FDA Veterinary Compliance</h4>
                     <p className="opacity-80">
                       In accordance with FDA veterinary guidelines and regulations for animal drug administration:
                       - Breeders must record drug names, dosages, and the manufacturer's **Withdrawal Period** (in days) to ensure no residues enter the exhibition or food chain.
@@ -8942,7 +8923,7 @@ export default function App() {
                   </div>
                   <hr className="border-white/5" />
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">ðŸ”’ HIPAA Safe Harbor Data Protection</h4>
+                    <h4 className="text-base font-bold text-white mb-2">🔒 HIPAA Safe Harbor Data Protection</h4>
                     <p className="opacity-80">
                       This is a veterinary-focused animal management platform. In compliance with Federal HIPAA regulations and local compliance rules:
                       - **Rabbit-Only Veterinary Scope**: All medical logs, treatments, dosages, and questions must concern rabbits exclusively. No human medical details, breeder medical records, or human drug prescriptions may be documented.
@@ -8952,7 +8933,7 @@ export default function App() {
                   </div>
                   <hr className="border-white/5" />
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">âš–ï¸ Terms of Service & Privacy Declarations</h4>
+                    <h4 className="text-base font-bold text-white mb-2">⚖️ Terms of Service & Privacy Declarations</h4>
                     <p className="opacity-80">
                       By utilizing the WarrenWise Pro platform, you agree to safeguard client identities, log veterinary procedures accurately under FDA guidelines, and refrain from uploading human health datasets. All database information is stored locally on-device and transmitted via end-to-end encrypted SQLite databases.
                     </p>
@@ -8963,7 +8944,7 @@ export default function App() {
               {helpSubTab === 'disclaimer' && (
                 <div className="glass-container p-6 flex flex-col gap-5 text-sm leading-relaxed text-left">
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">âš–ï¸ ARBA Trademark Notice & Fair Use Disclaimer</h4>
+                    <h4 className="text-base font-bold text-white mb-2">⚖️ ARBA Trademark Notice & Fair Use Disclaimer</h4>
                     <p className="opacity-80">
                       WarrenWise Pro (RabbitryPedigree Pro) is an independent hutch registry, pedigree manager, and husbandry logging utility. <strong>This software application is not affiliated with, endorsed by, sponsored by, or officially associated with the American Rabbit Breeders Association (ARBA)</strong>.
                     </p>
@@ -8976,13 +8957,13 @@ export default function App() {
                   </div>
                   <hr className="border-white/5" />
                   <div>
-                    <h4 className="text-base font-bold text-white mb-2">ðŸ›¡ï¸ Copyright Compliance & Breeder Data Ownership</h4>
+                    <h4 className="text-base font-bold text-white mb-2">🛡️ Copyright Compliance & Breeder Data Ownership</h4>
                     <p className="opacity-80">
                       We respect all intellectual property laws and copyright protections:
                       <br />
-                      â€¢ <strong>Pedigree Generation</strong>: The pedigree chart templates generated by this platform are generic, breeder-owned layouts designed to record genetic lineage. We do not copy, distribute, or print protected official ARBA certificates or proprietary materials.
+                      • <strong>Pedigree Generation</strong>: The pedigree chart templates generated by this platform are generic, breeder-owned layouts designed to record genetic lineage. We do not copy, distribute, or print protected official ARBA certificates or proprietary materials.
                       <br />
-                      â€¢ <strong>Exhibition Planning</strong>: Show lists and scheduling calculators are informational organizers. Show catalogs, entry fees, and registration rules remain the intellectual property of their respective sponsoring clubs.
+                      • <strong>Exhibition Planning</strong>: Show lists and scheduling calculators are informational organizers. Show catalogs, entry fees, and registration rules remain the intellectual property of their respective sponsoring clubs.
                     </p>
                   </div>
                 </div>
@@ -8991,7 +8972,7 @@ export default function App() {
               {helpSubTab === 'data' && (
                 <div className="glass-container p-6 flex flex-col gap-6 text-sm">
                   <div>
-                    <h4 className="text-base font-bold text-white mb-1">ðŸ“ Complete Database Backup (Export JSON)</h4>
+                    <h4 className="text-base font-bold text-white mb-1">📁 Complete Database Backup (Export JSON)</h4>
                     <p className="opacity-75 text-xs">
                       Download a single JSON file containing all rabbits, breedings, litters, ledger, medical history, and account settings. You can use this file to migrate between devices or store historical archives.
                     </p>
@@ -9006,7 +8987,7 @@ export default function App() {
                   <hr className="border-white/5" />
 
                   <div>
-                    <h4 className="text-base font-bold text-white mb-1">ðŸ“¤ Restore Database (Import JSON)</h4>
+                    <h4 className="text-base font-bold text-white mb-1">📤 Restore Database (Import JSON)</h4>
                     <p className="opacity-75 text-xs text-rose-300">
                       WARNING: Importing a backup file will overwrite all current rabbits, litters, breedings, ledger, and settings in this browser. This action cannot be undone.
                     </p>
@@ -9061,14 +9042,14 @@ export default function App() {
                     <input
                       type="password"
                       required
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="••••••••••••••••"
                       value={adminPasswordInput}
                       onChange={(e) => setAdminPasswordInput(e.target.value)}
                       className="py-2.5 px-4 bg-slate-950/50 border border-white/10 text-white rounded-xl text-center text-sm tracking-widest font-mono focus:border-red-500"
                     />
                     {adminPasswordError && (
                       <span className="text-red-400 font-semibold mt-1 text-[10px] block text-center">
-                        âš ï¸ {adminPasswordError}
+                        ⚠️ {adminPasswordError}
                       </span>
                     )}
                   </div>
@@ -9097,7 +9078,7 @@ export default function App() {
                         className="p-1 px-2.5 bg-slate-855 hover:bg-slate-800 text-[10px] text-slate-400 hover:text-slate-200 border border-white/10 rounded-lg font-mono ml-4"
                         title="Lock access"
                       >
-                        ðŸ”’ Lock Tab
+                        🔒 Lock Tab
                       </button>
                     </h3>
                   <p className="text-xs opacity-75">
@@ -9267,9 +9248,9 @@ export default function App() {
                       <div className="flex flex-col gap-1">
                         <label className="font-bold">Assign Role</label>
                         <select name="breederRole" className="py-1.5 px-3">
-                          <option value="owner">Breeder / Owner ðŸ‘‘</option>
-                          <option value="assistant">Barn Assistant ðŸŒ¾</option>
-                          <option value="registrar">ARBA Registrar ðŸ“œ</option>
+                          <option value="owner">Breeder / Owner 👑</option>
+                          <option value="assistant">Barn Assistant 🌾</option>
+                          <option value="registrar">ARBA Registrar 📜</option>
                         </select>
                       </div>
 
@@ -9363,14 +9344,14 @@ export default function App() {
                             }
                           }}
                         >
-                          ðŸ“ {ann.text}
+                          📍 {ann.text}
                         </div>
                       ))}
 
                       {/* Watermark Overlay Preview */}
                       {editorWatermark && (
                         <span className="absolute bottom-2 right-2 text-[8px] text-white/50 bg-black/40 px-1 py-0.5 rounded pointer-events-none uppercase font-mono tracking-widest">
-                          Â© {activeBreederContext?.rabbitryName || 'My Rabbitry'}
+                          © {activeBreederContext?.rabbitryName || 'My Rabbitry'}
                         </span>
                       )}
                     </div>
@@ -9444,7 +9425,7 @@ export default function App() {
                           onClick={() => setEditorRotation(prev => (prev + 90) % 360)}
                           className="btn-interactive py-1 px-3 bg-indigo-600 text-xs border-none font-bold"
                         >
-                          ðŸ”„ Rotate 90Â°
+                          🔄 Rotate 90°
                         </button>
                       </div>
 
@@ -9556,13 +9537,13 @@ export default function App() {
                       onClick={prevPhoto}
                       className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 p-3 text-white/80 bg-slate-900/50 hover:bg-slate-900 hover:text-white rounded-full transition-all"
                     >
-                      â—€
+                      ◀
                     </button>
                     <button 
                       onClick={nextPhoto}
                       className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 p-3 text-white/80 bg-slate-900/50 hover:bg-slate-900 hover:text-white rounded-full transition-all"
                     >
-                      â–¶
+                      ▶
                     </button>
                   </>
                 )}
@@ -9586,14 +9567,14 @@ export default function App() {
                       style={{ left: `${ann.x}%`, top: `${ann.y}%` }}
                       title={ann.text}
                     >
-                      ðŸ“ {ann.text}
+                      📍 {ann.text}
                     </div>
                   ))}
 
                   {/* Watermark overlay */}
                   {pObj.watermark && (
                     <span className="absolute bottom-2 right-2 text-xs text-white/40 bg-black/40 px-2 py-1 rounded pointer-events-none uppercase tracking-widest font-mono">
-                      Â© {activeBreederContext?.rabbitryName || 'My Rabbitry'}
+                      © {activeBreederContext?.rabbitryName || 'My Rabbitry'}
                     </span>
                   )}
                 </div>
@@ -9667,7 +9648,7 @@ export default function App() {
                       }}
                       className="btn-interactive w-full py-2 bg-indigo-600 hover:bg-indigo-650 text-white font-bold text-xs border-none"
                     >
-                      â­ Set as Primary Profile
+                      ⭐ Set as Primary Profile
                     </button>
 
                     <button 
@@ -9885,8 +9866,8 @@ export default function App() {
                           value={buyerDetails.type}
                           onChange={(e) => setBuyerDetails({ ...buyerDetails, type: e.target.value })}
                         >
-                          <option value="sale">Permanent Ownership Transfer (Sale) ðŸ‘‘</option>
-                          <option value="lease">Temporary Lease Agreement â±ï¸</option>
+                          <option value="sale">Permanent Ownership Transfer (Sale) 👑</option>
+                          <option value="lease">Temporary Lease Agreement ⏱️</option>
                         </select>
                       </div>
                       <div className="flex flex-col gap-1 col-span-2">
@@ -9944,14 +9925,14 @@ export default function App() {
                   return (
                     <div className="flex flex-col gap-4">
                       <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-200">
-                        âš ï¸ <strong>Pedigree Integrity Alert:</strong> ARBA registry standards require complete records for all ancestors. Please resolve the missing fields below before signing:
+                        ⚠️ <strong>Pedigree Integrity Alert:</strong> ARBA registry standards require complete records for all ancestors. Please resolve the missing fields below before signing:
                       </div>
 
                       <div className="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1">
                         {missingFields.map((fieldItem, idx) => (
                           <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2">
                             <span className="text-xs font-bold text-white uppercase block">
-                              ðŸ‘¤ {fieldItem.name} ({fieldItem.id === rabbit.id ? 'Self' : 'Ancestor'})
+                              👤 {fieldItem.name} ({fieldItem.id === rabbit.id ? 'Self' : 'Ancestor'})
                             </span>
                             <div className="flex flex-col gap-1">
                               <label className="text-[11px] opacity-75">Missing Field: <strong>{fieldItem.label}</strong></label>
@@ -10032,7 +10013,7 @@ export default function App() {
                   return (
                     <div className="flex flex-col gap-6">
                       <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-200">
-                        âœï¸ Both parties must authorize the ownership transfer. You can draw using your cursor/touchscreen or type a legally binding electronic signature.
+                        ✍️ Both parties must authorize the ownership transfer. You can draw using your cursor/touchscreen or type a legally binding electronic signature.
                       </div>
 
                       {/* 1. Seller Section */}
@@ -10182,7 +10163,7 @@ export default function App() {
                 {transferWizardStep === 4 && (
                   <div className="flex flex-col gap-5 items-center justify-center py-6 text-center">
                     <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-450 border border-emerald-500 flex items-center justify-center text-4xl animate-bounce-subtle">
-                      ðŸŽ‰
+                      🎉
                     </div>
                     <div>
                       <h4 className="font-extrabold text-white text-base">Ownership Transfer Complete!</h4>
@@ -10205,46 +10186,13 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => {
-                          const buildAncestor = (id) => {
-                            if (!id) return null;
-                            const anc = allRabbits.find(r => r.id === id);
-                            if (!anc) return null;
-                            return {
-                              name: anc.name,
-                              tattooNumber: anc.tattooNumber,
-                              breed: anc.breed,
-                              variety: anc.variety,
-                              sex: anc.sex,
-                              dob: anc.dob,
-                              weightOz: anc.weightOz,
-                              registrationNumber: anc.registrationNumber,
-                              gcNumber: anc.gcNumber,
-                              notes: anc.notes,
-                              sire: buildAncestor(anc.sireId),
-                              dam: buildAncestor(anc.damId)
-                            };
-                          };
-
-                          const fullPacket = {
-                            type: 'certificate',
-                            certificateId: 'TX-' + Math.floor(1000 + Math.random() * 9000),
-                            rabbitName: rabbit.name,
-                            tattooNumber: rabbit.tattooNumber,
-                            breed: rabbit.breed,
-                            variety: rabbit.variety,
-                            sex: rabbit.sex,
-                            dob: rabbit.dob,
-                            weightOz: rabbit.weightOz,
-                            sire: buildAncestor(rabbit.sireId),
-                            dam: buildAncestor(rabbit.damId)
-                          };
-
-                          navigator.clipboard.writeText(JSON.stringify(fullPacket, null, 2));
-                          alert(`Full Pedigree Transfer Certificate for "${rabbit.name}" copied to clipboard! The buyer can paste this into their Import Wizard to automatically import the rabbit and all lineage ancestors.`);
+                          const mockUrl = `${window.location.origin}/transfer-verification/${rabbit.id}?cert=TX-SIMULATED`;
+                          navigator.clipboard.writeText(mockUrl);
+                          alert("Shareable digital verification link copied to clipboard!");
                         }}
-                        className="btn-interactive py-2 text-xs bg-indigo-600 text-white font-bold"
+                        className="btn-interactive py-2 text-xs bg-slate-800 text-slate-200"
                       >
-                        📋 Copy Full-Pedigree Transfer Packet (JSON)
+                        Copy Shareable Certificate Link
                       </button>
                       <button
                         type="button"
@@ -10295,7 +10243,7 @@ export default function App() {
                 
                 {/* Header Stamp */}
                 <div className="text-center flex flex-col items-center gap-1 pb-4 border-b border-indigo-100">
-                  <div className="text-4xl text-indigo-900">ðŸ‘‘</div>
+                  <div className="text-4xl text-indigo-900">👑</div>
                   <h2 className="font-serif font-black text-2xl uppercase tracking-widest text-indigo-950">
                     Verifiable Transfer Certificate
                   </h2>
@@ -10626,7 +10574,7 @@ export default function App() {
                           }}
                           className="text-[10px] text-indigo-400 font-bold border-none bg-transparent hover:text-indigo-300 flex items-center gap-0.5 cursor-pointer"
                         >
-                          ðŸŽ¨ Color Wizard
+                          🎨 Color Wizard
                         </button>
                       </div>
                       <input
@@ -10659,7 +10607,7 @@ export default function App() {
                           onChange={(e) => setNodeForm({...nodeForm, isCharlie: e.target.checked})}
                           className="rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-400 w-3 h-3"
                         />
-                        âš ï¸ Flag as 'Charlie' (En/En)
+                        ⚠️ Flag as 'Charlie' (En/En)
                       </label>
                     </div>
 
@@ -10788,7 +10736,7 @@ export default function App() {
                 {(pedigreeEditNode.rabbitId || pedigreeEditNode.isOffspring) && (
                   <div className="flex flex-col gap-4 border-t border-white/5 pt-4 mt-2">
                     <h4 className="text-xs font-bold text-yellow-400 flex items-center gap-1">
-                      ðŸ† Post & Record Show Leg Certificates
+                      🏆 Post & Record Show Leg Certificates
                     </h4>
                     
                     {/* List of current legs */}
@@ -10845,10 +10793,10 @@ export default function App() {
                         onChange={(e) => setNewAncestorLeg({...newAncestorLeg, award: e.target.value})}
                         className="text-[11px] py-1 px-2.5 bg-slate-800 border-white/5"
                       >
-                        <option value="1st Class">1st Class ðŸ¥‡</option>
-                        <option value="Best of Variety">BOV ðŸ†</option>
-                        <option value="Best of Breed">BOB ðŸŒŸ</option>
-                        <option value="Best In Show">BIS ðŸ‘‘</option>
+                        <option value="1st Class">1st Class 🥇</option>
+                        <option value="Best of Variety">BOV 🏆</option>
+                        <option value="Best of Breed">BOB 🌟</option>
+                        <option value="Best In Show">BIS 👑</option>
                       </select>
                       <input
                         type="number" placeholder="Class Size"
@@ -10861,7 +10809,7 @@ export default function App() {
                         onClick={handleAddAncestorLeg}
                         className="col-span-2 md:col-span-4 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 font-bold rounded-lg border border-yellow-500/35 transition-all text-xs"
                       >
-                        âž• Post Show Leg Certificate
+                        ➕ Post Show Leg Certificate
                       </button>
                     </div>
                   </div>
@@ -10889,7 +10837,7 @@ export default function App() {
                                 className="btn-interactive text-xs bg-rose-900 hover:bg-rose-950 font-bold py-2 px-4 border-none text-white"
                                 title="Permanently deletes this saved pedigree-only ancestor record from your database."
                               >
-                                ðŸ—‘ï¸ Delete Ancestor Record
+                                🗑️ Delete Ancestor Record
                               </button>
                             );
                           }
@@ -10985,7 +10933,7 @@ export default function App() {
                 <div className="leading-none">
                   <div className="flex justify-between items-start gap-1">
                     <span className="text-[5.5px] print:text-[8px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
-                    {winsText && <span className="text-[5.5px] print:text-[8px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[100px]" title={winsText}>ðŸ† {winsText}</span>}
+                    {winsText && <span className="text-[5.5px] print:text-[8px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[100px]" title={winsText}>🏆 {winsText}</span>}
                   </div>
                   <h5 className="font-serif font-bold text-[8.5px] print:text-[11.5px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px] print:max-w-[220px]">
                     {namePrefix}{ancestor.name}
@@ -11001,7 +10949,7 @@ export default function App() {
                     ) : ancestor.gcNumber ? (
                       <span className="text-yellow-700">GC: <strong>{ancestor.gcNumber}</strong></span>
                     ) : (
-                      <span className="opacity-40">Reg: â€”</span>
+                      <span className="opacity-40">Reg: —</span>
                     )}
                   </div>
                 </div>
@@ -11014,7 +10962,7 @@ export default function App() {
               <div>
                 <div className="flex justify-between items-start gap-1 leading-none">
                   <span className="text-[7px] print:text-[10px] uppercase font-bold text-slate-500">{roleLabel}</span>
-                  {winsText && <span className="text-[7px] print:text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[140px]">ðŸ† {winsText}</span>}
+                  {winsText && <span className="text-[7px] print:text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[140px]">🏆 {winsText}</span>}
                 </div>
                 <h5 className="font-serif font-bold text-[10px] print:text-[14px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px] print:max-w-[240px]">
                   {namePrefix}{ancestor.name}
@@ -11044,7 +10992,7 @@ export default function App() {
                   onClick={() => window.print()}
                   className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5"
                 >
-                  ðŸ–¨ï¸ Print Certificate
+                  🖨️ Print Certificate
                 </button>
                 <button 
                   onClick={() => setShowPrintPedigreeModal(null)}
@@ -11077,7 +11025,7 @@ export default function App() {
 
                   {/* Center: Title (Hidden on Print, merged to the left) */}
                   <div className="text-center flex flex-col items-center gap-1.5 print:gap-0.5 print:hidden">
-                    <span className="text-3xl filter drop-shadow">ðŸ‡</span>
+                    <span className="text-3xl filter drop-shadow">🐇</span>
                     <h2 className="font-cinzel font-black text-2xl uppercase tracking-widest text-slate-900 leading-none">
                       Pedigree Certificate
                     </h2>
@@ -11090,7 +11038,7 @@ export default function App() {
                   <div className="bg-slate-50 p-3 print:p-2 rounded-xl print:rounded-lg border border-slate-200 text-xs print:text-[10px] text-left grid grid-cols-2 gap-1 print:gap-x-2 print:gap-y-0.5 text-slate-700 font-lora">
                     <div className="col-span-2 border-b border-slate-200 pb-1 print:pb-0.5 mb-1 print:mb-0.5 flex justify-between items-center">
                       <strong className="font-cinzel font-black text-sm print:text-[11.5px] text-slate-900 uppercase leading-none">{rabbit.name}</strong>
-                      {rabbit.gcNumber && <span className="text-[8px] print:text-[7.5px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">ðŸ† CHAMP</span>}
+                      {rabbit.gcNumber && <span className="text-[8px] print:text-[7.5px] bg-yellow-100 text-yellow-800 border border-yellow-300 font-bold px-1.5 py-0.5 rounded font-cinzel">🏆 CHAMP</span>}
                     </div>
                     <div>{rabbit.species === 'cavy' ? 'Ear Tag:' : 'Tattoo:'} <strong className="font-sans">{rabbit.tattooNumber}</strong></div>
                     <div>Sex: <strong className="capitalize">{rabbit.sex}</strong></div>
@@ -11227,7 +11175,7 @@ export default function App() {
                   onClick={() => window.print()}
                   className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5 cursor-pointer"
                 >
-                  ðŸ–¨ï¸ Print Cage Card
+                  🖨️ Print Cage Card
                 </button>
                 <button 
                   onClick={() => setPrintCardRabbit(null)}
@@ -11289,7 +11237,8 @@ export default function App() {
           </div>
         );
       })()}
-      {/* Marketplace Listing Modal */}
+
+            {/* Marketplace Listing Modal */}
       {showListForSaleModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="glass-container p-6 max-w-lg w-full border border-orange-500/25 shadow-2xl relative text-left">
@@ -11409,7 +11358,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b border-white/10 pb-3">
               <div>
                 <h3 className="font-extrabold text-lg text-indigo-400">
-                  âœ‰ï¸ Email / Text Import Wizard
+                  ✉️ Email / Text Import Wizard
                 </h3>
                 <p className="text-xs opacity-70">
                   Paste the show leg email report or Verifiable Transfer Certificate JSON below.
@@ -11495,10 +11444,10 @@ export default function App() {
                         onChange={(e) => setEmailImportPreview({...emailImportPreview, award: e.target.value})}
                         className="bg-slate-850 border border-white/10 text-xs p-2 text-white"
                       >
-                        <option value="1st Class">1st Class Ribbon ðŸ¥‡</option>
-                        <option value="Best of Variety">Best of Variety (BOV) ðŸ†</option>
-                        <option value="Best of Breed">Best of Breed (BOB) ðŸŒŸ</option>
-                        <option value="Best In Show">Best In Show (BIS) ðŸ‘‘</option>
+                        <option value="1st Class">1st Class Ribbon 🥇</option>
+                        <option value="Best of Variety">Best of Variety (BOV) 🏆</option>
+                        <option value="Best of Breed">Best of Breed (BOB) 🌟</option>
+                        <option value="Best In Show">Best In Show (BIS) 👑</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -11526,7 +11475,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 bg-black/25 p-4 rounded-xl border border-white/5 text-xs text-slate-300">
-                    <p className="text-[11px] text-green-400 font-bold mb-2">âœ“ Valid Verifiable Transfer Certificate Detected!</p>
+                    <p className="text-[11px] text-green-400 font-bold mb-2">✓ Valid Verifiable Transfer Certificate Detected!</p>
                     <div>Rabbit Name: <strong>{emailImportPreview.name}</strong></div>
                     <div>Tattoo Number: <strong>{emailImportPreview.tattooNumber}</strong></div>
                     <div>Breed / Variety: <strong>{emailImportPreview.breed} - {emailImportPreview.variety}</strong></div>
@@ -11577,7 +11526,7 @@ export default function App() {
           <div className="w-full max-w-sm bg-slate-900 border-2 border-orange-500/35 rounded-t-3xl sm:rounded-3xl p-6 flex flex-col gap-4 shadow-2xl text-slate-100 no-print">
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
               <h3 className="font-extrabold text-base text-orange-400">
-                âš–ï¸ Touch Weight Log
+                ⚖️ Touch Weight Log
               </h3>
               <button 
                 onClick={() => setShowQuickWeightModal(false)}
@@ -11647,7 +11596,7 @@ export default function App() {
                     }, true)}
                     className="text-[10px] text-indigo-400 font-bold hover:underline border-none bg-transparent cursor-pointer"
                   >
-                    ðŸŽ™ï¸ Speak Weight
+                    🎙️ Speak Weight
                   </button>
                 </label>
                 <input 
@@ -11678,7 +11627,7 @@ export default function App() {
           <div className="w-full max-w-md bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto">
             <div className="text-center">
               <h3 className="font-extrabold text-xl text-indigo-400 flex items-center justify-center gap-2">
-                ðŸ›¡ï¸ {currentUser?.ageGroup === 'teen' ? 'ðŸ§‘ Teen Breeder Approval' : 'ðŸ’³ Parent Identity Verification'}
+                🛡️ {currentUser?.ageGroup === 'teen' ? '🧑 Teen Breeder Approval' : '💳 Parent Identity Verification'}
               </h3>
               <p className="text-xs opacity-70 mt-1">
                 {currentUser?.ageGroup === 'teen' 
@@ -11794,7 +11743,7 @@ export default function App() {
               ) : (
                 <div className="border-t border-white/5 pt-3 mt-1 flex flex-col gap-3">
                   <span className="text-[10px] uppercase font-bold text-orange-400 tracking-wider flex items-center gap-1">
-                    ðŸ’³ Adult Credit Card / Bank Verification
+                    💳 Adult Credit Card / Bank Verification
                   </span>
                   <p className="text-[9px] opacity-75 leading-relaxed">
                     In compliance with FTC COPPA rules, we verify adult guardian status using a credit or debit card. A temporary micro-authorization of $0.50 will be processed (instantly voided).
@@ -11952,7 +11901,7 @@ export default function App() {
           >
             <div className="flex items-center gap-3">
               <span className="text-base">
-                {toast.type === 'error' ? 'âŒ' : toast.type === 'info' ? 'âš¡' : 'âœ…'}
+                {toast.type === 'error' ? '❌' : toast.type === 'info' ? '⚡' : '✅'}
               </span>
               <div className="flex flex-col">
                 <span className="text-xs font-black text-white">{toast.message}</span>
@@ -11964,7 +11913,7 @@ export default function App() {
               className="text-xs font-bold hover:text-white bg-transparent border-none text-slate-400 cursor-pointer self-start p-1"
               aria-label="Dismiss Toast"
             >
-              âœ•
+              ✕
             </button>
           </div>
         ))}
