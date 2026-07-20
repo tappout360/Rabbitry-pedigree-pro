@@ -2088,16 +2088,67 @@ export default function App() {
       });
   }, [allApprovals, dbLoaded, dbError]);
 
-  // Sync log helper
-  const addSyncAction = (action, table, payload) => {
+  // Trigger Auto-Backup Snapshot to LocalStorage
+  const triggerAutoBackupSnapshot = () => {
+    try {
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        rabbits: allRabbits,
+        breedings: allBreedings,
+        litters: allLitters,
+        ledger: allLedger,
+        medical: allMedical,
+        weights: allWeights
+      };
+      localStorage.setItem('rp_auto_backup_latest', JSON.stringify(snapshot));
+    } catch (e) {
+      // quota catch
+    }
+  };
+
+  // Sync log helper (Persists immediately to Dexie IndexedDB + LocalStorage Backup)
+  const addSyncAction = async (action, table, payload) => {
     const newAction = {
       id: uuidv7(),
       action,
       table,
       payload,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toISOString()
     };
     setSyncQueue(prev => [...prev, newAction]);
+
+    try {
+      // 1. Immediately persist entity changes to Dexie IndexedDB
+      if (table === 'rabbits' && db.rabbits) {
+        if (action === 'DELETE') await db.rabbits.delete(payload.id);
+        else await db.rabbits.put(payload);
+      } else if (table === 'breedings' && db.breedings) {
+        if (action === 'DELETE') await db.breedings.delete(payload.id);
+        else await db.breedings.put(payload);
+      } else if (table === 'litters' && db.litters) {
+        if (action === 'DELETE') await db.litters.delete(payload.id);
+        else await db.litters.put(payload);
+      } else if (table === 'ledger' && db.ledger) {
+        if (action === 'DELETE') await db.ledger.delete(payload.id);
+        else await db.ledger.put(payload);
+      } else if (table === 'weights' && db.weights) {
+        if (action === 'DELETE') await db.weights.delete(payload.id);
+        else await db.weights.put(payload);
+      } else if (table === 'medical' && db.medical) {
+        if (action === 'DELETE') await db.medical.delete(payload.id);
+        else await db.medical.put(payload);
+      }
+
+      // 2. Immediately persist to Dexie sync queue table
+      if (db.syncQueue) {
+        await db.syncQueue.add(newAction);
+      }
+
+      // 3. Save auto-backup snapshot
+      triggerAutoBackupSnapshot();
+    } catch (err) {
+      console.error("Immediate Dexie persistence error:", err);
+    }
   };
 
   const handleChoreToggle = (chore) => {
@@ -6221,8 +6272,53 @@ export default function App() {
         {/* Center Panel */}
         <div className="lg:col-span-3 flex flex-col gap-6">
 
-          {/* TAB 1: DASHBOARD */}
-          {activeTab === 'dashboard' && (
+          {/* INACTIVE ACCOUNT GATE: If account is inactive, block all tabs except Marketplace & Billing */}
+          {(sub.status === 'expired' || sub.status === 'cancelled') && activeTab !== 'marketplace' && activeTab !== 'billing' ? (
+            <div className="glass-container p-8 flex flex-col items-center justify-center text-center gap-6 max-w-2xl mx-auto my-8 border-2 border-rose-500/30 shadow-2xl relative overflow-hidden text-slate-100">
+              <div className="w-20 h-20 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center text-4xl animate-pulse">
+                🔒
+              </div>
+              
+              <div>
+                <h3 className="text-2xl font-black text-white">Account Inactive — Subscription Required</h3>
+                <p className="text-xs text-rose-200/90 mt-2 max-w-lg leading-relaxed">
+                  Your 14-day free trial has expired or your hutch subscription is currently inactive. 
+                  <br />
+                  <strong className="text-emerald-300 font-bold">Your records, pedigrees, and herd histories are 100% preserved and safe!</strong> To unlock your registry management tools, breeding scheduler, and cloud sync, please activate a plan.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 w-full max-w-md flex flex-col gap-2.5 text-xs text-left">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                  <span>✓</span> Complete Lineage & Pedigrees Preserved
+                </div>
+                <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                  <span>✓</span> Health & Financial Logs Safe
+                </div>
+                <div className="flex items-center gap-2 text-orange-300 font-bold">
+                  <span>🛒</span> Public Marketplace Access Unlocked
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md mt-2">
+                <button
+                  onClick={() => setActiveTab('billing')}
+                  className="btn-interactive py-3 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-650 hover:to-teal-650 text-white font-black text-xs rounded-xl shadow-lg border-none flex-1 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  💳 Activate Account & View Plans
+                </button>
+                <button
+                  onClick={() => setActiveTab('marketplace')}
+                  className="btn-interactive py-3 px-6 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-white/10 flex-1 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  🛒 Browse Marketplace
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* TAB 1: DASHBOARD */}
+              {activeTab === 'dashboard' && (
             <div className="flex flex-col gap-6">
 
               {/* Subscription Trial & Expiration Warning Banner */}
@@ -9361,7 +9457,10 @@ export default function App() {
             </div>
           ))}
 
-        </div>
+        </>
+      )}
+
+    </div>
 
       </main>
 
