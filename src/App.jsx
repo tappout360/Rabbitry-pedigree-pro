@@ -2151,6 +2151,55 @@ export default function App() {
     }
   };
 
+  // Clear Demo Data & Reset Database for Real Rabbitry Stock
+  const handleClearDemoData = async () => {
+    if (!window.confirm("Are you sure you want to clear all demo rabbits, mock breedings, test litters, and sample financial records? Your account profile will stay active, and your database will be reset to a clean state for your real rabbitry stock.")) {
+      return;
+    }
+
+    try {
+      // Clear Dexie tables except adminBreeders & subscriptions
+      if (db.rabbits) await db.rabbits.clear();
+      if (db.breedings) await db.breedings.clear();
+      if (db.litters) await db.litters.clear();
+      if (db.ledger) await db.ledger.clear();
+      if (db.medical) await db.medical.clear();
+      if (db.weights) await db.weights.clear();
+      if (db.chores) await db.chores.clear();
+      if (db.shows) await db.shows.clear();
+      if (db.showEntries) await db.showEntries.clear();
+      if (db.syncQueue) await db.syncQueue.clear();
+
+      // Clear local state
+      setAllRabbits([]);
+      setAllBreedings([]);
+      setAllLitters([]);
+      setAllLedger([]);
+      setAllMedical([]);
+      setAllWeights([]);
+      setAllChores([]);
+      setAllShows([]);
+      setAllShowEntries([]);
+      setSyncQueue([]);
+
+      // Wipe local snapshot
+      localStorage.removeItem('rp_auto_backup_latest');
+
+      triggerConfetti();
+      showToast("Demo data cleared! Your database is clean and ready for real stock.", "success");
+
+      setSuccessMascot({
+        type: 'usagi',
+        emoji: '🧹',
+        title: 'Fresh Hutch Ready!',
+        message: 'All sample demo animals and test records have been safely cleared. You can now register your real rabbits and start your official hutch registry!'
+      });
+    } catch (err) {
+      console.error("Error clearing demo stock:", err);
+      alert("Failed to clear demo data. Please try reloading.");
+    }
+  };
+
   const handleChoreToggle = (chore) => {
     const nextCompleted = !chore.completed;
     
@@ -8832,23 +8881,31 @@ export default function App() {
                     Force re-seed all local tables with comprehensive test data (20+ purebred rabbits, historical growth logs, financial ledger entries, breeder profiles, active breeding schedules, and 4-H Academy streaks) to audit end-to-end workflows.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    if (window.confirm("Are you sure you want to reset and re-seed all database tables? Any custom local data will be replaced with clean defaults.")) {
-                      localStorage.removeItem('rp_migrated_to_dexie_v9');
-                      localStorage.removeItem('rp_current_user');
-                      db.delete().then(() => {
-                        window.location.reload();
-                      }).catch(err => {
-                        console.error("Failed to delete database:", err);
-                        window.location.reload();
-                      });
-                    }
-                  }}
-                  className="btn-interactive shrink-0 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl border-none shadow-md shadow-emerald-900/20"
-                >
-                  ⚡ Seed Full Test Data
-                </button>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <button
+                    onClick={handleClearDemoData}
+                    className="btn-interactive py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none shadow-md cursor-pointer"
+                  >
+                    🧹 Clear Demo Stock
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to reset and re-seed all database tables? Any custom local data will be replaced with clean defaults.")) {
+                        localStorage.removeItem('rp_migrated_to_dexie_v9');
+                        localStorage.removeItem('rp_current_user');
+                        db.delete().then(() => {
+                          window.location.reload();
+                        }).catch(err => {
+                          console.error("Failed to delete database:", err);
+                          window.location.reload();
+                        });
+                      }
+                    }}
+                    className="btn-interactive py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl border-none shadow-md shadow-emerald-900/20 cursor-pointer"
+                  >
+                    ⚡ Seed Full Test Data
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -9177,6 +9234,21 @@ export default function App() {
                         className="hidden"
                       />
                     </label>
+                  </div>
+
+                  <hr className="border-white/5" />
+
+                  <div>
+                    <h4 className="text-base font-bold text-white mb-1">🧹 Clear Demo Stock & Reset for Live Registry</h4>
+                    <p className="opacity-75 text-xs text-amber-200">
+                      Wipe sample demo rabbits, test litters, and mock financial entries to begin registering your official real-world rabbitry stock. Your account profile and subscription will remain active.
+                    </p>
+                    <button
+                      onClick={handleClearDemoData}
+                      className="btn-interactive text-xs py-2 px-4 bg-rose-600 hover:bg-rose-650 text-white font-bold mt-3 border-none flex items-center gap-1.5 cursor-pointer inline-flex"
+                    >
+                      🧹 Clear Demo Stock & Reset Database
+                    </button>
                   </div>
                 </div>
               )}
