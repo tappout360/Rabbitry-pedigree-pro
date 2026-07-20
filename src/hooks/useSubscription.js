@@ -12,6 +12,7 @@ export const useSubscription = create((set, get) => ({
   cancelledAt: '',
   evansVerified: false,
   additionalHutches: 0,
+  additionalStorageGb: 0,
   invoices: [],
   isLoading: true,
 
@@ -32,6 +33,7 @@ export const useSubscription = create((set, get) => ({
           cancelledAt: localSub.cancelledAt || '',
           evansVerified: !!localSub.evansVerified,
           additionalHutches: parseInt(localSub.additionalHutches) || 0,
+          additionalStorageGb: parseInt(localSub.additionalStorageGb) || 0,
           isLoading: false
         });
       } else {
@@ -48,6 +50,7 @@ export const useSubscription = create((set, get) => ({
           cancelledAt: null,
           evansVerified: false,
           additionalHutches: 0,
+          additionalStorageGb: 0,
           createdAt: new Date().toISOString()
         };
         await db.subscriptions.add(defaultSub);
@@ -61,6 +64,7 @@ export const useSubscription = create((set, get) => ({
           cancelledAt: '',
           evansVerified: false,
           additionalHutches: 0,
+          additionalStorageGb: 0,
           isLoading: false
         });
       }
@@ -90,6 +94,7 @@ export const useSubscription = create((set, get) => ({
         cancelledAt: subData.cancelledAt || existing?.cancelledAt || null,
         evansVerified: subData.evansVerified !== undefined ? !!subData.evansVerified : !!existing?.evansVerified,
         additionalHutches: subData.additionalHutches !== undefined ? parseInt(subData.additionalHutches) : (parseInt(existing?.additionalHutches) || 0),
+        additionalStorageGb: subData.additionalStorageGb !== undefined ? parseInt(subData.additionalStorageGb) : (parseInt(existing?.additionalStorageGb) || 0),
         updatedAt: new Date().toISOString()
       };
 
@@ -109,7 +114,8 @@ export const useSubscription = create((set, get) => ({
         trialEnd: updatedRecord.trialEnd,
         cancelledAt: updatedRecord.cancelledAt,
         evansVerified: updatedRecord.evansVerified,
-        additionalHutches: updatedRecord.additionalHutches
+        additionalHutches: updatedRecord.additionalHutches,
+        additionalStorageGb: updatedRecord.additionalStorageGb
       });
 
       // Queue sync action
@@ -139,6 +145,13 @@ export const useSubscription = create((set, get) => ({
     });
   },
 
+  buyStorage: async (breederId, gbCount) => {
+    const current = get().additionalStorageGb || 0;
+    await get().updateSubscription(breederId, {
+      additionalStorageGb: current + gbCount
+    });
+  },
+
   clearSubscription: () => {
     set({
       tier: 'basic',
@@ -150,6 +163,7 @@ export const useSubscription = create((set, get) => ({
       cancelledAt: '',
       evansVerified: false,
       additionalHutches: 0,
+      additionalStorageGb: 0,
       invoices: []
     });
   },
@@ -171,38 +185,18 @@ export const useSubscription = create((set, get) => ({
   },
 
   getLimits: () => {
-    const { tier, status, additionalHutches } = get();
+    const { tier, status, additionalHutches, additionalStorageGb } = get();
     const isTrial = status === 'trialing';
 
-    if (isTrial) {
-      if (tier === 'basic') {
-        return {
-          animalLimit: 40 + (additionalHutches || 0),
-          photoLimit: 100,
-          isTrial: true
-        };
-      }
-      if (tier === 'pro') {
-        return {
-          animalLimit: 100 + (additionalHutches || 0),
-          photoLimit: 250,
-          isTrial: true
-        };
-      }
-      if (tier === 'youth_academy') {
-        return {
-          animalLimit: 50 + (additionalHutches || 0),
-          photoLimit: 150,
-          isTrial: true
-        };
-      }
-    }
-
     const limits = getTierLimits(tier);
+    const baseGb = limits.cloudStorageGb || 1;
+    const totalStorageGb = baseGb + (additionalStorageGb || 0);
+
     return {
       animalLimit: limits.animalLimit + (additionalHutches || 0),
-      photoLimit: limits.photoLimit,
-      isTrial: false
+      photoLimit: limits.photoLimit + ((additionalStorageGb || 0) * 500),
+      storageGb: totalStorageGb,
+      isTrial: isTrial
     };
   }
 }));

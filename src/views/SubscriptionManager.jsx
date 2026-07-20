@@ -215,60 +215,120 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
         </div>
       </div>
 
-      {/* Hutch Storage Expansion Purchases */}
-      <div className="glass-container p-6 border border-indigo-500/10 bg-slate-900/25 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-start gap-4">
-          <div className="text-3xl">🏡</div>
-          <div className="text-left">
-            <h4 className="font-black text-sm text-indigo-300 uppercase tracking-wider">Hutch Storage Expansion Upgrades</h4>
-            <p className="text-[11px] opacity-75 mt-1 leading-relaxed max-w-md">
-              Need extra rabbit space? Expand your capacity beyond your plan limit. Purchase a one-time hutch storage pack to permanently house more active rabbit profiles.
-            </p>
-            <div className="flex items-center gap-4 mt-2">
-              <span className="text-xs bg-slate-800 px-3 py-1 rounded border border-white/10 text-slate-200">
-                Plan Limit: <strong className="text-white">{getLimits().animalLimit - (useSubscription.getState().additionalHutches || 0)}</strong>
-              </span>
-              <span className="text-xs bg-indigo-500/10 px-3 py-1 rounded border border-indigo-500/20 text-indigo-300 font-bold">
-                Purchased Additions: <strong className="text-indigo-200">+{useSubscription.getState().additionalHutches || 0} hutches</strong>
-              </span>
+      {/* Hutch Storage & Cloud Storage Expansion Purchases */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 1. Hutch Capacity Expansion */}
+        <div className="glass-container p-6 border border-indigo-500/10 bg-slate-900/25 flex flex-col justify-between gap-6 text-left">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">🏡</div>
+            <div>
+              <h4 className="font-black text-sm text-indigo-300 uppercase tracking-wider">Hutch Profile Capacity Expansion</h4>
+              <p className="text-[11px] opacity-75 mt-1 leading-relaxed">
+                Need extra rabbit space? Expand your capacity beyond your plan limit. Purchase a permanent hutch pack to house more active rabbit profiles.
+              </p>
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                <span className="text-[11px] bg-slate-800 px-3 py-1 rounded border border-white/10 text-slate-200">
+                  Base Limit: <strong className="text-white">{getLimits().animalLimit - (useSubscription.getState().additionalHutches || 0)}</strong>
+                </span>
+                <span className="text-[11px] bg-indigo-500/10 px-3 py-1 rounded border border-indigo-500/20 text-indigo-300 font-bold">
+                  Additions: <strong className="text-indigo-200">+{useSubscription.getState().additionalHutches || 0} hutches</strong>
+                </span>
+              </div>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+            <button
+              onClick={async () => {
+                if (!currentUser?.id) return;
+                await useSubscription.getState().buyHutches(currentUser.id, 25);
+                triggerConfetti();
+                alert("Successfully purchased +25 Hutch Storage Expansion ($3.99)!");
+              }}
+              className="btn-interactive py-2 px-3 bg-indigo-650 hover:bg-indigo-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex-1 flex items-center justify-center gap-1 shadow"
+            >
+              +25 Hutches ($3.99)
+            </button>
+            <button
+              onClick={async () => {
+                if (!currentUser?.id) return;
+                await useSubscription.getState().buyHutches(currentUser.id, 50);
+                triggerConfetti();
+                alert("Successfully purchased +50 Hutch Storage Expansion ($6.99)!");
+              }}
+              className="btn-interactive py-2 px-3 bg-teal-650 hover:bg-teal-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex-1 flex items-center justify-center gap-1 shadow"
+            >
+              +50 Hutches ($6.99)
+            </button>
+            <button
+              onClick={async () => {
+                if (!currentUser?.id) return;
+                await useSubscription.getState().buyHutches(currentUser.id, 100);
+                triggerConfetti();
+                alert("Successfully purchased +100 Hutch Storage Expansion ($11.99)!");
+              }}
+              className="btn-interactive py-2 px-3 bg-purple-650 hover:bg-purple-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex-1 flex items-center justify-center gap-1 shadow"
+            >
+              +100 Hutches ($11.99)
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0 flex-wrap">
-          <button
-            onClick={async () => {
-              if (!currentUser?.id) return;
-              await useSubscription.getState().buyHutches(currentUser.id, 25);
-              triggerConfetti();
-              alert("Successfully purchased +25 Hutch Storage Expansion ($3.99)!");
-            }}
-            className="btn-interactive py-2 px-3 bg-indigo-650 hover:bg-indigo-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1 shadow"
-          >
-            +25 Hutches ($3.99)
-          </button>
-          <button
-            onClick={async () => {
-              if (!currentUser?.id) return;
-              await useSubscription.getState().buyHutches(currentUser.id, 50);
-              triggerConfetti();
-              alert("Successfully purchased +50 Hutch Storage Expansion ($6.99)!");
-            }}
-            className="btn-interactive py-2 px-3 bg-teal-650 hover:bg-teal-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1 shadow"
-          >
-            +50 Hutches ($6.99)
-          </button>
-          <button
-            onClick={async () => {
-              if (!currentUser?.id) return;
-              await useSubscription.getState().buyHutches(currentUser.id, 100);
-              triggerConfetti();
-              alert("Successfully purchased +100 Hutch Storage Expansion ($11.99)!");
-            }}
-            className="btn-interactive py-2 px-3 bg-purple-650 hover:bg-purple-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1 shadow"
-          >
-            +100 Hutches ($11.99)
-          </button>
+        {/* 2. Cloud Media & Photo Storage Expansion */}
+        <div className="glass-container p-6 border border-cyan-500/10 bg-slate-900/25 flex flex-col justify-between gap-6 text-left">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">☁️</div>
+            <div>
+              <h4 className="font-black text-sm text-cyan-300 uppercase tracking-wider">Cloud & Photo Media Storage Expansion</h4>
+              <p className="text-[11px] opacity-75 mt-1 leading-relaxed">
+                Need extra storage space for judging photo logs, tattoo scans, and show leg certificates? Add cloud storage capacity to your hutch account.
+              </p>
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                <span className="text-[11px] bg-slate-800 px-3 py-1 rounded border border-white/10 text-slate-200">
+                  Total Cloud Storage: <strong className="text-cyan-300 font-bold">{getLimits().storageGb} GB</strong>
+                </span>
+                <span className="text-[11px] bg-cyan-500/10 px-3 py-1 rounded border border-cyan-500/20 text-cyan-300 font-bold">
+                  Photo Limit: <strong className="text-cyan-200">~{getLimits().photoLimit} uploads</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+            <button
+              onClick={async () => {
+                if (!currentUser?.id) return;
+                await useSubscription.getState().buyStorage(currentUser.id, 2);
+                triggerConfetti();
+                alert("Successfully purchased +2 GB Cloud Media Storage ($2.99)!");
+              }}
+              className="btn-interactive py-2 px-3 bg-cyan-650 hover:bg-cyan-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex-1 flex items-center justify-center gap-1 shadow"
+            >
+              +2 GB Storage ($2.99)
+            </button>
+            <button
+              onClick={async () => {
+                if (!currentUser?.id) return;
+                await useSubscription.getState().buyStorage(currentUser.id, 5);
+                triggerConfetti();
+                alert("Successfully purchased +5 GB Cloud Media Storage ($5.99)!");
+              }}
+              className="btn-interactive py-2 px-3 bg-sky-650 hover:bg-sky-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex-1 flex items-center justify-center gap-1 shadow"
+            >
+              +5 GB Storage ($5.99)
+            </button>
+            <button
+              onClick={async () => {
+                if (!currentUser?.id) return;
+                await useSubscription.getState().buyStorage(currentUser.id, 15);
+                triggerConfetti();
+                alert("Successfully purchased +15 GB Cloud Media Storage ($12.99)!");
+              }}
+              className="btn-interactive py-2 px-3 bg-blue-650 hover:bg-blue-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex-1 flex items-center justify-center gap-1 shadow"
+            >
+              +15 GB Storage ($12.99)
+            </button>
+          </div>
         </div>
       </div>
 
