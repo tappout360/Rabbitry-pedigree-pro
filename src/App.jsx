@@ -5410,7 +5410,7 @@ export default function App() {
         icon: '🚀',
         badge: `${activeCount}/${limit} Profiles`,
         execute: () => {
-          alert("To upgrade your subscription, please contact administration or open the Help tab.");
+          setActiveTab('billing');
         }
       });
     }
@@ -5551,6 +5551,41 @@ export default function App() {
               ☁️ Push Sync ({syncQueue.length})
             </button>
           )}
+
+          {/* Header Subscription Status Badge */}
+          {(() => {
+            const isTrialing = sub.status === 'trialing';
+            const isExpired = sub.status === 'expired' || sub.status === 'cancelled';
+
+            let daysRemaining = 0;
+            if (sub.trialEnd) {
+              const endMs = new Date(sub.trialEnd).getTime();
+              daysRemaining = Math.max(0, Math.ceil((endMs - Date.now()) / (1000 * 60 * 60 * 24)));
+            }
+
+            return (
+              <button
+                onClick={() => setActiveTab('billing')}
+                className={`btn-interactive text-xs py-2 px-3 border flex items-center gap-1.5 font-bold ${
+                  isExpired 
+                    ? 'bg-rose-950/80 text-rose-300 border-rose-500/40 animate-pulse'
+                    : isTrialing 
+                      ? 'bg-amber-950/60 text-amber-300 border-amber-500/30' 
+                      : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                }`}
+                title="Click to manage subscription and hutch limits"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {isExpired ? (
+                  <span>⚠️ Inactive (Read-Only)</span>
+                ) : isTrialing ? (
+                  <span>⏳ {daysRemaining}d Trial</span>
+                ) : (
+                  <span className="capitalize">💳 {sub.tier.replace('_', ' ')}</span>
+                )}
+              </button>
+            );
+          })()}
 
           {/* Design Mode Switcher */}
           <button
@@ -6189,6 +6224,52 @@ export default function App() {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="flex flex-col gap-6">
+
+              {/* Subscription Trial & Expiration Warning Banner */}
+              {(() => {
+                const isTrialing = sub.status === 'trialing';
+                const isExpired = sub.status === 'expired' || sub.status === 'cancelled';
+
+                if (!isTrialing && !isExpired) return null;
+
+                let daysRemaining = 0;
+                if (sub.trialEnd) {
+                  const endMs = new Date(sub.trialEnd).getTime();
+                  daysRemaining = Math.max(0, Math.ceil((endMs - Date.now()) / (1000 * 60 * 60 * 24)));
+                }
+
+                return (
+                  <div className={`glass-container p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden text-left ${
+                    isExpired 
+                      ? 'border-rose-500/40 bg-rose-950/30 text-rose-100' 
+                      : 'border-amber-500/40 bg-amber-950/30 text-amber-100'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{isExpired ? '⚠️' : '⏳'}</span>
+                      <div>
+                        <h4 className="font-bold text-white text-xs">
+                          {isExpired ? 'Account Inactive (Read-Only Mode)' : `14-Day Free Trial Active (${daysRemaining} days remaining)`}
+                        </h4>
+                        <p className="text-[10px] opacity-85 mt-0.5 leading-relaxed">
+                          {isExpired 
+                            ? 'Your 14-day free trial has ended. Your hutch records and pedigrees are 100% safe! Reactivate to unlock cloud sync & write access.'
+                            : 'Enjoy full WarrenWise Pro access! Upgrade anytime before your trial ends to ensure seamless cloud sync without interruption.'
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setActiveTab('billing')}
+                      className={`btn-interactive text-xs py-2 px-4 font-bold border-none shrink-0 cursor-pointer ${
+                        isExpired ? 'bg-rose-600 hover:bg-rose-650 text-white' : 'bg-amber-600 hover:bg-amber-650 text-white'
+                      }`}
+                    >
+                      {isExpired ? 'Reactivate Account' : 'Upgrade Plan'}
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* PWA Install Banner */}
               {deferredPrompt && showInstallBanner && (
