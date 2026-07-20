@@ -617,7 +617,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Advanced Genetics & COI Risk Calculator</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Barn Crew & Assistant Roles</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Photo Gallery Editor & Lightbox</li>
-                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> FDA Drug Withdrawal Health Safety Audit</li>
+                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Medication & Health Treatment Logs</li>
               </ul>
             </div>
             <button
@@ -654,6 +654,40 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
             </button>
           </div>
 
+        </div>
+
+        {/* 4-H KIDS LINKED ACCOUNT NOTICE & ADD-ON EXPANSIONS */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+          <div className="p-6 bg-yellow-950/30 border border-yellow-500/30 rounded-2xl">
+            <span className="text-xs font-black uppercase text-yellow-400 font-mono tracking-wider block mb-1">
+              🍀 4-H Youth Linked Accounts ($0 / month)
+            </span>
+            <h4 className="text-sm font-bold text-white mb-2">How Do 4-H Kids Accounts Work?</h4>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Under COPPA & family safety compliance, 4-H youth accounts are <strong>100% FREE ($0) sub-accounts</strong> created directly inside a Parent or Guardian account. Kids get their own individual login to access the 4-H Academy and showmanship tools while parents maintain full oversight!
+            </p>
+          </div>
+
+          <div className="p-6 bg-slate-900/80 border border-cyan-500/30 rounded-2xl">
+            <span className="text-xs font-black uppercase text-cyan-400 font-mono tracking-wider block mb-1">
+              ➕ Extra Hutch & Storage Expansion Packs
+            </span>
+            <h4 className="text-sm font-bold text-white mb-2">Need More Hutches Without Changing Plans?</h4>
+            <ul className="space-y-1.5 text-xs text-slate-300">
+              <li className="flex justify-between border-b border-white/5 pb-1">
+                <span><strong>+50 Extra Hutches Pack</strong></span>
+                <span className="text-cyan-300 font-mono font-bold">+$2.99 / mo</span>
+              </li>
+              <li className="flex justify-between border-b border-white/5 pb-1">
+                <span><strong>+150 Extra Hutches Pack</strong></span>
+                <span className="text-cyan-300 font-mono font-bold">+$6.99 / mo</span>
+              </li>
+              <li className="flex justify-between">
+                <span><strong>+10 GB Photo Storage Pack</strong></span>
+                <span className="text-cyan-300 font-mono font-bold">+$1.99 / mo</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
