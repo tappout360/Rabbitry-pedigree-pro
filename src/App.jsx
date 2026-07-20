@@ -1169,6 +1169,9 @@ export default function App() {
   }, [allShows, selectedBreederContext]);
 
   const [allShowEntries, setAllShowEntries] = useState([]);
+  const showEntries = React.useMemo(() => {
+    return allShowEntries.filter(se => selectedBreederContext === 'all' || se.breederId === selectedBreederContext);
+  }, [allShowEntries, selectedBreederContext]);
   const [showZipFilter, setShowZipFilter] = useState(() => localStorage.getItem('rp_breeder_zip') || '97201');
   const [showRadiusFilter, setShowRadiusFilter] = useState('100');
 
