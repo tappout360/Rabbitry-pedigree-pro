@@ -266,6 +266,7 @@ function generateScaleData() {
         const id = `r-gen-${rabbitCounter++}`;
         const name = `${breed} Founder ${sex === 'buck' ? 'Sire' : 'Dam'} ${rabbitCounter}`;
         const tattoo = `${breed.substring(0,2).toUpperCase()}${rabbitCounter}`;
+        const photoPath = getBreedPhoto(breed, variety);
         
         const rabbit = {
           id,
@@ -285,7 +286,7 @@ function generateScaleData() {
           gcNumber: i === 0 ? `GC-${20000 + rabbitCounter}` : '',
           location: `Hutch-${rabbitCounter}`,
           notes: 'Foundation stock.',
-          photos: ['/assets/holland_lop.png'],
+          photos: [photoPath],
           legs: i === 0 ? [{ id: `leg-${rabbitCounter}`, date: '2025-05-15', showName: 'State Fair', judge: 'Dr. A. Smith', award: 'Best of Breed', classSize: 20 }] : []
         };
         rabbits.push(rabbit);
@@ -359,7 +360,7 @@ function generateScaleData() {
             gcNumber: '',
             location: `Hutch-${rabbitCounter}`,
             notes: 'F1 generation offspring.',
-            photos: ['/assets/holland_lop.png'],
+            photos: [getBreedPhoto(breed, variety)],
             legs: []
           };
           rabbits.push(rabbit);
@@ -460,7 +461,7 @@ function generateScaleData() {
             gcNumber: '',
             location: `Hutch-${rabbitCounter}`,
             notes: 'F2 generation pedigree kit.',
-            photos: ['/assets/holland_lop.png'],
+            photos: [getBreedPhoto(breed, variety)],
             legs: []
           };
           rabbits.push(rabbit);
