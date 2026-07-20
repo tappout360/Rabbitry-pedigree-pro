@@ -577,7 +577,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Hobbyist & 4-H Starter</span>
               <h3 className="text-2xl font-black text-white">Basic Hutch Plan</h3>
               <div className="my-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">$5.99</span>
+                <span className="text-4xl font-black text-white">$3.59</span>
                 <span className="text-xs text-slate-400 font-semibold">/ month</span>
               </div>
               <p className="text-xs text-slate-400 mb-6">Ideal for small rabbitries, 4-H youth projects, and hobby breeders.</p>
@@ -594,7 +594,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
               onClick={() => onSelectPlan('basic')}
               className="mt-8 btn-interactive w-full py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/10 cursor-pointer"
             >
-              Select Basic Plan
+              Select Basic Plan ($3.59/mo)
             </button>
           </div>
 
@@ -607,7 +607,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
               <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block mb-2">Professional Show Herds</span>
               <h3 className="text-2xl font-black text-white">Pro Herd Plan</h3>
               <div className="my-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">$14.99</span>
+                <span className="text-4xl font-black text-white">$8.99</span>
                 <span className="text-xs text-slate-400 font-semibold">/ month</span>
               </div>
               <p className="text-xs text-slate-350 mb-6">Designed for active show exhibitors, commercial breeders, and multi-user barns.</p>
@@ -624,7 +624,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
               onClick={() => onSelectPlan('pro')}
               className="mt-8 btn-interactive w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl border-none shadow-lg shadow-amber-500/25 cursor-pointer"
             >
-              Get Started with Pro Herd
+              Get Started with Pro Herd ($8.99/mo)
             </button>
           </div>
 
@@ -634,7 +634,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
               <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 block mb-2">Large Commercial & National Herds</span>
               <h3 className="text-2xl font-black text-white">Master Breeder Plan</h3>
               <div className="my-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">$29.99</span>
+                <span className="text-4xl font-black text-white">$17.99</span>
                 <span className="text-xs text-slate-400 font-semibold">/ month</span>
               </div>
               <p className="text-xs text-slate-400 mb-6">Unlimited power for national champion rabbitries and commercial herds.</p>
@@ -650,7 +650,7 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
               onClick={() => onSelectPlan('master')}
               className="mt-8 btn-interactive w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl border-none cursor-pointer"
             >
-              Select Master Plan
+              Select Master Plan ($17.99/mo)
             </button>
           </div>
 
@@ -676,15 +676,15 @@ export default function LandingHomePage({ onSignIn, onRegister, onTryDemo, onSel
             <ul className="space-y-1.5 text-xs text-slate-300">
               <li className="flex justify-between border-b border-white/5 pb-1">
                 <span><strong>+50 Extra Hutches Pack</strong></span>
-                <span className="text-cyan-300 font-mono font-bold">+$2.99 / mo</span>
+                <span className="text-cyan-300 font-mono font-bold">+$1.79 / mo</span>
               </li>
               <li className="flex justify-between border-b border-white/5 pb-1">
                 <span><strong>+150 Extra Hutches Pack</strong></span>
-                <span className="text-cyan-300 font-mono font-bold">+$6.99 / mo</span>
+                <span className="text-cyan-300 font-mono font-bold">+$4.19 / mo</span>
               </li>
               <li className="flex justify-between">
                 <span><strong>+10 GB Photo Storage Pack</strong></span>
-                <span className="text-cyan-300 font-mono font-bold">+$1.99 / mo</span>
+                <span className="text-cyan-300 font-mono font-bold">+$1.19 / mo</span>
               </li>
             </ul>
           </div>

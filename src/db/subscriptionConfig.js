@@ -21,7 +21,7 @@ export const SUBSCRIPTION_TIERS = {
   basic: {
     id: 'basic',
     name: 'Basic Hutch Plan',
-    priceLabel: '$5.99 / month or $59.00 / year',
+    priceLabel: '$3.59 / month or $35.00 / year',
     limit: 75,
     cloudStorageGb: 1,
     maxPhotos: 500,
@@ -40,7 +40,7 @@ export const SUBSCRIPTION_TIERS = {
   pro: {
     id: 'pro',
     name: 'Pro Herd Plan',
-    priceLabel: '$14.99 / month or $149.00 / year',
+    priceLabel: '$8.99 / month or $89.00 / year',
     limit: 300,
     cloudStorageGb: 10,
     maxPhotos: 9999,
@@ -59,7 +59,7 @@ export const SUBSCRIPTION_TIERS = {
   master: {
     id: 'master',
     name: 'Master Breeder Plan',
-    priceLabel: '$29.99 / month or $299.00 / year',
+    priceLabel: '$17.99 / month or $179.00 / year',
     limit: 1000,
     cloudStorageGb: 50,
     maxPhotos: 50000,
@@ -76,7 +76,7 @@ export const SUBSCRIPTION_TIERS = {
   enterprise: {
     id: 'enterprise',
     name: 'Commercial Enterprise & Club Co-Op Plan',
-    priceLabel: '$49.99 / month',
+    priceLabel: '$29.99 / month or $299.00 / year',
     limit: 99999,
     cloudStorageGb: 200,
     maxPhotos: 200000,
@@ -91,7 +91,7 @@ export const SUBSCRIPTION_TIERS = {
   evans_lifetime: {
     id: 'evans_lifetime',
     name: 'Evans Migrant Lifetime Offer',
-    priceLabel: '$49.00 one-time switcher discount',
+    priceLabel: '$29.00 one-time switcher discount',
     limit: 500,
     cloudStorageGb: 10,
     maxPhotos: 9999,
@@ -107,10 +107,10 @@ export const SUBSCRIPTION_TIERS = {
 };
 
 export const ADDON_EXPANSION_PACKS = [
-  { id: 'hutch_50', name: '+50 Extra Hutches', priceLabel: '$2.99 / mo', limitIncrease: 50 },
-  { id: 'hutch_150', name: '+150 Extra Hutches', priceLabel: '$6.99 / mo', limitIncrease: 150 },
-  { id: 'gb_10', name: '+10 GB Cloud Storage', priceLabel: '$1.99 / mo', gb: 10, approxPhotos: 5000 },
-  { id: 'gb_50', name: '+50 GB Cloud Storage', priceLabel: '$4.99 / mo', gb: 50, approxPhotos: 25000 }
+  { id: 'hutch_50', name: '+50 Extra Hutches', priceLabel: '$1.79 / mo', limitIncrease: 50 },
+  { id: 'hutch_150', name: '+150 Extra Hutches', priceLabel: '$4.19 / mo', limitIncrease: 150 },
+  { id: 'gb_10', name: '+10 GB Cloud Storage', priceLabel: '$1.19 / mo', gb: 10, approxPhotos: 5000 },
+  { id: 'gb_50', name: '+50 GB Cloud Storage', priceLabel: '$2.99 / mo', gb: 50, approxPhotos: 25000 }
 ];
 
 export const EVANS_LIMIT_CONFIG = {
