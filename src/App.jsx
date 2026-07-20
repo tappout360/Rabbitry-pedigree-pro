@@ -35,6 +35,8 @@ import PrivacyPolicy from './views/PrivacyPolicy';
 import ParentControls from './components/ui/ParentControls';
 import LandingHomePage from './views/LandingHomePage';
 import WarrenWiseCoachModal from './components/ai/WarrenWiseCoachModal';
+import VoiceCommandBar from './components/ui/VoiceCommandBar';
+import VoiceInputButton from './components/ui/VoiceInputButton';
 import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
@@ -2270,6 +2272,29 @@ export default function App() {
       spread: 70,
       origin: { y: 0.6 }
     });
+  };
+
+  // Barn Voice Command Dispatcher
+  const handleExecuteVoiceCommand = (cmd) => {
+    if (cmd.action === 'ADD_RABBIT') {
+      setShowAddModal(true);
+      showToast("Voice Command: Opening Add Rabbit Modal", "info");
+    } else if (cmd.action === 'LOG_WEIGHT') {
+      if (cmd.value) {
+        setNewWeightEntry(prev => ({ ...prev, weightOz: cmd.value }));
+      }
+      setShowQuickWeightModal(true);
+      showToast("Voice Command: Opening Quick Weight Logger", "info");
+    } else if (cmd.action === 'OPEN_BREEDING') {
+      setShowScheduleModal(true);
+      showToast("Voice Command: Opening Breeding Scheduler", "info");
+    } else if (cmd.action === 'OPEN_COACH') {
+      setShowCoachModal(true);
+      showToast("Voice Command: Opening 4-H Coach WarrenWise", "info");
+    } else if (cmd.action === 'NAVIGATE') {
+      if (cmd.tab) setActiveTab(cmd.tab);
+      showToast(`Voice Command: Navigating to ${cmd.tab}`, "info");
+    }
   };
 
   // Direct Live Demo Login Handler
@@ -12250,6 +12275,14 @@ export default function App() {
           onClose={() => setBarnMode(false)}
           currentUser={currentUser}
           triggerConfetti={triggerConfetti}
+        />
+      )}
+
+      {/* Floating Barn Voice Command Assistant */}
+      {currentUser && (
+        <VoiceCommandBar
+          onExecuteCommand={handleExecuteVoiceCommand}
+          onOpenCoach={() => setShowCoachModal(true)}
         />
       )}
 
