@@ -127,6 +127,11 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${b.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
               {b.status}
             </span>
+            {b.isDemo && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                DEMO
+              </span>
+            )}
           </h4>
           <p className="text-xs opacity-75">{b.email} | {b.phone || 'No phone'}</p>
           <p className="text-[11px] text-indigo-300 font-semibold mt-0.5">Rabbitry: {b.rabbitryName}</p>
@@ -153,11 +158,47 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
                 Reject
               </button>
             </>
+          ) : b.isDemo ? (
+            <button
+              onClick={() => {
+                if (window.confirm(`Reset all demo data for ${b.name}? This will restore the original sample rabbits, breedings, litters, and financial records for this demo account.`)) {
+                  // Import and re-seed demo data for this breeder from defaults
+                  import('./db/defaults.js').then(({ DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS, DEFAULT_LEDGER, DEFAULT_SHOWS, DEFAULT_CHORES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS }) => {
+                    // Remove existing data for this breeder
+                    setAllRabbits(prev => prev.filter(r => r.breederId !== b.id));
+                    setAllBreedings(prev => prev.filter(br => br.breederId !== b.id));
+                    setAllLitters(prev => prev.filter(l => l.breederId !== b.id));
+                    setAllLedger(prev => prev.filter(le => le.breederId !== b.id));
+                    setAllShows(prev => prev.filter(s => s.breederId !== b.id));
+                    setAllChores(prev => prev.filter(c => c.breederId !== b.id));
+                    setAllMedical(prev => prev.filter(m => DEFAULT_RABBITS.filter(dr => dr.breederId === b.id).some(dr => dr.id === m.rabbitId) ? false : true));
+                    setAllWeights(prev => prev.filter(w => DEFAULT_RABBITS.filter(dr => dr.breederId === b.id).some(dr => dr.id === w.rabbitId) ? false : true));
+                    
+                    // Re-seed with default data for this breeder
+                    setTimeout(() => {
+                      setAllRabbits(prev => [...prev, ...DEFAULT_RABBITS.filter(r => r.breederId === b.id)]);
+                      setAllBreedings(prev => [...prev, ...DEFAULT_BREEDINGS.filter(br => br.breederId === b.id)]);
+                      setAllLitters(prev => [...prev, ...DEFAULT_LITTERS.filter(l => l.breederId === b.id)]);
+                      setAllLedger(prev => [...prev, ...DEFAULT_LEDGER.filter(le => le.breederId === b.id)]);
+                      setAllShows(prev => [...prev, ...DEFAULT_SHOWS.filter(s => s.breederId === b.id)]);
+                      setAllChores(prev => [...prev, ...DEFAULT_CHORES.filter(c => c.breederId === b.id)]);
+                      const demoRabbitIds = DEFAULT_RABBITS.filter(r => r.breederId === b.id).map(r => r.id);
+                      setAllMedical(prev => [...prev, ...DEFAULT_MEDICAL.filter(m => demoRabbitIds.includes(m.rabbitId))]);
+                      setAllWeights(prev => [...prev, ...DEFAULT_WEIGHTS.filter(w => demoRabbitIds.includes(w.rabbitId))]);
+                      showToast(`Demo data for ${b.name} has been reset to original sample data.`, 'success');
+                    }, 100);
+                  });
+                }
+              }}
+              className="text-cyan-400 hover:text-cyan-300 text-xs py-1 font-semibold"
+            >
+              ♻️ Reset Demo Data
+            </button>
           ) : (
-            !b.isSuperAdmin && (
+            !b.isSuperAdmin && !b.isProtected && (
               <button
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete breeder ${b.name}?`)) {
+                  if (window.confirm(`Are you sure you want to delete breeder ${b.name}? This action cannot be undone.`)) {
                     setAdminBreeders(prev => prev.filter(item => item.id !== b.id));
                   }
                 }}
@@ -824,14 +865,9 @@ export default function App() {
   const [adminBreeders, setAdminBreeders] = useState(() => {
     const saved = localStorage.getItem('rp_admin_breeders');
     const defaultList = [
-      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40' },
-      { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' },
-      { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032' },
-      { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: '60281b3793df67117865cbb6db58b43ad835c24e73f88f01b15c92c813f02ad1' },
-      { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: '6dcd317c244c4fae2e66cc48abfc4e24eb2fb1fa546bf1d7de6dfd0f8a846c1b' },
-      { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'b3a726ea7bd7ca164e29780512871146c86a34cd8c2184d081f2621183cf9e96' },
-      { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'dcf22dfa640102cd8b28ef94c03cc56c80c65538e1215ee54c0e6cfec0c99df3' },
-      { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' }
+      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', isProtected: true },
+      { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', isDemo: true, isProtected: true },
+      { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032', isDemo: true, isProtected: true }
     ];
     let list = defaultList;
     if (saved) {
@@ -5933,12 +5969,14 @@ export default function App() {
             >
               <ShieldAlert className="w-5 h-5 text-emerald-400" /> System Diagnostics
             </button>
+            {!currentUser?.isDemo && (
             <button 
               onClick={() => setActiveTab('academy')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'academy' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
               <Award className="w-5 h-5 text-yellow-400" /> 🎓 4-H Academy
             </button>
+            )}
             <button 
               onClick={() => setActiveTab('registrarPrep')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'registrarPrep' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
@@ -8916,6 +8954,14 @@ export default function App() {
           {/* TAB: 4-H KIDS LEARNING ACADEMY */}
           {activeTab === 'academy' && (
             <ErrorBoundary>
+              {currentUser?.isDemo ? (
+                <div className="glass-container p-12 text-center max-w-lg mx-auto mt-8">
+                  <Award className="w-12 h-12 text-yellow-400 mx-auto mb-4 opacity-60" />
+                  <h3 className="text-lg font-bold text-white mb-2">4-H Academy Unavailable</h3>
+                  <p className="text-sm text-slate-400 mb-4">The 4-H Learning Academy is exclusive to active subscriber accounts and is not available in demo mode.</p>
+                  <button onClick={() => setActiveTab('dashboard')} className="btn-interactive text-xs py-2 px-6 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold">Return to Dashboard</button>
+                </div>
+              ) : (
               <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Learning Academy...</div>}>
                 <Academy
                   rabbits={rabbits}
@@ -8923,6 +8969,7 @@ export default function App() {
                   currentUser={currentUser}
                 />
               </React.Suspense>
+              )}
             </ErrorBoundary>
           )}
 

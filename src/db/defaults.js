@@ -1,12 +1,7 @@
 export const DEFAULT_BREEDERS = [
-  { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', subscriptionTier: 'pro', subscriptionLimit: 10000 },
-  { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', subscriptionTier: 'pro', subscriptionLimit: 1000 },
-  { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032', subscriptionTier: 'free', subscriptionLimit: 25 },
-  { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: '60281b3793df67117865cbb6db58b43ad835c24e73f88f01b15c92c813f02ad1', subscriptionTier: 'free', subscriptionLimit: 25 },
-  { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: '6dcd317c244c4fae2e66cc48abfc4e24eb2fb1fa546bf1d7de6dfd0f8a846c1b', subscriptionTier: 'free', subscriptionLimit: 25 },
-  { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'b3a726ea7bd7ca164e29780512871146c86a34cd8c2184d081f2621183cf9e96', subscriptionTier: 'free', subscriptionLimit: 25 },
-  { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'dcf22dfa640102cd8b28ef94c03cc56c80c65538e1215ee54c0e6cfec0c99df3', subscriptionTier: 'pro', subscriptionLimit: 1000 },
-  { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', subscriptionTier: 'free', subscriptionLimit: 25 }
+  { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', subscriptionTier: 'pro', subscriptionLimit: 10000, isProtected: true },
+  { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', subscriptionTier: 'pro', subscriptionLimit: 1000, isDemo: true, isProtected: true },
+  { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032', subscriptionTier: 'free', subscriptionLimit: 25, isDemo: true, isProtected: true }
 ];
 
 export const DEFAULT_RABBITS = [
@@ -107,56 +102,6 @@ export const DEFAULT_RABBITS = [
     ]
   },
   { 
-    id: 'r-10', breederId: 'ab-7', tattooNumber: 'FG01', name: 'Titan Rex', breed: 'Flemish Giant', variety: 'Sandy', sex: 'buck', dob: '2025-03-01', weightOz: 240, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG991', gcNumber: 'GC-FG101', location: 'Cage-G1', notes: 'Massive sandy buck, ARBA show winner.',
-    photos: ['/assets/flemish_giant.png'],
-    legs: [{ id: 'leg-fg1', date: '2025-11-10', showName: 'National Flemish Giant Show', judge: 'Reginald Vance', award: 'Best of Breed', classSize: 32 }]
-  },
-  { 
-    id: 'r-11', breederId: 'ab-7', tattooNumber: 'FG02', name: 'Queen Freya', breed: 'Flemish Giant', variety: 'Steel', sex: 'doe', dob: '2025-04-12', weightOz: 256, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG992', gcNumber: '', location: 'Cage-G2', notes: 'Extremely fertile steel doe. Excellent size.',
-    photos: ['/assets/flemish_giant.png'],
-    legs: []
-  },
-  { 
-    id: 'r-12', breederId: 'ab-7', tattooNumber: 'FG-L1', name: 'Freya Junior', breed: 'Flemish Giant', variety: 'Sandy', sex: 'doe', dob: '2026-04-05', weightOz: 112, status: 'active', sireId: 'r-10', damId: 'r-11', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cage-G3', notes: 'Junior doe showing excellent bone development.',
-    photos: ['/assets/flemish_giant.png'],
-    legs: []
-  },
-  { 
-    id: 'r-20', breederId: 'ab-6', tattooNumber: 'BAT01', name: 'Midnight Knight', breed: 'Netherland Dwarf', variety: 'Black', sex: 'buck', dob: '2025-05-20', weightOz: 36, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-ND441', gcNumber: 'GC-BAT1', location: 'Cave-1', notes: 'Compact buck, very dark glossy coat.',
-    photos: ['/assets/netherland_dwarf.png'],
-    legs: [{ id: 'leg-nd1', date: '2026-02-15', showName: 'Gotham Rabbit Classic', judge: 'Harvey Dent', award: 'Best In Show', classSize: 15 }]
-  },
-  { 
-    id: 'r-21', breederId: 'ab-6', tattooNumber: 'CAT01', name: 'Selina Doe', breed: 'Netherland Dwarf', variety: 'Sable Point', sex: 'doe', dob: '2025-06-14', weightOz: 38, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-ND442', gcNumber: '', location: 'Cave-2', notes: 'Sleek, highly active sable point doe.',
-    photos: ['/assets/netherland_dwarf.png'],
-    legs: []
-  },
-  { 
-    id: 'r-22', breederId: 'ab-6', tattooNumber: 'BAT02', name: 'Bat-signalBEW', breed: 'Netherland Dwarf', variety: 'Blue Eyed White', sex: 'doe', dob: '2025-08-01', weightOz: 34, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-ND443', gcNumber: '', location: 'Cave-3', notes: 'Striking blue eyed white doe.',
-    photos: ['/assets/netherland_dwarf.png'],
-    legs: []
-  },
-  { 
-    id: 'r-23', breederId: 'ab-6', tattooNumber: 'BAT03', name: 'Robin BEW', breed: 'Netherland Dwarf', variety: 'Blue Eyed White', sex: 'buck', dob: '2026-02-10', weightOz: 32, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cave-4', notes: 'Vigorous junior BEW buck.',
-    photos: ['/assets/netherland_dwarf.png'],
-    legs: []
-  },
-  { 
-    id: 'r-24', breederId: 'ab-6', tattooNumber: 'BAT-L1', name: 'Bat-girl ND', breed: 'Netherland Dwarf', variety: 'Black', sex: 'doe', dob: '2026-05-01', weightOz: 16, status: 'active', sireId: 'r-20', damId: 'r-21', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cave-5', notes: 'Junior black doe. High potential.',
-    photos: ['/assets/netherland_dwarf.png'],
-    legs: []
-  },
-  { 
-    id: 'r-13', breederId: 'ab-7', tattooNumber: 'FG03', name: 'Thor Sandy', breed: 'Flemish Giant', variety: 'Sandy', sex: 'buck', dob: '2025-08-20', weightOz: 232, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG993', gcNumber: '', location: 'Cage-G4', notes: 'Strong sand variety buck.',
-    photos: ['/assets/flemish_giant.png'],
-    legs: []
-  },
-  { 
-    id: 'r-14', breederId: 'ab-7', tattooNumber: 'FG04', name: 'Loki Steel', breed: 'Flemish Giant', variety: 'Steel', sex: 'doe', dob: '2025-09-10', weightOz: 248, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-FG994', gcNumber: '', location: 'Cage-G5', notes: 'Sleek steel Flemish Giant doe.',
-    photos: ['/assets/flemish_giant.png'],
-    legs: []
-  },
-  { 
     id: 'r-30', breederId: 'ab-2', tattooNumber: 'CL01', name: 'Clover Opal', breed: 'Mini Rex', variety: 'Opal', sex: 'doe', dob: '2025-05-10', weightOz: 58, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-MR101', gcNumber: '', location: 'C-10', notes: 'Very soft opal coat.',
     photos: ['/assets/mini_rex.png'],
     legs: [],
@@ -205,21 +150,6 @@ export const DEFAULT_RABBITS = [
       { id: 't-34-3', date: '2026-06-15', photo: '/assets/mini_rex.png', weightOz: 36.0, notes: 'Hutch junior check' }
     ]
   },
-  { 
-    id: 'r-40', breederId: 'ab-4', tattooNumber: 'NZ01', name: 'Blue Cyclone', breed: 'New Zealand', variety: 'Blue', sex: 'buck', dob: '2025-01-15', weightOz: 152, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-NZ101', gcNumber: 'GC-NZ01', location: 'Cage-NZ1', notes: 'Stunning New Zealand Blue buck, massive build.',
-    photos: ['/assets/new_zealand_blue.png'],
-    legs: [{ id: 'leg-nz1', date: '2025-11-20', showName: 'National New Zealand Rabbit Show', judge: 'Arthur Pendelton', award: 'Best of Variety', classSize: 22 }]
-  },
-  { 
-    id: 'r-41', breederId: 'ab-4', tattooNumber: 'NZ02', name: 'Blue Sapphire', breed: 'New Zealand', variety: 'Blue', sex: 'doe', dob: '2025-02-20', weightOz: 168, status: 'active', sireId: '', damId: '', inbreedingCoeff: 0.0, registrationNumber: 'REG-NZ102', gcNumber: '', location: 'Cage-NZ2', notes: 'Proven New Zealand Blue doe, ideal type.',
-    photos: ['/assets/new_zealand_blue.png'],
-    legs: []
-  },
-  { 
-    id: 'r-42', breederId: 'ab-4', tattooNumber: 'NZ-L1', name: 'Blue Mist', breed: 'New Zealand', variety: 'Blue', sex: 'doe', dob: '2026-03-05', weightOz: 104, status: 'active', sireId: 'r-40', damId: 'r-41', inbreedingCoeff: 0.0, registrationNumber: '', gcNumber: '', location: 'Cage-NZ3', notes: 'Promising junior Blue doe.',
-    photos: ['/assets/new_zealand_blue.png'],
-    legs: []
-  },
   {
     id: 'c-1', breederId: 'ab-1', tattooNumber: 'TAG-C1', name: 'Ginger Snap', breed: 'Abyssinian', variety: 'Golden Agouti', sex: 'doe', dob: '2025-06-10', weightOz: 34, status: 'active', sireId: '', damId: 'c-4', inbreedingCoeff: 0.0, registrationNumber: 'REG-C101', gcNumber: '', location: 'Cage-C1', notes: 'Proven Abyssinian cavy doe. Very docile.',
     species: 'cavy',
@@ -254,23 +184,14 @@ export const DEFAULT_BREEDINGS = [
   { id: 'b-2', breederId: 'ab-1', buckId: 'r-4', doeId: 'r-5', breedDate: '2026-06-01', palpateDate: '2026-06-13', palpateResult: null, nestBoxDate: '2026-06-29', kindleDate: '2026-07-02', status: 'bred' },
   { id: 'b-3', breederId: 'ab-1', buckId: 'r-6', doeId: 'r-7', breedDate: '2026-04-10', palpateDate: '2026-04-22', palpateResult: true, nestBoxDate: '2026-05-08', kindleDate: '2026-05-11', status: 'kindled' },
   { id: 'b-4', breederId: 'ab-1', buckId: 'r-8', doeId: 'r-9', breedDate: '2026-05-20', palpateDate: '2026-06-01', palpateResult: true, nestBoxDate: '2026-06-17', kindleDate: '2026-06-20', status: 'palpated_positive' },
-  { id: 'b-fg1', breederId: 'ab-7', buckId: 'r-10', doeId: 'r-11', breedDate: '2026-03-01', palpateDate: '2026-03-13', palpateResult: true, nestBoxDate: '2026-03-28', kindleDate: '2026-04-05', status: 'kindled' },
-  { id: 'b-nd1', breederId: 'ab-6', buckId: 'r-20', doeId: 'r-21', breedDate: '2026-05-10', palpateDate: '2026-05-22', palpateResult: true, nestBoxDate: '2026-06-07', kindleDate: null, status: 'palpated_positive' },
   { id: 'b-rc1', breederId: 'ab-2', buckId: 'r-31', doeId: 'r-30', breedDate: '2026-02-10', palpateDate: '2026-02-22', palpateResult: true, nestBoxDate: '2026-03-09', kindleDate: '2026-03-15', status: 'kindled' },
-  { id: 'b-rc2', breederId: 'ab-2', buckId: 'r-31', doeId: 'r-32', breedDate: '2026-06-05', palpateDate: '2026-06-17', palpateResult: null, nestBoxDate: '2026-07-02', kindleDate: '2026-07-06', status: 'bred' },
-  { id: 'b-nd2', breederId: 'ab-6', buckId: 'r-20', doeId: 'r-21', breedDate: '2026-04-01', palpateDate: '2026-04-13', palpateResult: true, nestBoxDate: '2026-04-28', kindleDate: '2026-05-01', status: 'kindled' },
-  { id: 'b-fg2', breederId: 'ab-7', buckId: 'r-13', doeId: 'r-14', breedDate: '2026-05-12', palpateDate: '2026-05-24', palpateResult: true, nestBoxDate: '2026-06-08', kindleDate: '2026-06-11', status: 'kindled' },
-  { id: 'b-nz1', breederId: 'ab-4', buckId: 'r-40', doeId: 'r-41', breedDate: '2026-05-01', palpateDate: '2026-05-13', palpateResult: true, nestBoxDate: '2026-05-28', kindleDate: '2026-06-01', status: 'kindled' }
+  { id: 'b-rc2', breederId: 'ab-2', buckId: 'r-31', doeId: 'r-32', breedDate: '2026-06-05', palpateDate: '2026-06-17', palpateResult: null, nestBoxDate: '2026-07-02', kindleDate: '2026-07-06', status: 'bred' }
 ];
 
 export const DEFAULT_LITTERS = [
   { id: 'l-1', breederId: 'ab-1', breedingId: 'b-1', kitsBornAlive: 6, kitsBornDead: 1, kitsWeaned: 5, notes: 'Thriving and active.' },
   { id: 'l-2', breederId: 'ab-1', breedingId: 'b-3', kitsBornAlive: 5, kitsBornDead: 0, kitsWeaned: 5, notes: 'Excellent weight gain, very healthy litter.' },
-  { id: 'l-fg1', breederId: 'ab-7', breedingId: 'b-fg1', kitsBornAlive: 8, kitsBornDead: 1, kitsWeaned: 7, notes: 'Flemish Giant litter grew extremely fast. Freya junior is from this litter.' },
-  { id: 'l-rc1', breederId: 'ab-2', breedingId: 'b-rc1', kitsBornAlive: 5, kitsBornDead: 0, kitsWeaned: 4, notes: 'Very sweet Mini Rex kits. Velvet and Prince are from this breeding.' },
-  { id: 'l-nd2', breederId: 'ab-6', breedingId: 'b-nd2', kitsBornAlive: 3, kitsBornDead: 1, kitsWeaned: 2, notes: 'Bat-girl ND is from this litter.' },
-  { id: 'l-fg2', breederId: 'ab-7', breedingId: 'b-fg2', kitsBornAlive: 7, kitsBornDead: 1, kitsWeaned: 6, notes: 'Flemish Giant sandy and steel kits growing fast.' },
-  { id: 'l-nz1', breederId: 'ab-4', breedingId: 'b-nz1', kitsBornAlive: 8, kitsBornDead: 0, kitsWeaned: 8, notes: 'New Zealand Blue litter. Growing extremely fast and healthy.' }
+  { id: 'l-rc1', breederId: 'ab-2', breedingId: 'b-rc1', kitsBornAlive: 5, kitsBornDead: 0, kitsWeaned: 4, notes: 'Very sweet Mini Rex kits. Velvet and Prince are from this breeding.' }
 ];
 
 export const DEFAULT_LEDGER = [
@@ -281,33 +202,17 @@ export const DEFAULT_LEDGER = [
   { id: 'lt-5', breederId: 'ab-1', date: '2026-05-15', type: 'expense', amount: 35.00, category: 'equipment', rabbitId: '', notes: 'New automatic water nozzle system.' },
   { id: 'lt-6', breederId: 'ab-1', date: '2026-05-25', type: 'expense', amount: 12.00, category: 'medical', rabbitId: '', notes: 'VetRx respiratory treatment oil.' },
   { id: 'lt-7', breederId: 'ab-1', date: '2026-06-08', type: 'income', amount: 200.00, category: 'sale', rabbitId: '', notes: 'Sold proven senior show doe.' },
-  { id: 'lt-fg1', breederId: 'ab-7', date: '2026-05-15', type: 'income', amount: 150.00, category: 'sale', rabbitId: '', notes: 'Sold Flemish Giant junior buck.' },
-  { id: 'lt-fg2', breederId: 'ab-7', date: '2026-06-02', type: 'expense', amount: 85.00, category: 'feed', rabbitId: '', notes: 'Bulk purchase of high-protein giant breed feed.' },
-  { id: 'lt-fg3', breederId: 'ab-7', date: '2026-06-12', type: 'income', amount: 100.00, category: 'other', rabbitId: '', notes: 'ARBA Flemish Giant Best of Breed Cash Award.' },
-  { id: 'lt-bat1', breederId: 'ab-6', date: '2026-05-28', type: 'expense', amount: 300.00, category: 'equipment', rabbitId: '', notes: 'Cave-optimized LED hutch lighting.' },
-  { id: 'lt-bat2', breederId: 'ab-6', date: '2026-06-10', type: 'income', amount: 400.00, category: 'sale', rabbitId: '', notes: 'Sold champion lineage Netherland Dwarf buck.' },
   { id: 'lt-rc1', breederId: 'ab-2', date: '2026-05-20', type: 'income', amount: 120.00, category: 'sale', rabbitId: '', notes: 'Sold a castor junior buck.' },
   { id: 'lt-rc2', breederId: 'ab-2', date: '2026-05-22', type: 'expense', amount: 35.00, category: 'feed', notes: 'Mini Rex feed bags.' },
-  { id: 'lt-rc3', breederId: 'ab-2', date: '2026-06-01', type: 'expense', amount: 15.00, category: 'show_fee', notes: 'Rex Specialty registration fee.' },
-  { id: 'lt-bat3', breederId: 'ab-6', date: '2026-05-05', type: 'income', amount: 250.00, category: 'sale', notes: 'Sold BEW junior buck.' },
-  { id: 'lt-bat4', breederId: 'ab-6', date: '2026-06-02', type: 'expense', amount: 65.00, category: 'feed', notes: 'Netherland Dwarf special pellets.' },
-  { id: 'lt-fg4', breederId: 'ab-7', date: '2026-05-18', type: 'expense', amount: 45.00, category: 'medical', notes: 'Nail clippers & ear mite preventative drops.' },
-  { id: 'lt-fg5', breederId: 'ab-7', date: '2026-06-10', type: 'income', amount: 180.00, category: 'sale', notes: 'Sold steel Flemish giant junior doe.' },
-  { id: 'lt-nz1', breederId: 'ab-4', date: '2026-06-15', type: 'income', amount: 120.00, category: 'sale', rabbitId: 'r-42', notes: 'Sold junior New Zealand Blue doe.' },
-  { id: 'lt-nz2', breederId: 'ab-4', date: '2026-06-02', type: 'expense', amount: 50.00, category: 'feed', notes: 'Premium feed for New Zealand herd.' }
+  { id: 'lt-rc3', breederId: 'ab-2', date: '2026-06-01', type: 'expense', amount: 15.00, category: 'show_fee', notes: 'Rex Specialty registration fee.' }
 ];
 
 export const DEFAULT_SHOWS = [
   { id: 'show-1', breederId: 'ab-1', name: 'ARBA National Convention 2026', date: '2026-10-24', location: 'Indianapolis, IN', notes: 'Largest national event. Target all senior bucks.', status: 'interested', notifyDays: 14 },
   { id: 'show-2', breederId: 'ab-1', name: 'West Coast Rabbit Classic', date: '2026-07-20', location: 'Stockton, CA', notes: 'Local regional show. Register 4 Holland Lops.', status: 'attending', notifyDays: 7 },
   { id: 'show-3', breederId: 'ab-1', name: 'Mid-Summer Rabbit Show', date: '2026-08-15', location: 'Columbus, OH', notes: 'Hobbyist meet and show.', status: 'not_attending', notifyDays: 7 },
-  { id: 'show-fg1', breederId: 'ab-7', name: 'ARBA National Flemish Giant Show', date: '2026-07-10', location: 'Indianapolis, IN', notes: 'Entering Titan Rex.', status: 'attending', notifyDays: 14 },
-  { id: 'show-fg2', breederId: 'ab-7', name: 'Summer Giant Breeds Specialty', date: '2026-08-05', location: 'Lansing, MI', notes: 'Check weights for Freya Junior.', status: 'interested', notifyDays: 14 },
-  { id: 'show-bat1', breederId: 'ab-6', name: 'Gotham Rabbit Classic', date: '2026-07-15', location: 'Gotham City', notes: 'Midnight Knight defending title.', status: 'attending', notifyDays: 7 },
   { id: 'show-rc1', breederId: 'ab-2', name: 'Midwest Mini Rex Specialty', date: '2026-07-12', location: 'Fort Wayne, IN', notes: 'Targeting Best Castor.', status: 'attending', notifyDays: 14 },
-  { id: 'show-rc2', breederId: 'ab-2', name: 'Ohio State Rabbit Convention 2026', date: '2026-09-18', location: 'Columbus, OH', notes: 'Exhibiting Clover Shadow.', status: 'interested', notifyDays: 14 },
-  { id: 'show-bat2', breederId: 'ab-6', name: 'Metropolis Dwarf Showdown', date: '2026-08-20', location: 'Metropolis Coliseum', notes: 'Entering Robin BEW in junior class.', status: 'interested', notifyDays: 14 },
-  { id: 'show-fg3', breederId: 'ab-7', name: 'Great Lakes Giant Breeders Fair', date: '2026-09-02', location: 'Grand Rapids, MI', notes: 'Entering Thor Sandy.', status: 'attending', notifyDays: 14 }
+  { id: 'show-rc2', breederId: 'ab-2', name: 'Ohio State Rabbit Convention 2026', date: '2026-09-18', location: 'Columbus, OH', notes: 'Exhibiting Clover Shadow.', status: 'interested', notifyDays: 14 }
 ];
 
 export const DEFAULT_CHORES = [
@@ -315,11 +220,7 @@ export const DEFAULT_CHORES = [
   { id: 'ch-2', breederId: 'ab-1', taskName: 'Water System Pressure Check', completed: false },
   { id: 'ch-3', breederId: 'ab-1', taskName: 'Sweep Hutch Aisles', completed: false },
   { id: 'ch-4', breederId: 'ab-2', taskName: 'Castor Variety Grooming', completed: false },
-  { id: 'ch-5', breederId: 'ab-2', taskName: 'Refill Alfalfa Feed Hay', completed: false },
-  { id: 'ch-6', breederId: 'ab-6', taskName: 'BEW Nestbox Inspections', completed: false },
-  { id: 'ch-7', breederId: 'ab-6', taskName: 'Clean Dwarf Hutch Cage Trays', completed: false },
-  { id: 'ch-8', breederId: 'ab-7', taskName: 'Flemish Giant Weight Logs', completed: false },
-  { id: 'ch-9', breederId: 'ab-7', taskName: 'Clean Giant Breeding Enclosures', completed: false }
+  { id: 'ch-5', breederId: 'ab-2', taskName: 'Refill Alfalfa Feed Hay', completed: false }
 ];
 
 export const DEFAULT_TRANSFERS = [
@@ -338,22 +239,6 @@ export const DEFAULT_TRANSFERS = [
     date: '2026-06-05',
     certificateId: 'TX-8821-4902',
     hash: '8f7d9a10c9b5e3f412ad8e92f2c8d203a5b0eef2a95c4786d1a91e5c43d8f822'
-  },
-  {
-    id: 'tx-2',
-    breederId: 'ab-7',
-    rabbitId: 'r-fg2',
-    rabbitName: 'Titan Freya',
-    rabbitTattoo: 'FG-02',
-    rabbitBreed: 'Flemish Giant',
-    buyerName: 'Bob Vance',
-    buyerEmail: 'bob@vancerefrigeration.com',
-    buyerPhone: '555-0144',
-    price: 250.00,
-    type: 'sale',
-    date: '2026-06-12',
-    certificateId: 'TX-1049-7721',
-    hash: 'a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3'
   }
 ];
 
@@ -364,15 +249,6 @@ export const DEFAULT_SIGNATURES = [
     sellerSignature: 'Jason Miller',
     buyerSignature: 'Alice Watson',
     signedAt: '2026-06-05T14:30:00Z',
-    sellerSignatureType: 'typed',
-    buyerSignatureType: 'typed'
-  },
-  {
-    id: 'sig-2',
-    transferId: 'tx-2',
-    sellerSignature: 'Sarah Jenkins',
-    buyerSignature: 'Bob Vance',
-    signedAt: '2026-06-12T10:15:00Z',
     sellerSignatureType: 'typed',
     buyerSignatureType: 'typed'
   }
