@@ -34,6 +34,7 @@ import ParentConsentGate from './views/ParentConsentGate';
 import PrivacyPolicy from './views/PrivacyPolicy';
 import ParentControls from './components/ui/ParentControls';
 import LandingHomePage from './views/LandingHomePage';
+import WarrenWiseCoachModal from './components/ai/WarrenWiseCoachModal';
 import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
@@ -1075,6 +1076,7 @@ export default function App() {
   // Mascot Reward Pop-up State
   const [successMascot, setSuccessMascot] = useState(null);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showCoachModal, setShowCoachModal] = useState(false);
   const [selectedChildControlsId, setSelectedChildControlsId] = useState(null);
   const [conflictsCount, setConflictsCount] = useState(0);
 
@@ -12254,6 +12256,22 @@ export default function App() {
       {/* Privacy Policy and COPPA Disclosures Modal */}
       {showPrivacyPolicy && (
         <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />
+      )}
+
+      {/* WarrenWise 4-H Ultimate Coach Modal */}
+      {showCoachModal && (
+        <WarrenWiseCoachModal onClose={() => setShowCoachModal(false)} />
+      )}
+
+      {/* Floating 4-H Coach Quick-Launcher Button */}
+      {currentUser && (
+        <button
+          onClick={() => setShowCoachModal(true)}
+          className="fixed bottom-6 left-6 z-40 btn-interactive px-4 py-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-xl shadow-amber-500/30 flex items-center gap-2 border border-yellow-300/40 cursor-pointer"
+        >
+          <span className="text-base animate-bounce">🎓</span>
+          <span>4-H Coach WarrenWise</span>
+        </button>
       )}
 
       {/* Toast Notifications Container */}
