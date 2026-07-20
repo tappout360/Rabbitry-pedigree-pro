@@ -33,6 +33,7 @@ import { useSubscription } from './hooks/useSubscription';
 import ParentConsentGate from './views/ParentConsentGate';
 import PrivacyPolicy from './views/PrivacyPolicy';
 import ParentControls from './components/ui/ParentControls';
+import LandingHomePage from './views/LandingHomePage';
 import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
@@ -990,8 +991,8 @@ export default function App() {
   // Onboarding profile status derived from currentUser
   const hasProfile = currentUser !== null;
 
-  // Authentication Views: 'login', 'signup', 'forgot-password', 'reset-password', 'pending-approval'
-  const [authView, setAuthView] = useState('login');
+  // Authentication Views: 'home', 'login', 'signup', 'forgot-password', 'reset-password', 'pending-approval'
+  const [authView, setAuthView] = useState('home');
 
   // Login inputs
   const [loginEmail, setLoginEmail] = useState('');
@@ -2267,6 +2268,18 @@ export default function App() {
       spread: 70,
       origin: { y: 0.6 }
     });
+  };
+
+  // Direct Live Demo Login Handler
+  const handleTryDemo = (demoId = 'ab-1') => {
+    const demoUser = adminBreeders.find(b => b.id === demoId) || adminBreeders.find(b => b.isDemo) || adminBreeders[0];
+    if (demoUser) {
+      setCurrentUser(demoUser);
+      localStorage.setItem('rp_current_user', JSON.stringify(demoUser));
+      setSelectedBreederContext(demoUser.id);
+      setActiveTab('dashboard');
+      showToast(`Logged into Live Demo as ${demoUser.name} (${demoUser.rabbitryName || 'Demo Barn'})`, 'info');
+    }
   };
 
   // Login Form Submit Handler
@@ -4533,10 +4546,24 @@ export default function App() {
     );
   }
 
-  if (!hasProfile) {
+  if (!currentUser) {
+    if (authView === 'home') {
+      return (
+        <LandingHomePage 
+          onSignIn={() => setAuthView('login')}
+          onRegister={() => setAuthView('signup')}
+          onTryDemo={(demoId) => handleTryDemo(demoId)}
+          onSelectPlan={(planKey) => {
+            setProfileForm(prev => ({ ...prev, subscriptionTier: planKey }));
+            setAuthView('signup');
+          }}
+        />
+      );
+    }
+
     if (authView === 'marketplace') {
       return (
-        <div className="theme-dark min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
           <header className="w-full p-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-2xl animate-bounce">🐇👑</span>

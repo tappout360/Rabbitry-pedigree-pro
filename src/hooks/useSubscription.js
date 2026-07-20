@@ -4,7 +4,7 @@ import { canAccessFeature, getTierLimits } from '../db/subscriptionConfig';
 
 export const useSubscription = create((set, get) => ({
   tier: 'basic',
-  status: 'trialing',
+  status: 'active',
   stripeCustomerId: '',
   stripeSubscriptionId: '',
   currentPeriodEnd: '',
@@ -25,7 +25,7 @@ export const useSubscription = create((set, get) => ({
       if (localSub) {
         set({
           tier: localSub.tier || 'basic',
-          status: localSub.status || 'trialing',
+          status: localSub.status || 'active',
           stripeCustomerId: localSub.stripeCustomerId || '',
           stripeSubscriptionId: localSub.stripeSubscriptionId || '',
           currentPeriodEnd: localSub.currentPeriodEnd || '',
@@ -37,16 +37,16 @@ export const useSubscription = create((set, get) => ({
           isLoading: false
         });
       } else {
-        // Fallback or seed default 14-day trialing subscription
+        // Fallback default active subscription
         const defaultSub = {
           id: `sub-${breederId}`,
           breederId,
           tier: 'basic',
-          status: 'trialing',
+          status: 'active',
           stripeCustomerId: '',
           stripeSubscriptionId: '',
-          currentPeriodEnd: '',
-          trialEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          currentPeriodEnd: '2028-12-31',
+          trialEnd: null,
           cancelledAt: null,
           evansVerified: false,
           additionalHutches: 0,
@@ -56,7 +56,7 @@ export const useSubscription = create((set, get) => ({
         await db.subscriptions.add(defaultSub);
         set({
           tier: 'basic',
-          status: 'trialing',
+          status: 'active',
           stripeCustomerId: '',
           stripeSubscriptionId: '',
           currentPeriodEnd: '',

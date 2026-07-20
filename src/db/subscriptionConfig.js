@@ -9,7 +9,7 @@ export const SUBSCRIPTION_TIERS = {
     cloudStorageGb: 1,
     maxPhotos: 500,
     features: [
-      '14-Day Free Trial (Age Verify CC required)',
+      'Instant Activation & Full Feature Access',
       'Hutch inventory registry (max 75 active animals)',
       '1 GB Cloud & Photo Storage (~500 uploads)',
       'Full 4-generation pedigree tree generation',
@@ -28,7 +28,7 @@ export const SUBSCRIPTION_TIERS = {
     cloudStorageGb: 10,
     maxPhotos: 9999,
     features: [
-      '14-Day Free Trial (Age Verify CC required)',
+      'Instant Activation & Full Feature Access',
       'Large herd inventory (max 500 active profiles)',
       '10 GB Cloud & Photo Storage (~10,000 uploads)',
       'All Basic Plan hutch registry features',
@@ -45,7 +45,7 @@ export const SUBSCRIPTION_TIERS = {
     cloudStorageGb: 5,
     maxPhotos: 2500,
     features: [
-      '14-Day Free Trial (Age Verify CC required)',
+      'Instant Activation & Full Feature Access',
       'Medium hutch registry (max 100 active profiles)',
       '5 GB Cloud & Photo Storage (~2,500 uploads)',
       'All Basic Plan hutch registry features',
