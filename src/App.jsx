@@ -4,7 +4,7 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map
+  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
@@ -2429,13 +2429,14 @@ export default function App() {
     if (window.confirm("Are you sure you want to log out?")) {
       localStorage.removeItem('rp_logged_in_email');
       localStorage.removeItem('rp_selected_context');
+      localStorage.removeItem('rp_current_user');
       setCurrentUser(null);
       setSelectedBreederContext('ab-1');
       setActiveTab('dashboard');
       setControlCenterUnlocked(false);
       setAdminPasswordInput('');
       setAdminPasswordError('');
-      setAuthView('login');
+      setAuthView('home');
       setLoginEmail('');
       setLoginPassword('');
       setLoginError('');
@@ -4717,9 +4718,18 @@ export default function App() {
                 {/* 1. LOGIN VIEW */}
                 {authView === 'login' && (
                   <form onSubmit={handleLogin} className="flex flex-col gap-6">
-                    <div>
-                      <h3 className="text-2xl font-black text-white tracking-tight">Breeder Sign In</h3>
-                      <p className="text-xs opacity-75 mt-1 text-slate-300">Access your offline-first rabbitry database</p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-2xl font-black text-white tracking-tight">Breeder Sign In</h3>
+                        <p className="text-xs opacity-75 mt-1 text-slate-300">Access your offline-first rabbitry database</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAuthView('home')}
+                        className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-xl border border-white/10 cursor-pointer flex items-center gap-1 shrink-0"
+                      >
+                        ← Back to Home Page
+                      </button>
                     </div>
 
                     {loginError && (
@@ -4813,9 +4823,18 @@ export default function App() {
                 {/* 2. SIGN UP VIEW */}
                 {authView === 'signup' && (
                   <form onSubmit={handleCreateProfile} className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto pr-2">
-                    <div>
-                      <h3 className="text-xl font-black text-white tracking-tight">Create Breeder Account</h3>
-                      <p className="text-xs opacity-75 mt-0.5 text-slate-300">Register and request App Owner approval</p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-xl font-black text-white tracking-tight">Create Breeder Account</h3>
+                        <p className="text-xs opacity-75 mt-0.5 text-slate-300">Register and request App Owner approval</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAuthView('home')}
+                        className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-xl border border-white/10 cursor-pointer flex items-center gap-1 shrink-0"
+                      >
+                        ← Back to Home Page
+                      </button>
                     </div>
 
                     {/* Basic Info Group */}
