@@ -235,28 +235,39 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0 flex-wrap">
           <button
             onClick={async () => {
               if (!currentUser?.id) return;
               await useSubscription.getState().buyHutches(currentUser.id, 25);
               triggerConfetti();
-              alert("Successfully purchased +25 Hutch Storage Expansion!");
+              alert("Successfully purchased +25 Hutch Storage Expansion ($3.99)!");
             }}
-            className="btn-interactive py-2 px-4 bg-indigo-650 hover:bg-indigo-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1"
+            className="btn-interactive py-2 px-3 bg-indigo-650 hover:bg-indigo-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1 shadow"
           >
-            +25 Hutches ($15.00)
+            +25 Hutches ($3.99)
+          </button>
+          <button
+            onClick={async () => {
+              if (!currentUser?.id) return;
+              await useSubscription.getState().buyHutches(currentUser.id, 50);
+              triggerConfetti();
+              alert("Successfully purchased +50 Hutch Storage Expansion ($6.99)!");
+            }}
+            className="btn-interactive py-2 px-3 bg-teal-650 hover:bg-teal-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1 shadow"
+          >
+            +50 Hutches ($6.99)
           </button>
           <button
             onClick={async () => {
               if (!currentUser?.id) return;
               await useSubscription.getState().buyHutches(currentUser.id, 100);
               triggerConfetti();
-              alert("Successfully purchased +100 Hutch Storage Expansion!");
+              alert("Successfully purchased +100 Hutch Storage Expansion ($11.99)!");
             }}
-            className="btn-interactive py-2 px-4 bg-purple-650 hover:bg-purple-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1"
+            className="btn-interactive py-2 px-3 bg-purple-650 hover:bg-purple-750 text-white rounded-xl text-xs font-black border-none cursor-pointer flex items-center justify-center gap-1 shadow"
           >
-            +100 Hutches ($50.00)
+            +100 Hutches ($11.99)
           </button>
         </div>
       </div>
