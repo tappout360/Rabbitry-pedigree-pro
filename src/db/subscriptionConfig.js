@@ -1,56 +1,63 @@
-// Subscription tiers and gating configurations for WarrenWise Pro (RabbitryPedigree Pro)
+// Subscription Tiers & Capacity-Based Configurations for WarrenWise Pro (RabbitryPedigree Pro)
+// ALL FEATURES UNLOCKED ON EVERY PLAN; Tiers scale based on Active Hutches, Storage (GB), and Barn Crew Seats.
 
 export const SUBSCRIPTION_TIERS = {
   youth_student: {
     id: 'youth_student',
     name: '4-H Youth Linked Student Account',
     priceLabel: 'FREE ($0 / month linked to Parent Account)',
-    limit: 50,
+    monthlyPrice: 0,
+    annualPrice: 0,
+    limit: 25,
     cloudStorageGb: 1,
-    maxPhotos: 250,
+    maxPhotos: 500,
+    maxCrewMembers: 1,
     features: [
-      'Included FREE ($0) with any Parent or Leader Paid Plan',
-      'Individual login username & password for 4-H exhibitor',
-      'Parental Controls & Consent Gate verified',
+      '100% FREE ($0) linked sub-account under Parent Account',
+      'Individual login credentials for 4-H exhibitor',
       'Full access to 4-H Youth Academy & Quizzes',
-      'ARBA Showmanship Routine Trainer & Step Guide',
-      'Hutch inventory registry (max 50 active animals)',
-      '4-H Project Book Record Keeping'
+      'ARBA Showmanship Routine Trainer & Checkpoints',
+      'Hutch inventory registry (max 25 active animals)',
+      '4-H Project Book Record Keeping',
+      'Parental Controls & Consent Gate verified'
     ]
   },
   basic: {
     id: 'basic',
-    name: 'Basic Hutch Plan',
-    priceLabel: '$3.59 / month or $35.00 / year',
-    limit: 75,
-    cloudStorageGb: 1,
-    maxPhotos: 500,
+    name: 'Hobbyist & 4-H Starter Plan',
+    priceLabel: '$4.99 / month or $49.00 / year',
+    monthlyPrice: 4.99,
+    annualPrice: 49.00,
+    limit: 50,
+    cloudStorageGb: 2,
+    maxPhotos: 1000,
+    maxCrewMembers: 1,
     features: [
-      'Instant Activation & Full Feature Access',
-      'Hutch inventory registry (max 75 active animals)',
-      '1 GB Cloud & Photo Storage (~500 uploads)',
+      'ALL App Features Unlocked (Pedigrees, Voice, Ledger, etc.)',
+      'Hutch inventory registry (max 50 active animals)',
+      '2 GB Cloud Photo Storage (~1,000 photos)',
       'Full 4-generation pedigree tree generation',
-      'No PDF watermarks on certificates',
-      'Gestation milestones & notification alerts',
-      'Genetics inbreeding calculator',
-      'Basic hutch financial ledger',
-      'Offline auto-sync with secure SQLite cloud'
+      'Genetics inbreeding calculator (Wright’s COI)',
+      'Financial ledger & digital bill of sale transfers',
+      '100% Offline PWA access with auto-sync'
     ]
   },
   pro: {
     id: 'pro',
-    name: 'Pro Herd Plan',
-    priceLabel: '$8.99 / month or $89.00 / year',
-    limit: 300,
+    name: 'Pro Show Barn Plan',
+    priceLabel: '$9.99 / month or $99.00 / year',
+    monthlyPrice: 9.99,
+    annualPrice: 99.00,
+    evansAnnualFirstYearPrice: 49.00, // $50 OFF first year annual for Evans switchers!
+    limit: 200,
     cloudStorageGb: 10,
-    maxPhotos: 9999,
+    maxPhotos: 5000,
+    maxCrewMembers: 3,
     features: [
-      'Instant Activation & Full Feature Access',
-      'Active herd inventory (max 300 active profiles)',
-      '10 GB Cloud & Photo Storage (~10,000 uploads)',
-      'All Basic Plan hutch registry features',
-      'Advanced Genetics & COI Risk Calculator',
-      'Barn Crew & Assistant Roles permissions',
+      'ALL App Features Unlocked',
+      'Active herd inventory (max 200 active animals)',
+      '10 GB Cloud Photo Storage (~5,000 photos)',
+      '3 Barn Crew / Assistant Sub-User Seats (Owner + 2 Helpers)',
       'Photo Gallery Editor & Lightbox',
       'Medication & Health Treatment Logs',
       'Multi-user barn permissions'
@@ -59,58 +66,49 @@ export const SUBSCRIPTION_TIERS = {
   master: {
     id: 'master',
     name: 'Master Breeder Plan',
-    priceLabel: '$17.99 / month or $179.00 / year',
-    limit: 1000,
-    cloudStorageGb: 50,
-    maxPhotos: 50000,
+    priceLabel: '$19.99 / month or $199.00 / year',
+    monthlyPrice: 19.99,
+    annualPrice: 199.00,
+    evansAnnualFirstYearPrice: 149.00, // $50 OFF first year annual for Evans switchers!
+    limit: 750,
+    cloudStorageGb: 35,
+    maxPhotos: 20000,
+    maxCrewMembers: 6,
     features: [
-      'Instant Activation & Full Feature Access',
-      'Large herd inventory (max 1,000 active profiles)',
-      '50 GB Cloud & Photo Storage (~50,000 uploads)',
-      'Free Evans Software Auto-Migrator',
+      'ALL App Features Unlocked',
+      'Large herd inventory (max 750 active animals)',
+      '35 GB Cloud Photo Storage (~20,000 photos)',
+      '6 Barn Crew / Assistant Sub-User Seats (Owner + 5 Helpers)',
+      'Free Evans Software Auto-Migrator Tool',
       'Priority ARBA Registrar Support',
-      'Exhibitor registry bulk prep reports',
-      'Unlimited Cloud Storage & Daily Backups'
+      'Exhibitor registry bulk prep reports'
     ]
   },
   enterprise: {
     id: 'enterprise',
-    name: 'Commercial Enterprise & Club Co-Op Plan',
-    priceLabel: '$29.99 / month or $299.00 / year',
+    name: 'Commercial Enterprise & Co-Op Plan',
+    priceLabel: '$34.99 / month or $349.00 / year',
+    monthlyPrice: 34.99,
+    annualPrice: 349.00,
     limit: 99999,
-    cloudStorageGb: 200,
-    maxPhotos: 200000,
+    cloudStorageGb: 100,
+    maxPhotos: 50000,
+    maxCrewMembers: 999,
     features: [
+      'ALL App Features Unlocked',
       'Unlimited Active Hutches & Animal Profiles',
-      '200 GB Cloud & Photo Storage (~200,000 uploads)',
+      '100 GB Cloud Photo Storage (~50,000 photos)',
+      'Unlimited Barn Crew / Assistant Seats',
       'Multi-Location Barn Management',
-      'Co-Op Marketing & Public Directory Showcase',
-      'Dedicated ARBA Registrar Sync Account'
-    ]
-  },
-  evans_lifetime: {
-    id: 'evans_lifetime',
-    name: 'Evans Migrant Lifetime Offer',
-    priceLabel: '$29.00 one-time switcher discount',
-    limit: 500,
-    cloudStorageGb: 10,
-    maxPhotos: 9999,
-    features: [
-      'Special Verified Evans Software switcher rate',
-      'Includes 5 years of all major updates & features',
-      '10 GB Cloud & Photo Storage (~10,000 uploads)',
-      'Pay only for optional major version upgrades after 5 years',
-      'No standard monthly or yearly recurring hutch bills',
-      'All Pro Plan commercial tools and imports included'
+      'Co-Op Marketing & Public Directory Showcase'
     ]
   }
 };
 
 export const ADDON_EXPANSION_PACKS = [
-  { id: 'hutch_50', name: '+50 Extra Hutches', priceLabel: '$1.79 / mo', limitIncrease: 50 },
-  { id: 'hutch_150', name: '+150 Extra Hutches', priceLabel: '$4.19 / mo', limitIncrease: 150 },
-  { id: 'gb_10', name: '+10 GB Cloud Storage', priceLabel: '$1.19 / mo', gb: 10, approxPhotos: 5000 },
-  { id: 'gb_50', name: '+50 GB Cloud Storage', priceLabel: '$2.99 / mo', gb: 50, approxPhotos: 25000 }
+  { id: 'hutch_50', name: '+50 Extra Active Hutches', priceLabel: '$1.99 / mo', limitIncrease: 50 },
+  { id: 'gb_10', name: '+10 GB Photo Storage', priceLabel: '$1.49 / mo', gb: 10, approxPhotos: 5000 },
+  { id: 'crew_1', name: '+1 Extra Barn Crew Seat', priceLabel: '$1.49 / mo', seats: 1 }
 ];
 
 export const EVANS_LIMIT_CONFIG = {
@@ -120,7 +118,7 @@ export const EVANS_LIMIT_CONFIG = {
 };
 
 export function canAccessFeature(tier, featureKey) {
-  return true; // All features unlocked for active tiers
+  return true; // All features unlocked for everyone
 }
 
 export function getTierLimits(tier = 'basic') {
@@ -128,6 +126,7 @@ export function getTierLimits(tier = 'basic') {
   return {
     maxRabbits: t.limit,
     cloudStorageGb: t.cloudStorageGb,
-    maxPhotos: t.maxPhotos
+    maxPhotos: t.maxPhotos,
+    maxCrewMembers: t.maxCrewMembers || 1
   };
 }

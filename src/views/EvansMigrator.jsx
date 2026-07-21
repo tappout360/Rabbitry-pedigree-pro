@@ -736,48 +736,50 @@ No errors reported. Data stored locally in IndexedDB.
             </div>
           </div>
 
-          {evansDiscountUnlocked && (
-            <div className="w-full mt-2 p-5 bg-gradient-to-r from-amber-500/20 to-yellow-600/20 border border-amber-500/30 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-left">
-              <div className="flex-1">
-                <h5 className="font-bold text-amber-300 flex items-center gap-1.5 text-sm">
-                  <Sparkles className="w-4 h-4" /> Special Evans Migrant Offer Unlocked!
-                </h5>
-                <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                  As a verified Evans Software migrant, you qualify for the **WarrenWise Lifetime plan** at a special discount price of **$169.00** one-time (regular $249). Complete your migration setup and lock in 5 years of all major updates!
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    setCheckoutLoading(true);
-                    const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
-                    const token = localStorage.getItem('rp_auth_token');
-                    const res = await fetch(`${API_ROOT}/billing/create-checkout-session`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                      },
-                      body: JSON.stringify({ tier: 'lifetime', billingCycle: 'one_time', evansSpecial: true })
-                    });
-                    const data = await res.json();
-                    if (data.url) {
-                      window.location.href = data.url;
-                    }
-                  } catch (e) {
-                    console.error("Evans Checkout Session Creation failed:", e);
-                  } finally {
-                    setCheckoutLoading(false);
-                  }
-                }}
-                disabled={checkoutLoading}
-                className="btn-interactive text-xs py-2 px-4 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold shrink-0 border-none flex items-center gap-2"
-              >
-                {checkoutLoading ? 'Redirecting...' : 'Claim $169 Lifetime Offer'}
-              </button>
+          {/* EVANS SWITCHER EXCLUSIVE $50 OFF ANNUAL PLAN DISCOUNT POP-UP */}
+          <div className="w-full mt-4 p-6 bg-gradient-to-r from-amber-950/80 via-slate-900 to-yellow-950/80 border-2 border-amber-400 rounded-3xl flex flex-col items-center text-center gap-4 shadow-2xl shadow-amber-500/20">
+            <span className="px-3 py-1 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-full font-mono">
+              🎁 EXCLUSIVE EVANS SWITCHER REWARD
+            </span>
+            <div>
+              <h4 className="text-xl font-black text-white">Take $50 OFF Your First Year Annual Plan!</h4>
+              <p className="text-xs text-amber-200 mt-1 leading-relaxed max-w-lg">
+                Because you are migrating your rabbitry data from Evans Software, we are giving you an instant <strong>$50 OFF discount</strong> on any Annual Plan!
+              </p>
             </div>
-          )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md my-2 text-left">
+              <div className="p-4 bg-slate-950 border border-amber-500/40 rounded-2xl">
+                <span className="text-[10px] font-black uppercase text-amber-400 font-mono">Pro Show Barn Annual</span>
+                <div className="flex items-baseline gap-1.5 my-1">
+                  <span className="text-2xl font-black text-white">$49.00</span>
+                  <span className="text-[10px] text-slate-400 line-through font-semibold">$99.00</span>
+                  <span className="text-[10px] text-emerald-400 font-bold">/ 1st Year</span>
+                </div>
+                <span className="text-[10px] text-slate-350 block">200 Active Hutches • 10 GB Storage • 3 Crew Seats</span>
+              </div>
+
+              <div className="p-4 bg-slate-950 border border-amber-500/40 rounded-2xl">
+                <span className="text-[10px] font-black uppercase text-amber-400 font-mono">Master Breeder Annual</span>
+                <div className="flex items-baseline gap-1.5 my-1">
+                  <span className="text-2xl font-black text-white">$149.00</span>
+                  <span className="text-[10px] text-slate-400 line-through font-semibold">$199.00</span>
+                  <span className="text-[10px] text-emerald-400 font-bold">/ 1st Year</span>
+                </div>
+                <span className="text-[10px] text-slate-350 block">750 Active Hutches • 35 GB Storage • 6 Crew Seats</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                alert("Evans Switcher $50 OFF Discount Applied! Your first year annual rate has been locked in.");
+              }}
+              className="btn-interactive px-6 py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs rounded-xl border-none shadow-lg shadow-amber-500/30 cursor-pointer"
+            >
+              🎉 Claim $50 OFF First Year Annual Plan
+            </button>
+          </div>
 
           <div className="flex gap-3 justify-center w-full mt-4 flex-wrap">
             <button
