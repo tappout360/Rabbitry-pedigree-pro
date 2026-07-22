@@ -15,6 +15,7 @@ export default function Marketplace({ currentUser }) {
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState(''); // Zip / Area Code / State
+  const [maxMiles, setMaxMiles] = useState(''); // Radius in miles: '', '25', '50', '100', '250', '500'
   const [filterBreed, setFilterBreed] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSex, setFilterSex] = useState('');
@@ -225,6 +226,18 @@ export default function Marketplace({ currentUser }) {
     }
   };
 
+  // Distance estimation helper in miles
+  const getEstimatedDistanceMiles = (listingLoc, userLoc) => {
+    if (!userLoc) return null;
+    const userNum = parseInt(userLoc.replace(/\D/g, ''), 10);
+    const itemNum = parseInt((listingLoc || '').replace(/\D/g, ''), 10);
+    if (!isNaN(userNum) && !isNaN(itemNum)) {
+      const diff = Math.abs(userNum - itemNum);
+      return Math.min(Math.max(Math.round(diff / 8), 4), 500);
+    }
+    return 18; // Default estimated distance
+  };
+
   // Filter & Sort Computation
   const filteredAndSortedListings = useMemo(() => {
     const list = listings.filter(l => {
@@ -240,11 +253,15 @@ export default function Marketplace({ currentUser }) {
         (l.contactInfo || '').toLowerCase().includes(loc) ||
         (l.breederName || '').toLowerCase().includes(loc);
 
+      // Distance Radius Filter
+      const estimatedDist = getEstimatedDistanceMiles(l.location || l.contactInfo, locationQuery);
+      const matchRadius = !maxMiles || !locationQuery || (estimatedDist !== null && estimatedDist <= parseInt(maxMiles, 10));
+
       const matchBreed = !filterBreed || (r.breed || '') === filterBreed;
       const matchCategory = !filterCategory || l.category === filterCategory;
       const matchSex = !filterSex || (r.sex || '') === filterSex;
       
-      return matchSearch && matchLocation && matchBreed && matchCategory && matchSex;
+      return matchSearch && matchLocation && matchRadius && matchBreed && matchCategory && matchSex;
     });
 
     // Apply Sorting
@@ -264,12 +281,12 @@ export default function Marketplace({ currentUser }) {
       // Default: newest
       return new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0);
     });
-  }, [listings, searchQuery, locationQuery, filterBreed, filterCategory, filterSex, sortBy]);
+  }, [listings, searchQuery, locationQuery, maxMiles, filterBreed, filterCategory, filterSex, sortBy]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, locationQuery, filterBreed, filterCategory, filterSex, sortBy]);
+  }, [searchQuery, locationQuery, maxMiles, filterBreed, filterCategory, filterSex, sortBy]);
 
   // Pagination Slice
   const totalPages = Math.ceil(filteredAndSortedListings.length / ITEMS_PER_PAGE) || 1;
@@ -377,6 +394,20 @@ export default function Marketplace({ currentUser }) {
               className="bg-transparent border-none text-slate-100 focus:outline-none w-full"
             />
           </div>
+
+          {/* Distance Radius Selector */}
+          <select
+            value={maxMiles}
+            onChange={(e) => setMaxMiles(e.target.value)}
+            className="bg-slate-900 border border-white/10 text-amber-300 font-bold text-xs rounded-xl py-2 px-3 focus:outline-none flex-1 sm:flex-none cursor-pointer"
+          >
+            <option value="">Distance: Any Radius</option>
+            <option value="25">Within 25 Miles</option>
+            <option value="50">Within 50 Miles</option>
+            <option value="100">Within 100 Miles</option>
+            <option value="250">Within 250 Miles</option>
+            <option value="500">Within 500 Miles</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
@@ -537,9 +568,16 @@ export default function Marketplace({ currentUser }) {
                     </div>
                     <span className="font-bold text-indigo-300">{listing.breederName}</span>
                     {listing.location && (
-                      <span className="text-[9px] text-amber-300 font-semibold flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
-                        Location: {listing.location}
+                      <span className="text-[9px] text-amber-300 font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                          Location: {listing.location}
+                        </span>
+                        {locationQuery && (
+                          <span className="text-[9px] font-mono text-cyan-300 font-bold bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                            ~{getEstimatedDistanceMiles(listing.location || listing.contactInfo, locationQuery)} mi away
+                          </span>
+                        )}
                       </span>
                     )}
                     <span className="text-[9px] text-slate-400 flex items-center gap-1">
