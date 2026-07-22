@@ -284,7 +284,7 @@ export default function Marketplace({ currentUser }) {
           </div>
           
           <h2 className="text-2xl font-black tracking-tight text-white mt-2">
-            ARBA Show-Class & Commercial Breeder Directory
+            Purebred Show-Class & Commercial Breeder Directory
           </h2>
           <p className="text-xs text-slate-300 mt-2 leading-relaxed">
             Browse purebred show stock, commercial utility meat breeders, and companion pets from certified local WarrenWise rabbitries. Monitored by App Owner Jason Mounts for 100% safety.
@@ -321,7 +321,7 @@ export default function Marketplace({ currentUser }) {
             className="bg-slate-900 border border-white/10 text-white text-xs rounded-xl py-2 px-3 focus:outline-none flex-1 md:flex-none"
           >
             <option value="">All Categories</option>
-            <option value="show">🏆 ARBA Show Quality</option>
+            <option value="show">🏆 Standard Show Quality</option>
             <option value="utility_breeder">🧬 Utility Breeder</option>
             <option value="meat">🥩 Commercial Meat</option>
             <option value="pet">🐰 Pet / Companion</option>
@@ -626,7 +626,7 @@ export default function Marketplace({ currentUser }) {
                   className="mt-1 accent-emerald-500 cursor-pointer"
                 />
                 <label htmlFor="agreeTerms" className="text-[11px] text-emerald-200 cursor-pointer leading-tight">
-                  <strong>100% Legal & ARBA Rules Agreement:</strong> I certify under penalty of account suspension that this listing is 100% legal under USDA & state livestock laws, accurate under ARBA standards, and free of puppy/kitten mills or prohibited animals.
+                  <strong>100% Legal & Breed Standards Agreement:</strong> I certify under penalty of account suspension that this listing is 100% legal under USDA & state livestock laws, accurate under recognized breed standards, and free of puppy/kitten mills or prohibited animals.
                 </label>
               </div>
 

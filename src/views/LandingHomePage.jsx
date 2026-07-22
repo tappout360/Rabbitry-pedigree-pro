@@ -22,7 +22,7 @@ export default function LandingHomePage({
       name: "Grandview's Snow Monarch",
       breed: "New Zealand White",
       class: "Senior Buck",
-      awards: "Best in Show (BIS) - ARBA National",
+      awards: "Best in Show (BIS) - National Show",
       image: "/assets/new_zealand_white.png",
       breeder: "Grandview Rabbitry",
       category: "commercial",
@@ -86,7 +86,7 @@ export default function LandingHomePage({
                   WarrenWise
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-semibold font-mono tracking-wider">ARBA & CAVY REGISTRY ENGINE</p>
+              <p className="text-[10px] text-slate-400 font-semibold font-mono tracking-wider">PUREBRED & CAVY REGISTRY ENGINE</p>
             </div>
           </div>
 
@@ -144,11 +144,11 @@ export default function LandingHomePage({
             
             <div className="inline-flex items-center gap-2 self-start px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-pink-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold tracking-wide shadow-inner">
               <Sparkles className="w-4 h-4 text-yellow-400 animate-spin" />
-              <span>Built for ARBA & 4-H Show Champions Worldwide</span>
+              <span>Built for Purebred & 4-H Show Champions Worldwide</span>
             </div>
 
             <h1 className="text-4xl md:text-6xl font-black text-white leading-[1.1] tracking-tight">
-              The Ultimate <span className="bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">ARBA-Compliant</span> Rabbit & Cavy Management App
+              The Ultimate <span className="bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">Purebred & Cavy</span> Management App
             </h1>
 
             <p className="text-base md:text-lg text-slate-300 leading-relaxed max-w-2xl font-medium">
@@ -188,7 +188,7 @@ export default function LandingHomePage({
               </div>
               <div className="flex items-center gap-2">
                 <Award className="w-5 h-5 text-yellow-400 shrink-0" />
-                <span className="text-xs font-bold text-slate-300">ARBA & Cavy Standards</span>
+                <span className="text-xs font-bold text-slate-300">Purebred & Cavy Standards</span>
               </div>
               <div className="flex items-center gap-2">
                 <HeartPulse className="w-5 h-5 text-rose-400 shrink-0" />
@@ -313,7 +313,7 @@ export default function LandingHomePage({
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-400 shrink-0" /> <strong>50 Active Hutches</strong></li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-400 shrink-0" /> 4-Generation Pedigree Builder</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-400 shrink-0" /> Breeding & Nest Box Reminders</li>
-                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-400 shrink-0" /> ARBA Weight & Show Class Calculator</li>
+                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-400 shrink-0" /> Standard Weight & Show Class Calculator</li>
               </ul>
             </div>
             <button
@@ -368,7 +368,7 @@ export default function LandingHomePage({
               <ul className="space-y-3 text-xs text-slate-300">
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> <strong>1,000 Active Hutches</strong></li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Free Evans Software Auto-Migrator</li>
-                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Priority ARBA Registrar Support</li>
+                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Priority Show & Breeder Support</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Unlimited Cloud Storage & Backups</li>
               </ul>
             </div>
@@ -379,6 +379,14 @@ export default function LandingHomePage({
               Select Master Plan ($17.99/mo)
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* INDEPENDENT TRADEMARK DISCLAIMER SECTION */}
+      <section className="py-8 px-6 max-w-7xl mx-auto text-left border-t border-white/10">
+        <div className="p-4 bg-slate-900/60 border border-white/10 rounded-2xl text-[11px] text-slate-400 leading-relaxed">
+          <strong className="text-slate-300 block mb-1">INDEPENDENT SOFTWARE DISCLAIMER & TRADEMARK NOTICE:</strong>
+          RabbitryPedigree Pro (WarrenWise Pro) is an independent software application developed for rabbitry herd management, pedigree record-keeping, and show preparation. <strong>RabbitryPedigree Pro is not affiliated with, endorsed by, sponsored by, or officially associated with the American Rabbit Breeders Association (ARBA) or any official breed organization.</strong> All product names, logos, trademarks, and registered trademarks belong exclusively to their respective holders. Their reference in this software is purely for descriptive, informational comparison purposes.
         </div>
       </section>
 
@@ -402,7 +410,7 @@ export default function LandingHomePage({
           </div>
 
           <p className="text-[10px] text-slate-500">
-            © {new Date().getFullYear()} RabbitryPedigree Pro. ARBA & USDA Compliant. All Rights Reserved.
+            © {new Date().getFullYear()} RabbitryPedigree Pro. Independent Purebred & Cavy Management Software. All Rights Reserved.
           </p>
         </div>
       </footer>

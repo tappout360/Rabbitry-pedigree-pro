@@ -4810,7 +4810,7 @@ export default function App() {
                 <h1 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
                   Rabbitry Pedigree Pro
                 </h1>
-                <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-mono font-bold">ARBA-Compatible Registry Suite</span>
+                <span className="text-[9px] uppercase tracking-widest text-indigo-300 font-mono font-bold">Purebred & Cavy Registry Suite</span>
               </div>
             </div>
             
@@ -11720,7 +11720,7 @@ export default function App() {
                       <path id="curve" d="M 17,50 A 33,33 0 1,1 83,50" fill="none" />
                       <text fill="#78350f" fontSize="6.5" fontWeight="bold" letterSpacing="0.8">
                         <textPath href="#curve" startOffset="50%" textAnchor="middle">
-                          ARBA COMPLIANT REGISTRY
+                          PUREBRED SHOW REGISTRY
                         </textPath>
                       </text>
                       <path id="curve2" d="M 83,50 A 33,33 0 1,1 17,50" fill="none" />
