@@ -4736,7 +4736,6 @@ export default function App() {
               setProfileForm(prev => ({ ...prev, subscriptionTier: planKey }));
               setAuthView('signup');
             }}
-            onOpenMarketplace={() => setAuthView('marketplace')}
             onOpenTerms={() => setShowPrivacyPolicy(true)}
           />
           {showPrivacyPolicy && (

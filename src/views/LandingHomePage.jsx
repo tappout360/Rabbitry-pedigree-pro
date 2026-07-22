@@ -3,7 +3,7 @@ import {
   Sparkles, Award, ShieldCheck, HeartPulse, RefreshCw, Zap, 
   ChevronRight, CheckCircle2, FileText, Users, Download, ArrowRight,
   Star, Play, Lock, Smartphone, Database, Check, Layers, HelpCircle,
-  ShoppingBag, Scale, Eye, Gavel
+  Scale, Eye, Gavel
 } from 'lucide-react';
 
 export default function LandingHomePage({ 
@@ -11,10 +11,8 @@ export default function LandingHomePage({
   onRegister, 
   onTryDemo, 
   onSelectPlan, 
-  onOpenMarketplace, 
   onOpenTerms 
 }) {
-  const [activeFeatureTab, setActiveFeatureTab] = useState('pedigree');
   const [selectedBreedCategory, setSelectedBreedCategory] = useState('all');
 
   const breedsShowcase = [
@@ -25,8 +23,7 @@ export default function LandingHomePage({
       awards: "Best in Show (BIS) - National Show",
       image: "/assets/new_zealand_white.png",
       breeder: "Grandview Rabbitry",
-      category: "commercial",
-      price: 150
+      category: "commercial"
     },
     {
       name: "Copper Ridge Champion",
@@ -35,8 +32,7 @@ export default function LandingHomePage({
       awards: "Best of Breed (BOB) - 4 Grand Legs",
       image: "/assets/new_zealand_red.png",
       breeder: "Grandview Rabbitry",
-      category: "commercial",
-      price: 180
+      category: "commercial"
     },
     {
       name: "Blue Thunder",
@@ -45,8 +41,7 @@ export default function LandingHomePage({
       awards: "Best of Variety (BOV) - 3 Legs",
       image: "/assets/holland_lop.png",
       breeder: "Grandview Rabbitry",
-      category: "fancy",
-      price: 200
+      category: "fancy"
     },
     {
       name: "Clover Velvet King",
@@ -55,8 +50,25 @@ export default function LandingHomePage({
       awards: "Best Fur Award - 5 Legs",
       image: "/assets/mini_rex.png",
       breeder: "Clover Barns",
-      category: "fancy",
-      price: 120
+      category: "fancy"
+    },
+    {
+      name: "Valley Mark Smudge",
+      breed: "Californian",
+      class: "Senior Buck",
+      awards: "Best Commercial Type - National",
+      image: "/assets/californian_rabbit.png",
+      breeder: "Grandview Rabbitry",
+      category: "commercial"
+    },
+    {
+      name: "Midnight Knight",
+      breed: "Netherland Dwarf",
+      class: "Senior Buck",
+      awards: "Best of Breed - Gotham Classic",
+      image: "/assets/netherland_dwarf.png",
+      breeder: "Wayne Manor Hutch",
+      category: "fancy"
     }
   ];
 
@@ -90,12 +102,9 @@ export default function LandingHomePage({
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-300">
-            <a href="#features" className="hover:text-yellow-400 transition-colors">Features</a>
-            <a href="#marketplace-showcase" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
-              <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" /> Marketplace
-            </a>
+          <nav className="hidden lg:flex items-center gap-8 text-xs font-bold text-slate-300">
             <a href="#showcase" className="hover:text-yellow-400 transition-colors">Show Champions</a>
+            <a href="#features" className="hover:text-yellow-400 transition-colors">Features</a>
             <a href="#youth" className="hover:text-yellow-400 transition-colors">4-H Youth</a>
             <a href="#pricing" className="hover:text-yellow-400 transition-colors">Pricing & Plans</a>
             <button 
@@ -106,28 +115,22 @@ export default function LandingHomePage({
             </button>
           </nav>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={onOpenMarketplace}
-              className="btn-interactive px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-black rounded-xl border-none shadow-lg shadow-indigo-900/30 flex items-center gap-1.5 cursor-pointer"
-            >
-              <ShoppingBag className="w-3.5 h-3.5" /> Marketplace
-            </button>
+          <div className="flex items-center gap-3">
             <button
               onClick={() => onTryDemo('ab-1')}
-              className="btn-interactive px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-black rounded-xl border-none shadow-lg shadow-cyan-900/30 flex items-center gap-1.5 cursor-pointer"
+              className="btn-interactive px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-black rounded-xl border-none shadow-lg shadow-cyan-900/30 flex items-center gap-1.5 cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" /> Live Demo
             </button>
             <button
               onClick={onSignIn}
-              className="btn-interactive px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/10 cursor-pointer"
+              className="btn-interactive px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/10 cursor-pointer"
             >
               Sign In
             </button>
             <button
               onClick={onRegister}
-              className="btn-interactive px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl border-none shadow-lg shadow-amber-500/25 cursor-pointer"
+              className="btn-interactive px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-xl border-none shadow-lg shadow-amber-500/25 cursor-pointer"
             >
               Get Started
             </button>
@@ -152,28 +155,21 @@ export default function LandingHomePage({
             </h1>
 
             <p className="text-base md:text-lg text-slate-300 leading-relaxed max-w-2xl font-medium">
-              Fun, reliable, and built for show success! Manage your hutch records, design 4-generation pedigree certificates, buy & sell verified purebred stock in our 100% legal marketplace, and empower your 4-H family.
+              Fun, reliable, and built for show success! Manage your hutch records, design 4-generation pedigree certificates with cryptographic proof, track kindle dates, and empower your 4-H youth family.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button
-                onClick={onOpenMarketplace}
-                className="btn-interactive px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-sm rounded-2xl border-none shadow-xl shadow-indigo-600/30 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 transition-all"
-              >
-                <ShoppingBag className="w-5 h-5" /> Explore Breeder Marketplace
-              </button>
-
+            {/* Clean CTAs */}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
               <button
                 onClick={() => onTryDemo('ab-1')}
-                className="btn-interactive px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm rounded-2xl border-none shadow-xl shadow-cyan-500/25 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 transition-all"
+                className="btn-interactive px-7 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm rounded-2xl border-none shadow-xl shadow-cyan-500/25 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 transition-all"
               >
-                <Play className="w-5 h-5 fill-current" /> Live Demo
+                <Play className="w-5 h-5 fill-current" /> Launch Interactive Live Demo
               </button>
 
               <button
                 onClick={onRegister}
-                className="btn-interactive px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm rounded-2xl border-none shadow-xl shadow-amber-500/25 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 transition-all"
+                className="btn-interactive px-7 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm rounded-2xl border-none shadow-xl shadow-amber-500/25 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 transition-all"
               >
                 <span>Create Hutch Account</span>
                 <ArrowRight className="w-5 h-5" />
@@ -184,19 +180,19 @@ export default function LandingHomePage({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-white/10">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span className="text-xs font-bold text-slate-300">100% Legal Livestock</span>
+                <span className="text-xs font-bold text-slate-300">100% Offline Ready</span>
               </div>
               <div className="flex items-center gap-2">
                 <Award className="w-5 h-5 text-yellow-400 shrink-0" />
-                <span className="text-xs font-bold text-slate-300">Purebred & Cavy Standards</span>
+                <span className="text-xs font-bold text-slate-300">Breed Standards</span>
               </div>
               <div className="flex items-center gap-2">
                 <HeartPulse className="w-5 h-5 text-rose-400 shrink-0" />
                 <span className="text-xs font-bold text-slate-300">HIPAA Safe Harbor</span>
               </div>
               <div className="flex items-center gap-2">
-                <Gavel className="w-5 h-5 text-indigo-400 shrink-0" />
-                <span className="text-xs font-bold text-slate-300">Owner Abuse Protection</span>
+                <Users className="w-5 h-5 text-indigo-400 shrink-0" />
+                <span className="text-xs font-bold text-slate-300">4-H Family Ready</span>
               </div>
             </div>
           </div>
@@ -238,50 +234,76 @@ export default function LandingHomePage({
         </div>
       </section>
 
-      {/* FEATURED BREEDER MARKETPLACE SHOWCASE SECTION */}
-      <section id="marketplace-showcase" className="py-16 px-6 max-w-7xl mx-auto text-left">
+      {/* SHOW CHAMPIONS SHOWCASE SECTION */}
+      <section id="showcase" className="py-16 px-6 max-w-7xl mx-auto text-left">
         <div className="glass-container p-8 border-2 border-indigo-500/30 rounded-3xl bg-slate-900/80 relative overflow-hidden">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 border-b border-white/10 pb-6">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-black uppercase tracking-wider mb-2">
-                <ShoppingBag className="w-4 h-4 text-cyan-400" /> 100% Certified Public Directory
+                <Award className="w-4 h-4 text-yellow-400" /> Featured Purebred Show Champions
               </div>
-              <h2 className="text-2xl md:text-3xl font-black text-white">Verified Breeder Marketplace Showcase</h2>
+              <h2 className="text-2xl md:text-3xl font-black text-white">National & Regional Show Champions</h2>
               <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-                Browse purebred show stock, commercial utility meat breeders, and pedigreed animals from verified WarrenWise breeders. All listings are subject to strict legal guidelines and seller verification.
+                Track leg wins, Best of Breed awards, and 4-generation pedigree certificates for top commercial and fancy purebred rabbits.
               </p>
             </div>
-            <button
-              onClick={onOpenMarketplace}
-              className="btn-interactive px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-black text-xs rounded-xl border-none shadow-lg shadow-indigo-600/25 flex items-center gap-2 cursor-pointer shrink-0"
-            >
-              <ShoppingBag className="w-4 h-4" /> View All Listings
-            </button>
+
+            {/* Breed Category Filters */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedBreedCategory('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedBreedCategory === 'all'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+                }`}
+              >
+                All Champions
+              </button>
+              <button
+                onClick={() => setSelectedBreedCategory('commercial')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedBreedCategory === 'commercial'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+                }`}
+              >
+                🥩 Commercial
+              </button>
+              <button
+                onClick={() => setSelectedBreedCategory('fancy')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedBreedCategory === 'fancy'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-white/10'
+                }`}
+              >
+                🐰 Fancy
+              </button>
+            </div>
           </div>
 
-          {/* Grid of sample stock */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {breedsShowcase.map((stock, idx) => (
+          {/* Grid of show champions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBreeds.map((stock, idx) => (
               <div key={idx} className="bg-slate-950 border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-indigo-500/40 transition-all">
                 <div>
-                  <div className="relative rounded-xl overflow-hidden bg-slate-900 h-40 mb-3">
+                  <div className="relative rounded-xl overflow-hidden bg-slate-900 h-44 mb-3">
                     <img src={stock.image} alt={stock.name} className="w-full h-full object-cover" />
-                    <span className="absolute top-2 left-2 bg-slate-950/80 border border-white/10 text-[9px] font-black text-emerald-400 px-2 py-0.5 rounded-full">
-                      ✓ Verified Breeder
-                    </span>
-                    <span className="absolute bottom-2 right-2 bg-slate-950/90 text-white font-black text-xs px-2.5 py-1 rounded-lg">
-                      ${stock.price}
+                    <span className="absolute top-2 left-2 bg-amber-500/90 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase shadow">
+                      🏆 Champion
                     </span>
                   </div>
-                  <strong className="text-white text-sm font-bold block truncate">{stock.name}</strong>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">{stock.breed} • {stock.class}</span>
-                  <span className="text-[10px] text-amber-400 font-semibold block mt-1">🏆 {stock.awards}</span>
+                  <span className="text-[10px] font-mono text-indigo-300 font-bold uppercase block">{stock.breeder}</span>
+                  <strong className="text-white text-base font-black block mt-0.5 truncate">{stock.name}</strong>
+                  <span className="text-xs text-slate-400 block mt-0.5">{stock.breed} • {stock.class}</span>
+                  <span className="text-xs text-amber-400 font-bold block mt-2">⭐ {stock.awards}</span>
                 </div>
                 <button
-                  onClick={onOpenMarketplace}
+                  onClick={() => onTryDemo('ab-1')}
                   className="mt-4 w-full py-2 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl border-none cursor-pointer flex items-center justify-center gap-1"
                 >
-                  <Eye className="w-3.5 h-3.5" /> View Listing & Pedigree
+                  <Eye className="w-3.5 h-3.5" /> View Pedigree Tree & Stats
                 </button>
               </div>
             ))}
@@ -402,10 +424,10 @@ export default function LandingHomePage({
           </div>
 
           <div className="flex flex-wrap justify-center gap-6 font-semibold">
-            <button onClick={onOpenMarketplace} className="hover:text-white transition-colors bg-transparent border-none text-xs text-slate-400 font-semibold cursor-pointer">Marketplace Directory</button>
+            <a href="#showcase" className="hover:text-white transition-colors">Show Champions</a>
+            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
             <button onClick={onOpenTerms} className="hover:text-yellow-400 transition-colors bg-transparent border-none text-xs text-emerald-400 font-bold cursor-pointer">📜 Terms of Service & Rules</button>
             <button onClick={onOpenTerms} className="hover:text-white transition-colors bg-transparent border-none text-xs text-slate-400 font-semibold cursor-pointer">🛡️ Privacy & HIPAA Policy</button>
-            <button onClick={onOpenTerms} className="hover:text-white transition-colors bg-transparent border-none text-xs text-slate-400 font-semibold cursor-pointer">⚖️ 100% Legal Livestock Rules</button>
             <button onClick={onSignIn} className="hover:text-white transition-colors bg-transparent border-none text-xs text-slate-400 font-semibold cursor-pointer">Sign In</button>
           </div>
 
