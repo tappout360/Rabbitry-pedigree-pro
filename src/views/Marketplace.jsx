@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Sliders, ShoppingBag, Eye, X, Award, ShieldCheck, Heart, Sparkles, 
-  Phone, Mail, Flag, Plus, Scale, AlertTriangle, Check, CheckCircle2, Lock 
+  Phone, Mail, Flag, Plus, Scale, AlertTriangle, Check, CheckCircle2, Lock,
+  MapPin, ArrowUpDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import TermsAndPolicies from './TermsAndPolicies';
+
+const ITEMS_PER_PAGE = 25;
 
 export default function Marketplace({ currentUser }) {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
+  const [locationQuery, setLocationQuery] = useState(''); // Zip / Area Code / State
   const [filterBreed, setFilterBreed] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSex, setFilterSex] = useState('');
+  const [sortBy, setSortBy] = useState('newest'); // newest | oldest | price_asc | price_desc | breed
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Modal states
   const [selectedListing, setSelectedListing] = useState(null);
   const [pedigreeTree, setPedigreeTree] = useState(null);
@@ -29,6 +39,7 @@ export default function Marketplace({ currentUser }) {
     sex: 'buck',
     category: 'show',
     price: '120',
+    location: '', // Area Code / Zip Code / State
     contactMethod: 'email',
     contactInfo: currentUser?.email || '',
     description: '',
@@ -140,6 +151,7 @@ export default function Marketplace({ currentUser }) {
           sex: createForm.sex,
           category: createForm.category,
           price: parseFloat(createForm.price) || 50,
+          location: createForm.location,
           contactMethod: createForm.contactMethod,
           contactInfo: createForm.contactInfo,
           description: createForm.description,
@@ -161,6 +173,7 @@ export default function Marketplace({ currentUser }) {
           sex: 'buck',
           category: 'show',
           price: '120',
+          location: '',
           contactMethod: 'email',
           contactInfo: currentUser?.email || '',
           description: '',
@@ -212,21 +225,58 @@ export default function Marketplace({ currentUser }) {
     }
   };
 
-  // Filter computations
-  const filteredListings = useMemo(() => {
-    return listings.filter(l => {
+  // Filter & Sort Computation
+  const filteredAndSortedListings = useMemo(() => {
+    const list = listings.filter(l => {
       const r = l.rabbit || {};
       const matchSearch = 
         (r.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (r.breed || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (l.breederName || '').toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const loc = (locationQuery || '').toLowerCase().trim();
+      const matchLocation = !loc || 
+        (l.location || '').toLowerCase().includes(loc) ||
+        (l.contactInfo || '').toLowerCase().includes(loc) ||
+        (l.breederName || '').toLowerCase().includes(loc);
+
       const matchBreed = !filterBreed || (r.breed || '') === filterBreed;
       const matchCategory = !filterCategory || l.category === filterCategory;
       const matchSex = !filterSex || (r.sex || '') === filterSex;
       
-      return matchSearch && matchBreed && matchCategory && matchSex;
+      return matchSearch && matchLocation && matchBreed && matchCategory && matchSex;
     });
-  }, [listings, searchQuery, filterBreed, filterCategory, filterSex]);
+
+    // Apply Sorting
+    return list.sort((a, b) => {
+      if (sortBy === 'oldest') {
+        return new Date(a.createdAt || a.created_at || 0) - new Date(b.createdAt || b.created_at || 0);
+      }
+      if (sortBy === 'price_asc') {
+        return (a.price || 0) - (b.price || 0);
+      }
+      if (sortBy === 'price_desc') {
+        return (b.price || 0) - (a.price || 0);
+      }
+      if (sortBy === 'breed') {
+        return (a.rabbit?.breed || '').localeCompare(b.rabbit?.breed || '');
+      }
+      // Default: newest
+      return new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0);
+    });
+  }, [listings, searchQuery, locationQuery, filterBreed, filterCategory, filterSex, sortBy]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, locationQuery, filterBreed, filterCategory, filterSex, sortBy]);
+
+  // Pagination Slice
+  const totalPages = Math.ceil(filteredAndSortedListings.length / ITEMS_PER_PAGE) || 1;
+  const paginatedListings = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAndSortedListings.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredAndSortedListings, currentPage]);
 
   const uniqueBreeds = useMemo(() => {
     const breeds = new Set();
@@ -301,20 +351,51 @@ export default function Marketplace({ currentUser }) {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter, Search, Location & Sort Bar */}
       <div className="glass-container p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 flex items-center gap-2 text-xs w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by breed, breeder name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none text-slate-100 focus:outline-none w-full"
-          />
+        <div className="flex items-center gap-3 flex-1 w-full flex-wrap">
+          {/* Keyword Search */}
+          <div className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 flex items-center gap-2 text-xs flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search breed, rabbit name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none text-slate-100 focus:outline-none w-full"
+            />
+          </div>
+
+          {/* Area Code / Zip Code / Location Input */}
+          <div className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 flex items-center gap-2 text-xs w-full sm:w-48">
+            <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Area Code / Zip / State..."
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              className="bg-transparent border-none text-slate-100 focus:outline-none w-full"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-1 bg-slate-900 border border-white/10 rounded-xl px-2 py-1">
+            <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400 ml-1 shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent text-white text-xs py-1 px-2 focus:outline-none cursor-pointer border-none"
+            >
+              <option value="newest">Sort: Newest to Oldest</option>
+              <option value="oldest">Sort: Oldest to Newest</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="breed">Sort by Breed (A-Z)</option>
+            </select>
+          </div>
+
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
@@ -350,18 +431,31 @@ export default function Marketplace({ currentUser }) {
         </div>
       </div>
 
+      {/* Results Header Info & Pagination Summary */}
+      <div className="flex justify-between items-center text-xs text-slate-400 px-1">
+        <span>
+          Showing {paginatedListings.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} – {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedListings.length)} of <strong className="text-white">{filteredAndSortedListings.length}</strong> active sales listings
+          {locationQuery && <span className="text-amber-400 font-semibold ml-2">📍 Location: "{locationQuery}"</span>}
+        </span>
+        {totalPages > 1 && (
+          <span className="font-mono text-[11px] text-indigo-300 font-bold">
+            Page {currentPage} of {totalPages} (25 per page)
+          </span>
+        )}
+      </div>
+
       {/* Listings Grid */}
       {loading ? (
         <div className="glass-container p-12 text-center text-xs opacity-50 font-bold">
           Loading marketplace directory listings...
         </div>
-      ) : filteredListings.length === 0 ? (
+      ) : paginatedListings.length === 0 ? (
         <div className="glass-container p-12 text-center text-slate-400">
-          No active sales listings matching current filters.
+          No active sales listings matching current filters or area code.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredListings.map(listing => {
+          {paginatedListings.map(listing => {
             const rabbit = listing.rabbit || {};
             const isShow = listing.category === 'show';
             const isMeat = listing.category === 'meat';
@@ -442,6 +536,12 @@ export default function Marketplace({ currentUser }) {
                       </span>
                     </div>
                     <span className="font-bold text-indigo-300">{listing.breederName}</span>
+                    {listing.location && (
+                      <span className="text-[9px] text-amber-300 font-semibold flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                        Location: {listing.location}
+                      </span>
+                    )}
                     <span className="text-[9px] text-slate-400 flex items-center gap-1">
                       {listing.contactMethod === 'email' ? <Mail className="w-3 h-3 text-indigo-400" /> : <Phone className="w-3 h-3 text-indigo-400" />}
                       {listing.contactInfo}
@@ -471,6 +571,31 @@ export default function Marketplace({ currentUser }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* PAGINATION FOOTER (25 PER PAGE) */}
+      {totalPages > 1 && (
+        <div className="glass-container p-4 flex items-center justify-between gap-4 mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-xs font-bold rounded-xl border border-white/10 flex items-center gap-1 cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" /> Previous Page
+          </button>
+
+          <span className="text-xs font-bold text-slate-300 font-mono">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-xs font-bold rounded-xl border border-white/10 flex items-center gap-1 cursor-pointer"
+          >
+            Next Page <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -549,7 +674,7 @@ export default function Marketplace({ currentUser }) {
                     onChange={(e) => setCreateForm(prev => ({ ...prev, category: e.target.value }))}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
                   >
-                    <option value="show">🏆 Show Quality</option>
+                    <option value="show">🏆 Standard Show Quality</option>
                     <option value="utility_breeder">🧬 Utility Breeder</option>
                     <option value="meat">🥩 Commercial Meat</option>
                     <option value="pet">🐰 Pet / Companion</option>
@@ -571,6 +696,16 @@ export default function Marketplace({ currentUser }) {
                   />
                 </div>
                 <div>
+                  <label className="text-slate-400 font-bold block mb-1">Area Code / Zip / State</label>
+                  <input
+                    type="text"
+                    placeholder="E.g. 44114, OH"
+                    value={createForm.location}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  />
+                </div>
+                <div>
                   <label className="text-slate-400 font-bold block mb-1">Contact Method</label>
                   <select
                     value={createForm.contactMethod}
@@ -581,17 +716,18 @@ export default function Marketplace({ currentUser }) {
                     <option value="phone">Phone</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-slate-400 font-bold block mb-1">Contact Info *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="E.g. breeder@farm.com"
-                    value={createForm.contactInfo}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, contactInfo: e.target.value }))}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-bold block mb-1">Contact Info *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="E.g. breeder@farm.com"
+                  value={createForm.contactInfo}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, contactInfo: e.target.value }))}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                />
               </div>
 
               <div>
@@ -763,8 +899,8 @@ export default function Marketplace({ currentUser }) {
             )}
 
             <div className="p-4 bg-slate-900/60 border border-white/5 rounded-2xl text-[10px] text-slate-400">
-              <span className="font-bold text-white block mb-1">ARBA SHOW RULE COMPLIANCE CERTIFICATION</span>
-              This rabbit is certified healthy and offered under standard ARBA guidelines. Reserved purchases are held automatically via Stripe Secure.
+              <span className="font-bold text-white block mb-1">PUREBRED SHOW RULE COMPLIANCE CERTIFICATION</span>
+              This rabbit is certified healthy and offered under standard breed guidelines. Reserved purchases are held automatically via Stripe Secure.
             </div>
 
             <button
