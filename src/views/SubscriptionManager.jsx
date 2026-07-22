@@ -117,10 +117,11 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
   };
 
   const getTierGradient = (tId) => {
+    if (tId === 'youth_student') return 'from-emerald-950/45 to-teal-950/50 border-emerald-500/25';
     if (tId === 'basic') return 'from-slate-800 to-indigo-950/70 border-slate-700/60';
     if (tId === 'pro') return 'from-purple-950/45 to-fuchsia-950/50 border-purple-500/25';
-    if (tId === 'youth_academy') return 'from-indigo-950/50 to-cyan-950/50 border-indigo-500/25';
-    return 'from-amber-950/60 to-yellow-950/60 border-amber-500/30';
+    if (tId === 'master') return 'from-amber-950/60 to-yellow-950/60 border-amber-500/30';
+    return 'from-blue-950/50 to-indigo-950/50 border-blue-500/25';
   };
 
   return (
@@ -357,45 +358,38 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
         </div>
 
         {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-stretch">
           {Object.keys(SUBSCRIPTION_TIERS).filter(k => k !== 'evans_lifetime').map(key => {
             const plan = SUBSCRIPTION_TIERS[key];
             const isCurrent = tier === key;
             const cardGrad = getTierGradient(key);
 
-            // Price resolution
+            // Dynamic Price Resolution
             let priceText = plan.priceLabel;
-            if (key === 'basic') {
-              priceText = billingCycle === 'annual' ? '$59.00 / year' : '$5.99 / month';
-            } else if (key === 'pro') {
-              priceText = billingCycle === 'annual' ? '$129.00 / year' : '$12.99 / month';
-            } else if (key === 'youth_academy') {
-              priceText = '$15.99 / month'; // Monthly only
+            if (plan.monthlyPrice !== undefined && plan.annualPrice !== undefined) {
+              priceText = billingCycle === 'annual' 
+                ? `$${plan.annualPrice.toFixed(2)} / yr` 
+                : `$${plan.monthlyPrice.toFixed(2)} / mo`;
             }
 
             return (
-              <div key={key} className={`rounded-3xl border p-6 flex flex-col justify-between gap-5 bg-gradient-to-b ${cardGrad} transition-all relative ${plan.id === 'basic' ? 'shadow-[0_0_20px_rgba(99,102,241,0.15)] ring-2 ring-indigo-500/25' : ''}`}>
-                {plan.id === 'basic' && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow animate-pulse">
-                    14-Day Trial Options
-                  </span>
-                )}
-                <div className="flex flex-col gap-3">
+              <div key={key} className={`rounded-2xl border p-4 flex flex-col justify-between gap-4 bg-gradient-to-b ${cardGrad} transition-all relative ${isCurrent ? 'ring-2 ring-indigo-500/50 border-indigo-400' : ''}`}>
+                <div className="flex flex-col gap-2">
                   <div>
-                    <h5 className="font-black text-white text-base">{plan.name}</h5>
-                    <span className="text-xl font-black text-indigo-350 font-mono mt-1 block">
+                    <h5 className="font-black text-white text-xs leading-snug">{plan.name}</h5>
+                    <span className="text-sm font-black text-indigo-300 font-mono mt-1 block">
                       {priceText}
                     </span>
                   </div>
 
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    Hutch capacity limits: <strong className="text-slate-300 font-bold">{plan.limit}</strong> active profiles
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                    Limit: <strong className="text-slate-350">{plan.limit} animals</strong>
                   </p>
 
-                  <ul className="flex flex-col gap-2 mt-2 text-left">
-                    {plan.features.map((feat, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5 text-[11px] opacity-90 leading-relaxed text-slate-350">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  <ul className="flex flex-col gap-1.5 mt-1 text-left">
+                    {plan.features.slice(0, 5).map((feat, idx) => (
+                      <li key={idx} className="flex items-start gap-1 text-[10px] leading-relaxed text-slate-350">
+                        <Check className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
                         <span>{feat}</span>
                       </li>
                     ))}
@@ -406,9 +400,9 @@ export default function SubscriptionManager({ currentUser, triggerConfetti }) {
                   type="button"
                   onClick={() => handleCheckout(key)}
                   disabled={checkoutLoading || isCurrent}
-                  className={`btn-interactive w-full text-xs font-bold py-2 ${isCurrent ? 'bg-white/10 text-white cursor-default border-none shadow-inner' : 'bg-indigo-650 hover:bg-indigo-700 text-white border-none shadow-md shadow-indigo-650/15 cursor-pointer'}`}
+                  className={`btn-interactive w-full text-[10px] font-black py-2 rounded-xl ${isCurrent ? 'bg-white/10 text-white cursor-default border-none shadow-inner' : 'bg-indigo-650 hover:bg-indigo-700 text-white border-none cursor-pointer'}`}
                 >
-                  {isCurrent ? 'Current Plan Active' : 'Upgrade & Start Trial'}
+                  {isCurrent ? 'Current Plan Active' : 'Subscribe Plan'}
                 </button>
               </div>
             );
