@@ -1,5 +1,5 @@
 // WarrenWise AI Ultimate 4-H Coach Engine
-// Provides 100% offline ARBA rules, showmanship routines, breed standards, and adaptive 4-H coaching.
+// Provides 100% offline show rules, showmanship routines, breed standards, and adaptive 4-H coaching.
 
 export const AGE_DIVISIONS = {
   cloverbud: {
@@ -12,7 +12,7 @@ export const AGE_DIVISIONS = {
   junior: {
     id: 'junior',
     name: 'Junior Division (Ages 9-11)',
-    description: 'ARBA showmanship routine, breed classes, feeding schedules, and basic ear tattoo checks.',
+    description: 'Showmanship routine, breed classes, feeding schedules, and basic ear tattoo checks.',
     readingLevel: 'intermediate',
     tone: 'supportive'
   },
@@ -26,7 +26,7 @@ export const AGE_DIVISIONS = {
   senior: {
     id: 'senior',
     name: 'Senior Division (Ages 15-18)',
-    description: 'ARBA Standard of Perfection deep dives, genetics (COI), registrar exam prep, and commercial yields.',
+    description: 'Standard of Perfection deep dives, genetics (COI), registrar exam prep, and commercial yields.',
     readingLevel: 'expert',
     tone: 'professional-coach'
   }
@@ -170,19 +170,19 @@ export function getWarrenWiseCoachAdvice(query, division = 'junior') {
 
   if (q.includes('showmanship') || q.includes('step') || q.includes('routine') || q.includes('pose')) {
     return {
-      topic: 'ARBA Showmanship Routine',
+      topic: 'Showmanship Routine',
       summary: `Here is your step-by-step showmanship guide tailored for ${divInfo.name}!`,
       steps: ARBA_SHOWMANSHIP_ROUTINE,
-      disclaimer: 'For official ARBA showmanship scoring sheets, consult your local 4-H extension agent or licensed ARBA registrar.'
+      disclaimer: 'For official showmanship scoring sheets, consult your local 4-H extension agent or licensed registrar.'
     };
   }
 
   if (q.includes('body type') || q.includes('commercial') || q.includes('compact') || q.includes('breed')) {
     return {
-      topic: 'ARBA Body Type Classifications',
-      summary: 'ARBA recognizes 5 distinct rabbit body types:',
+      topic: 'Body Type Classifications',
+      summary: 'There are 5 distinct rabbit body types recognized in show standards:',
       types: ARBA_BREED_BODY_TYPES,
-      disclaimer: 'Always verify breed weight minimums and maximums in the official ARBA Standard of Perfection.'
+      disclaimer: 'Always verify breed weight minimums and maximums in the official Standard of Perfection.'
     };
   }
 
@@ -196,6 +196,6 @@ export function getWarrenWiseCoachAdvice(query, division = 'junior') {
       'Practice your 12-step showmanship routine at least twice a week before fair.',
       'Keep your 4-H project record book updated after every feed purchase or sale.'
     ],
-    disclaimer: 'WarrenWise Coach is an educational tool. For official rules, consult the ARBA Standard of Perfection.'
+    disclaimer: 'WarrenWise Coach is an educational tool. For official rules, consult the Standard of Perfection from your local registry.'
   };
 }

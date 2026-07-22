@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Scale, HeartPulse, UserPlus, X, Search, ChevronRight, Award, Plus, Calendar, ShieldCheck, Flame } from 'lucide-react';
+import { Scale, HeartPulse, UserPlus, X, Search, ChevronRight, Award, Plus, Calendar, ShieldCheck, Flame, GraduationCap } from 'lucide-react';
 import { db } from '../../db/registryDb';
 
 export default function BarnMode({ 
@@ -8,7 +8,9 @@ export default function BarnMode({
   setAllRabbits,
   onClose,
   currentUser,
-  triggerConfetti
+  triggerConfetti,
+  onOpenCoach,
+  isYouthAccount
 }) {
   const [activeSubTab, setActiveSubTab] = useState('weights'); // weights, palpations, matings
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,6 +209,14 @@ export default function BarnMode({
         >
           <UserPlus className="w-4 h-4" /> Record Mating
         </button>
+        {isYouthAccount && (
+          <button
+            onClick={() => { if (onOpenCoach) onOpenCoach(); }}
+            className={`flex-1 py-3 text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 border-b-2 transition-all border-transparent text-yellow-400 bg-transparent hover:bg-yellow-400/10 hover:border-yellow-400/50`}
+          >
+            <GraduationCap className="w-4 h-4" /> 4-H Coach
+          </button>
+        )}
       </div>
 
       {/* Main Workspace: Left Side = Search/Selector, Right Side = Touch Dialog Form */}

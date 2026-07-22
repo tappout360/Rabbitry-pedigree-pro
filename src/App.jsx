@@ -36,7 +36,7 @@ import PrivacyPolicy from './views/PrivacyPolicy';
 import ParentControls from './components/ui/ParentControls';
 import LandingHomePage from './views/LandingHomePage';
 import WarrenWiseCoachModal from './components/ai/WarrenWiseCoachModal';
-import VoiceCommandBar from './components/ui/VoiceCommandBar';
+// VoiceCommandBar removed — voice input is now inline via VoiceInputButton
 import VoiceInputButton from './components/ui/VoiceInputButton';
 import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
@@ -7582,13 +7582,21 @@ export default function App() {
                 {/* Search and Add Header */}
                 <div className="glass-container p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                     <input 
                       type="text" 
                       placeholder="Search rabbits by name, tattoo, breed..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      spellCheck={true}
                       className="w-full sm:w-80"
                     />
+                    <VoiceInputButton
+                      onTranscript={(text) => setSearchQuery(text)}
+                      onExecuteCommand={handleExecuteVoiceCommand}
+                      size="md"
+                    />
+                    </div>
                     <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
                       <input 
                         type="checkbox"
@@ -12490,37 +12498,24 @@ export default function App() {
           onClose={() => setBarnMode(false)}
           currentUser={currentUser}
           triggerConfetti={triggerConfetti}
+          onOpenCoach={() => setShowCoachModal(true)}
+          isYouthAccount={!!currentUser?.isYouth}
         />
       )}
 
-      {/* Floating Barn Voice Command Assistant */}
-      {currentUser && (
-        <VoiceCommandBar
-          onExecuteCommand={handleExecuteVoiceCommand}
-          onOpenCoach={() => setShowCoachModal(true)}
-        />
-      )}
+      {/* Inline mic replaces the old floating bar — VoiceInputButton is now placed next to text inputs */}
 
       {/* Privacy Policy and COPPA Disclosures Modal */}
       {showPrivacyPolicy && (
         <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />
       )}
 
-      {/* WarrenWise 4-H Ultimate Coach Modal */}
-      {showCoachModal && (
+      {/* WarrenWise 4-H Ultimate Coach Modal — only for youth/kids 4-H accounts */}
+      {showCoachModal && currentUser?.isYouth && (
         <WarrenWiseCoachModal onClose={() => setShowCoachModal(false)} />
       )}
 
-      {/* Floating 4-H Coach Quick-Launcher Button */}
-      {currentUser && (
-        <button
-          onClick={() => setShowCoachModal(true)}
-          className="fixed bottom-6 left-6 z-40 btn-interactive px-4 py-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-2xl shadow-xl shadow-amber-500/30 flex items-center gap-2 border border-yellow-300/40 cursor-pointer"
-        >
-          <span className="text-base animate-bounce">🎓</span>
-          <span>4-H Coach WarrenWise</span>
-        </button>
-      )}
+      {/* 4-H Coach is now accessed via BarnMode tab for youth accounts only */}
 
       {/* Toast Notifications Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">

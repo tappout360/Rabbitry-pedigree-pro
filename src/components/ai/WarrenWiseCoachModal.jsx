@@ -38,7 +38,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-black text-white">WarrenWise 4-H Ultimate Coach</h3>
                 <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-yellow-400/20 text-yellow-300 rounded-full border border-yellow-400/30">
-                  ARBA Standard AI
+                  Show Standard Guide
                 </span>
               </div>
               <p className="text-xs text-slate-350 font-medium mt-0.5">Your intelligent, accurate, & encouraging 4-H show guide</p>
@@ -80,7 +80,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
         <div className="flex border-b border-white/10 bg-slate-900 px-6 py-2 gap-2 overflow-x-auto">
           {[
             { id: 'showmanship', icon: '🏆', label: '12-Step Showmanship Routine' },
-            { id: 'bodytypes', icon: '📜', label: 'ARBA Body Types & Breeds' },
+            { id: 'bodytypes', icon: '📜', label: 'Body Types & Breed Standards' },
             { id: 'health', icon: '🩺', label: 'Faults & Disqualifications' },
             { id: 'ask', icon: '💬', label: 'Ask Coach WarrenWise' }
           ].map(tab => (
@@ -126,7 +126,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
 
                 <div className="p-4 bg-slate-950 border border-indigo-500/30 rounded-2xl text-left">
                   <span className="text-[10px] font-black uppercase text-indigo-400 font-mono tracking-wider block mb-1">
-                    🎓 Senior & ARBA Registrar Tip
+                    🎓 Senior & Registrar-Level Tip
                   </span>
                   <p className="text-xs text-slate-200 leading-relaxed font-medium">"{currentStep.seniorTip}"</p>
                 </div>
@@ -190,7 +190,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
                     <p className="text-xs text-slate-350 mb-3 leading-relaxed">{bt.description}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Official ARBA Breeds:</span>
+                    <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Registered Breeds:</span>
                     <div className="flex flex-wrap gap-1.5">
                       {bt.examples.map((ex, i) => (
                         <span key={i} className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[11px] text-slate-300 font-semibold">
@@ -210,7 +210,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
               <div className="p-4 bg-red-950/40 border border-red-500/30 rounded-2xl flex items-start gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-400 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-black text-red-300">ARBA Permanent Disqualifications (DQs)</h4>
+                  <h4 className="text-sm font-black text-red-300">Permanent Disqualifications (DQs)</h4>
                   <p className="text-xs text-red-200 mt-1 leading-relaxed">
                     Any rabbit exhibiting the following condition faults must be eliminated from show placement:
                   </p>
@@ -281,7 +281,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
 
         {/* MODAL FOOTER DISCLAIMER */}
         <div className="p-4 bg-slate-950 border-t border-white/10 text-center text-[10px] text-slate-400 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>🛡️ Official ARBA Disclaimer: For official competition rules, consult the ARBA Standard of Perfection.</span>
+          <span>🛡️ Disclaimer: For official competition rules, consult your local registry's Standard of Perfection.</span>
           <span className="text-yellow-400 font-bold">4-H Family Safe • Neutral COPPA Gate Verified</span>
         </div>
 

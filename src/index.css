@@ -13,6 +13,17 @@
 }
 
 /* ==========================================
+   Spell Check & Input Enhancements
+   ========================================== */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+textarea {
+  /* Browser-native spell check on all text inputs */
+  -webkit-spell-check: auto;
+}
+
+/* ==========================================
    RabbitryPedigree Pro - Global Stylesheet
    ========================================== */
 
