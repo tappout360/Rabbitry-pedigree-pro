@@ -1,21 +1,22 @@
 {
-  "short_name": "WarrenWise Pro",
+  "short_name": "RabbitryPro",
   "name": "RabbitryPedigree Pro (WarrenWise Pro)",
   "icons": [
     {
-      "src": "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=192",
+      "src": "/assets/mascot.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=512",
+      "src": "/assets/mascot.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
   "start_url": "/",
-  "background_color": "#090d16",
-  "theme_color": "#ea580c",
+  "background_color": "#020617",
+  "theme_color": "#4f46e5",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "any",
+  "description": "Premier ARBA & Cavy Herd Management, Offline-First Pedigree Registry, and 100% Legal Marketplace."
 }

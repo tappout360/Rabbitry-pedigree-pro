@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Sliders, ShoppingBag, Eye, X, Award, ShieldCheck, Heart, Sparkles, Phone, Mail } from 'lucide-react';
+import { 
+  Search, Sliders, ShoppingBag, Eye, X, Award, ShieldCheck, Heart, Sparkles, 
+  Phone, Mail, Flag, Plus, Scale, AlertTriangle, Check, CheckCircle2, Lock 
+} from 'lucide-react';
+import TermsAndPolicies from './TermsAndPolicies';
 
-export default function Marketplace() {
+export default function Marketplace({ currentUser }) {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,14 +17,39 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState(null);
   const [pedigreeTree, setPedigreeTree] = useState(null);
   const [pedigreeLoading, setPedigreeLoading] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState(null); // listingId
+  const [purchaseLoading, setPurchaseLoading] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Create Listing Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    breed: 'Holland Lop',
+    variety: 'Solid',
+    sex: 'buck',
+    category: 'show',
+    price: '120',
+    contactMethod: 'email',
+    contactInfo: currentUser?.email || '',
+    description: '',
+    photoUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80',
+    agreedToTerms: false
+  });
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+
+  // Report Listing Modal State
+  const [reportingListing, setReportingListing] = useState(null);
+  const [reportReason, setReportReason] = useState('Inaccurate Pedigree');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
+  // Terms Modal State
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Fetch listings on mount
   useEffect(() => {
     fetchListings();
     
-    // Check if redirecting back from a successful checkout
     const params = new URLSearchParams(window.location.hash.split('?')[1] || window.location.search);
     if (params.get('checkout') === 'success') {
       setSuccessMessage('🎉 Congratulations! Your purchase reservation was completed successfully. The breeder has been notified to coordinate pick-up.');
@@ -30,7 +59,7 @@ export default function Marketplace() {
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
       const res = await fetch(`${API_ROOT}/api/public/listings`);
       const data = await res.json();
       setListings(data || []);
@@ -45,7 +74,7 @@ export default function Marketplace() {
     try {
       setPedigreeLoading(true);
       setPedigreeTree(null);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
       const res = await fetch(`${API_ROOT}/api/public/listings/${listingId}/pedigree`);
       const data = await res.json();
       setPedigreeTree(data);
@@ -59,7 +88,7 @@ export default function Marketplace() {
   const handlePurchaseListing = async (listingId) => {
     try {
       setPurchaseLoading(listingId);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
       const res = await fetch(`${API_ROOT}/api/public/buy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +97,7 @@ export default function Marketplace() {
       const data = await res.json();
       
       if (data.url) {
-        window.location.href = data.url; // Redirect to Stripe
+        window.location.href = data.url;
       } else if (data.success) {
         setSuccessMessage('🎉 Reservation completed successfully (Simulated Payment). Listing updated to Sold!');
         fetchListings();
@@ -80,6 +109,106 @@ export default function Marketplace() {
       alert('Failed to connect to checkout session.');
     } finally {
       setPurchaseLoading(null);
+    }
+  };
+
+  // Create Listing Handler
+  const handleCreateListingSubmit = async (e) => {
+    e.preventDefault();
+    if (!createForm.agreedToTerms) {
+      alert('You must agree to the 100% Legal Marketplace Rules and Terms of Service to create a listing.');
+      return;
+    }
+
+    if (currentUser?.status === 'banned' || currentUser?.status === 'suspended') {
+      alert('Your account is currently suspended or banned from posting marketplace listings by App Owner Jason Mounts.');
+      return;
+    }
+
+    try {
+      setCreateSubmitting(true);
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const res = await fetch(`${API_ROOT}/api/marketplace/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          breederId: currentUser?.id || 'ab-1',
+          breederName: currentUser?.name || currentUser?.rabbitryName || 'Grandview Rabbitry',
+          rabbitName: createForm.name,
+          breed: createForm.breed,
+          variety: createForm.variety,
+          sex: createForm.sex,
+          category: createForm.category,
+          price: parseFloat(createForm.price) || 50,
+          contactMethod: createForm.contactMethod,
+          contactInfo: createForm.contactInfo,
+          description: createForm.description,
+          photoUrl: createForm.photoUrl,
+          healthCertified: 1
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert(`Listing Error: ${data.error}`);
+      } else {
+        setSuccessMessage('🎉 Your new sales listing has been published to the 100% Legal Public Marketplace!');
+        setShowCreateModal(false);
+        setCreateForm({
+          name: '',
+          breed: 'Holland Lop',
+          variety: 'Solid',
+          sex: 'buck',
+          category: 'show',
+          price: '120',
+          contactMethod: 'email',
+          contactInfo: currentUser?.email || '',
+          description: '',
+          photoUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80',
+          agreedToTerms: false
+        });
+        fetchListings();
+      }
+    } catch (err) {
+      console.error("Create listing failed:", err);
+      alert('Failed to publish listing. Please try again.');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
+  // Submit Abuse Report Handler
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!reportingListing) return;
+
+    try {
+      setReportSubmitting(true);
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const res = await fetch(`${API_ROOT}/api/marketplace/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listingId: reportingListing.id,
+          reporterId: currentUser?.id || 'anonymous',
+          reason: reportReason,
+          details: reportDetails
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert('Thank you! Your report has been submitted to App Owner Jason Mounts for moderation review within 24 hours.');
+        setReportingListing(null);
+        setReportDetails('');
+      } else {
+        alert(data.error || 'Failed to submit report.');
+      }
+    } catch(err) {
+      console.error("Report submission failed:", err);
+      alert('Failed to submit report. Please try again.');
+    } finally {
+      setReportSubmitting(false);
     }
   };
 
@@ -99,7 +228,6 @@ export default function Marketplace() {
     });
   }, [listings, searchQuery, filterBreed, filterCategory, filterSex]);
 
-  // Extract unique breeds for selection
   const uniqueBreeds = useMemo(() => {
     const breeds = new Set();
     listings.forEach(l => {
@@ -132,9 +260,9 @@ export default function Marketplace() {
       
       {/* Banner / Notice Alert */}
       {successMessage && (
-        <div className="glass-container p-4 border border-emerald-500/30 bg-emerald-950/15 backdrop-blur flex justify-between items-center relative overflow-hidden animate-fade-in">
+        <div className="glass-container p-4 border border-emerald-500/30 bg-emerald-950/15 backdrop-blur flex justify-between items-center relative overflow-hidden animate-fade-in text-left">
           <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500"></div>
-          <p className="text-xs font-bold text-emerald-400 text-left">{successMessage}</p>
+          <p className="text-xs font-bold text-emerald-400">{successMessage}</p>
           <button onClick={() => setSuccessMessage('')} className="text-slate-400 hover:text-white border-none bg-transparent cursor-pointer font-bold ml-4">Dismiss</button>
         </div>
       )}
@@ -143,27 +271,33 @@ export default function Marketplace() {
       <div className="glass-container p-8 border border-indigo-500/20 bg-indigo-950/5 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
         <div className="text-left max-w-xl">
-          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
-            Public Directory Marketplace
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
+              100% Legal Public Marketplace Directory
+            </span>
+            <button 
+              onClick={() => setShowTermsModal(true)}
+              className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-bold hover:bg-emerald-500/20 cursor-pointer flex items-center gap-1"
+            >
+              <Scale className="w-3 h-3" /> View Marketplace Rules & Terms
+            </button>
+          </div>
+          
           <h2 className="text-2xl font-black tracking-tight text-white mt-2">
-            ARBA Show-Class & Commercial Marketplace
+            ARBA Show-Class & Commercial Breeder Directory
           </h2>
           <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-            Browse and secure purebred show stock, commercial utility meat breeders, and companion pets from certified local WarrenWise rabbitries. No account required to purchase.
+            Browse purebred show stock, commercial utility meat breeders, and companion pets from certified local WarrenWise rabbitries. Monitored by App Owner Jason Mounts for 100% safety.
           </p>
         </div>
-        <div className="shrink-0 flex items-center gap-2">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
-            <span className="text-xl">🏆</span>
-            <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Show Registry</span>
-            <span className="text-xs font-black text-indigo-400 mt-0.5">100% Certified</span>
-          </div>
-          <div className="bg-slate-900 border border-white/10 rounded-2xl p-4 flex flex-col items-center">
-            <span className="text-xl">🥩</span>
-            <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Commercial</span>
-            <span className="text-xs font-black text-emerald-400 mt-0.5">Meat Standard</span>
-          </div>
+
+        <div className="shrink-0 flex items-center gap-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-interactive px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black rounded-2xl border-none shadow-lg shadow-amber-500/25 flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 font-black" /> Post Sales Listing
+          </button>
         </div>
       </div>
 
@@ -181,7 +315,6 @@ export default function Marketplace() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
-          {/* Category Filter */}
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
@@ -194,7 +327,6 @@ export default function Marketplace() {
             <option value="pet">🐰 Pet / Companion</option>
           </select>
 
-          {/* Breed Filter */}
           <select
             value={filterBreed}
             onChange={(e) => setFilterBreed(e.target.value)}
@@ -206,7 +338,6 @@ export default function Marketplace() {
             ))}
           </select>
 
-          {/* Sex Filter */}
           <select
             value={filterSex}
             onChange={(e) => setFilterSex(e.target.value)}
@@ -244,12 +375,11 @@ export default function Marketplace() {
                 {/* Photo Header */}
                 <div className="relative overflow-hidden rounded-xl h-44 bg-slate-950/80">
                   <img
-                    src={rabbit.photos?.[0] || 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80'}
+                    src={rabbit.photos?.[0] || listing.photoUrl || 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80'}
                     alt={rabbit.name}
                     className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
                   />
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {/* Category badge */}
                     <span className={`text-[9px] font-black py-0.5 px-2 rounded-full border text-white shadow ${
                       isShow ? 'bg-indigo-650 border-indigo-500/30' :
                       isMeat ? 'bg-emerald-650 border-emerald-500/30' :
@@ -267,7 +397,16 @@ export default function Marketplace() {
                       </span>
                     )}
                   </div>
-                  {/* Price overlay */}
+
+                  {/* Flag button */}
+                  <button
+                    onClick={() => setReportingListing(listing)}
+                    title="Report Listing to App Owner Jason Mounts"
+                    className="absolute top-2 right-2 p-1.5 bg-slate-950/80 hover:bg-red-950 text-slate-400 hover:text-red-400 rounded-full border border-white/10 cursor-pointer transition-all"
+                  >
+                    <Flag className="w-3.5 h-3.5" />
+                  </button>
+
                   <div className="absolute bottom-2 right-2 bg-slate-950/90 border border-white/10 rounded-lg px-2.5 py-1 text-xs font-black text-white">
                     ${listing.price.toFixed(2)}
                   </div>
@@ -296,8 +435,13 @@ export default function Marketplace() {
                   )}
                   
                   <div className="border-t border-white/5 pt-2 mt-2 flex flex-col gap-1 text-[10px]">
-                    <span className="text-[9px] text-slate-500 uppercase font-black">Breeder:</span>
-                    <span className="font-bold text-indigo-350">{listing.breederName}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] text-slate-500 uppercase font-black">Breeder:</span>
+                      <span className="text-[9px] font-extrabold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                        ✓ Verified
+                      </span>
+                    </div>
+                    <span className="font-bold text-indigo-300">{listing.breederName}</span>
                     <span className="text-[9px] text-slate-400 flex items-center gap-1">
                       {listing.contactMethod === 'email' ? <Mail className="w-3 h-3 text-indigo-400" /> : <Phone className="w-3 h-3 text-indigo-400" />}
                       {listing.contactInfo}
@@ -330,7 +474,235 @@ export default function Marketplace() {
         </div>
       )}
 
-      {/* Pedigree Preview Modal */}
+      {/* CREATE NEW LISTING MODAL */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-slate-950 border-2 border-amber-500/40 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl relative animate-scale-up text-left max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-900 rounded-full border-none text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col gap-1">
+              <h3 className="font-extrabold text-lg text-amber-400 uppercase flex items-center gap-2">
+                <Plus className="w-5 h-5 text-amber-400" /> Post New Sales Listing
+              </h3>
+              <p className="text-xs text-slate-400">
+                Publish a 100% legal sales listing to the public WarrenWise breeder directory.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateListingSubmit} className="flex flex-col gap-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Rabbit Name / Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. Grandview Royal King"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Breed *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. Holland Lop"
+                    value={createForm.breed}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, breed: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Variety / Color</label>
+                  <input
+                    type="text"
+                    placeholder="E.g. Sable Point"
+                    value={createForm.variety}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, variety: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Gender *</label>
+                  <select
+                    value={createForm.sex}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, sex: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  >
+                    <option value="buck">Buck (Male)</option>
+                    <option value="doe">Doe (Female)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Category *</label>
+                  <select
+                    value={createForm.category}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  >
+                    <option value="show">🏆 Show Quality</option>
+                    <option value="utility_breeder">🧬 Utility Breeder</option>
+                    <option value="meat">🥩 Commercial Meat</option>
+                    <option value="pet">🐰 Pet / Companion</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Price ($USD) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="120"
+                    value={createForm.price}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, price: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Contact Method</label>
+                  <select
+                    value={createForm.contactMethod}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, contactMethod: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  >
+                    <option value="email">Email</option>
+                    <option value="phone">Phone</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-400 font-bold block mb-1">Contact Info *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="E.g. breeder@farm.com"
+                    value={createForm.contactInfo}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, contactInfo: e.target.value }))}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-bold block mb-1">Description / Pedigree Highlights</label>
+                <textarea
+                  rows="2"
+                  placeholder="Describe show wins, bloodlines, temperament..."
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-bold block mb-1">Photo Image URL</label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={createForm.photoUrl}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, photoUrl: e.target.value }))}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                />
+              </div>
+
+              {/* Mandatory Terms Checkbox */}
+              <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl flex items-start gap-2.5 mt-2">
+                <input
+                  type="checkbox"
+                  id="agreeTerms"
+                  checked={createForm.agreedToTerms}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, agreedToTerms: e.target.checked }))}
+                  className="mt-1 accent-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="agreeTerms" className="text-[11px] text-emerald-200 cursor-pointer leading-tight">
+                  <strong>100% Legal & ARBA Rules Agreement:</strong> I certify under penalty of account suspension that this listing is 100% legal under USDA & state livestock laws, accurate under ARBA standards, and free of puppy/kitten mills or prohibited animals.
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={createSubmitting || !createForm.agreedToTerms}
+                className="mt-2 w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer border-none shadow-lg shadow-amber-500/25"
+              >
+                {createSubmitting ? 'Publishing...' : 'Publish Sales Listing'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REPORT LISTING MODAL */}
+      {reportingListing && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-950 border-2 border-red-500/40 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl relative animate-scale-up text-left">
+            <button
+              onClick={() => setReportingListing(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-900 rounded-full border-none text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col gap-1">
+              <h3 className="font-extrabold text-base text-red-400 uppercase flex items-center gap-2">
+                <Flag className="w-5 h-5 text-red-400" /> Report Listing to App Owner
+              </h3>
+              <p className="text-xs text-slate-400">
+                Report "{reportingListing.rabbit?.name}" to App Owner Jason Mounts for investigation.
+              </p>
+            </div>
+
+            <form onSubmit={handleReportSubmit} className="flex flex-col gap-3 text-xs">
+              <div>
+                <label className="text-slate-400 font-bold block mb-1">Reason for Report *</label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                >
+                  <option value="Inaccurate Pedigree">Inaccurate Pedigree / Falsified Lineage</option>
+                  <option value="Animal Welfare Concern">Animal Welfare / Health Concern</option>
+                  <option value="Fraud / Misrepresentation">Fraud / Scam / Misrepresentation</option>
+                  <option value="Prohibited Animal">Prohibited Non-Rabbit Animal</option>
+                  <option value="Inappropriate Content">Inappropriate Language / Imagery</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-bold block mb-1">Additional Details</label>
+                <textarea
+                  rows="3"
+                  required
+                  placeholder="Provide specific information regarding this violation..."
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={reportSubmitting}
+                className="w-full py-2.5 bg-red-650 hover:bg-red-750 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer border-none shadow-md"
+              >
+                {reportSubmitting ? 'Submitting Report...' : 'Submit Report for Moderation'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PEDIGREE PREVIEW MODAL */}
       {selectedListing && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-2xl bg-slate-950 border-2 border-indigo-500/35 rounded-3xl p-6 flex flex-col gap-4 shadow-2xl relative animate-scale-up text-left">
@@ -342,33 +714,29 @@ export default function Marketplace() {
             </button>
 
             <div className="flex flex-col gap-1">
-              <h3 className="font-extrabold text-base text-indigo-450 uppercase flex items-center gap-1.5">
-                <Award className="w-5 h-5 text-indigo-450" /> Official 3-Gen Pedigree Preview
+              <h3 className="font-extrabold text-base text-indigo-400 uppercase flex items-center gap-1.5">
+                <Award className="w-5 h-5 text-indigo-400" /> Official 3-Gen Pedigree Preview
               </h3>
               <p className="text-[10px] text-slate-400">
                 Ancestry registry for {selectedListing.rabbit?.name} — Tattoo: {selectedListing.rabbit?.tattooNumber || 'None'}
               </p>
             </div>
 
-            {/* Pedigree Tree column boxes */}
             {pedigreeLoading ? (
               <div className="h-48 flex items-center justify-center text-xs text-slate-500 font-bold italic">
                 Generating ancestry relationships...
               </div>
             ) : pedigreeTree ? (
               <div className="grid grid-cols-3 gap-3 items-center bg-slate-900/40 p-4 border border-white/5 rounded-2xl relative overflow-hidden min-h-[220px]">
-                {/* Watermark overlay */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-5 font-black text-6xl text-indigo-500 uppercase tracking-widest rotate-12">
                   WarrenWise Pedigree
                 </div>
                 
-                {/* Column 1: Proband */}
                 <div className="flex flex-col gap-2">
                   <span className="text-[9px] uppercase font-black text-slate-500 text-center block">Proband</span>
                   {renderPedigreeNode(pedigreeTree, "Self")}
                 </div>
 
-                {/* Column 2: Parents */}
                 <div className="flex flex-col gap-4">
                   <span className="text-[9px] uppercase font-black text-slate-500 text-center block">Parents</span>
                   <div className="flex flex-col gap-3">
@@ -377,7 +745,6 @@ export default function Marketplace() {
                   </div>
                 </div>
 
-                {/* Column 3: Grandparents */}
                 <div className="flex flex-col gap-4">
                   <span className="text-[9px] uppercase font-black text-slate-500 text-center block">Grandparents</span>
                   <div className="flex flex-col gap-2">
@@ -397,7 +764,7 @@ export default function Marketplace() {
 
             <div className="p-4 bg-slate-900/60 border border-white/5 rounded-2xl text-[10px] text-slate-400">
               <span className="font-bold text-white block mb-1">ARBA SHOW RULE COMPLIANCE CERTIFICATION</span>
-              This rabbit is certified healthy and offered under standard ARBA guidelines. Show Quality listings contain verified tattoos and pedigree history. Reserved purchases are held automatically via Stripe Secure.
+              This rabbit is certified healthy and offered under standard ARBA guidelines. Reserved purchases are held automatically via Stripe Secure.
             </div>
 
             <button
@@ -405,12 +772,17 @@ export default function Marketplace() {
                 setSelectedListing(null);
                 handlePurchaseListing(selectedListing.id);
               }}
-              className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer border-none shadow-md shadow-indigo-650/15"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer border-none shadow-md shadow-indigo-600/15"
             >
               <ShoppingBag className="w-4 h-4" /> Reserve This Rabbit Now
             </button>
           </div>
         </div>
+      )}
+
+      {/* FULL TERMS AND POLICIES MODAL */}
+      {showTermsModal && (
+        <TermsAndPolicies onClose={() => setShowTermsModal(false)} initialTab="marketplace" />
       )}
 
     </div>

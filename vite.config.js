@@ -8,6 +8,7 @@ export default defineConfig({
     open: true
   },
   build: {
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -18,7 +19,12 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
-            return 'vendor-core';
+            if (id.includes('dexie')) {
+              return 'vendor-db';
+            }
+            if (id.includes('crypto-js') || id.includes('canvas-confetti')) {
+              return 'vendor-utils';
+            }
           }
         }
       }

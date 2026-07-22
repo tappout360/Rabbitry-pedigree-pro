@@ -75,6 +75,23 @@ db.serialize(() => {
   db.run("ALTER TABLE breeders ADD COLUMN parental_controls TEXT", () => {});
   db.run("ALTER TABLE breeders ADD COLUMN parental_consent_verified INTEGER DEFAULT 0", () => {});
   db.run("ALTER TABLE breeders ADD COLUMN coach_authorized INTEGER DEFAULT 0", () => {});
+  db.run("ALTER TABLE breeders ADD COLUMN banned INTEGER DEFAULT 0", () => {});
+  db.run("ALTER TABLE breeders ADD COLUMN marketplace_suspended INTEGER DEFAULT 0", () => {});
+  db.run("ALTER TABLE breeders ADD COLUMN ban_reason TEXT", () => {});
+  db.run("ALTER TABLE breeders ADD COLUMN banned_at TEXT", () => {});
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketplace_reports (
+      id TEXT PRIMARY KEY,
+      listing_id TEXT NOT NULL,
+      reporter_id TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      details TEXT,
+      status TEXT DEFAULT 'pending',
+      created_at TEXT
+    )
+  `);
+
 
   db.run(`
     CREATE TABLE IF NOT EXISTS breeder_cloud_records (
@@ -1064,6 +1081,181 @@ app.post('/api/billing/list-for-sale', authenticateToken, (req, res) => {
     }
   );
 });
+
+// 3b. Create Marketplace Listing from Public Marketplace view
+app.post('/api/marketplace/create', (req, res) => {
+  const { 
+    breederId = 'ab-1', 
+    breederName = 'Grandview Rabbitry', 
+    rabbitName, 
+    breed, 
+    variety = 'Solid', 
+    sex = 'buck', 
+    category = 'show', 
+    price = 50, 
+    contactMethod = 'email', 
+    contactInfo, 
+    description = '', 
+    photoUrl = '',
+    healthCertified = 1 
+  } = req.body;
+
+  if (!rabbitName || !breed || !price || !contactInfo) {
+    return res.status(400).json({ error: 'Missing mandatory fields' });
+  }
+
+  // Ban / Suspension check
+  db.get("SELECT banned, marketplace_suspended, status FROM breeders WHERE id = ?", [breederId], (bErr, breederRow) => {
+    if (breederRow && (breederRow.banned === 1 || breederRow.marketplace_suspended === 1 || breederRow.status === 'banned')) {
+      return res.status(403).json({ error: 'Your account is banned or suspended from posting marketplace listings by App Owner Jason Mounts.' });
+    }
+
+    // Keyword Safety & HIPAA Sanitization Filter
+    const illegalKeywords = ['puppy', 'kitten', 'dog', 'cat', 'monkey', 'snake', 'illegal', 'stolen', 'prescription', 'vicodin', 'oxycodone'];
+    const lowerContent = `${rabbitName} ${description}`.toLowerCase();
+    const foundBanned = illegalKeywords.find(k => lowerContent.includes(k));
+    if (foundBanned) {
+      return res.status(400).json({ error: `Listing rejected by safety filter: Contains prohibited keyword '${foundBanned}'. Marketplace is strictly for legal rabbitry stock.` });
+    }
+
+    const rabbitId = `r-mp-${Date.now()}`;
+    const listingId = `ml-${Date.now()}`;
+    const timestamp = new Date().toISOString();
+
+    const rabbitPayload = {
+      id: rabbitId,
+      breederId,
+      name: rabbitName,
+      breed,
+      variety,
+      sex,
+      dob: timestamp.split('T')[0],
+      tattooNumber: `MP-${Math.floor(Math.random() * 900 + 100)}`,
+      status: 'available',
+      notes: description,
+      photos: [photoUrl || 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80']
+    };
+
+    db.run(
+      `INSERT INTO breeder_cloud_records (id, breeder_id, tbl, record_id, payload, timestamp, deleted)
+       VALUES (?, ?, 'rabbits', ?, ?, ?, 0)`,
+      [`bcr-${Date.now()}`, breederId, rabbitId, JSON.stringify(rabbitPayload), timestamp]
+    );
+
+    db.run(
+      `INSERT INTO marketplace_listings (id, rabbit_id, breeder_id, category, price, contact_method, contact_info, description, health_certified, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
+      [listingId, rabbitId, breederId, category, parseFloat(price), contactMethod, contactInfo, description, healthCertified ? 1 : 0, timestamp],
+      (err) => {
+        if (err) {
+          console.error("Failed to create marketplace listing:", err);
+          return res.status(500).json({ error: 'Database failure creating listing' });
+        }
+        res.json({ success: true, listingId, rabbitId });
+      }
+    );
+  });
+});
+
+// 3c. Submit Report Against Marketplace Listing
+app.post('/api/marketplace/report', (req, res) => {
+  const { listingId, reporterId = 'anonymous', reason, details = '' } = req.body;
+  if (!listingId || !reason) {
+    return res.status(400).json({ error: 'Listing ID and report reason required' });
+  }
+
+  const reportId = `rep-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const timestamp = new Date().toISOString();
+
+  db.run(
+    `INSERT INTO marketplace_reports (id, listing_id, reporter_id, reason, details, status, created_at)
+     VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
+    [reportId, listingId, reporterId, reason, details, timestamp],
+    (err) => {
+      if (err) return res.status(500).json({ error: 'Failed to record abuse report' });
+      res.json({ success: true, reportId });
+    }
+  );
+});
+
+// 3d. Super Admin: Get Flagged Listings Queue (For App Owner Jason Mounts)
+app.get('/api/admin/flagged-listings', (req, res) => {
+  db.all(
+    `SELECT r.*, l.category, l.price, l.description as listing_desc, l.breeder_id, b.name as breeder_name, b.email as breeder_email
+     FROM marketplace_reports r
+     JOIN marketplace_listings l ON r.listing_id = l.id
+     JOIN breeders b ON l.breeder_id = b.id
+     WHERE r.status = 'pending'
+     ORDER BY r.created_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Failed to retrieve flagged listings' });
+      res.json(rows || []);
+    }
+  );
+});
+
+// 3e. Super Admin: Moderate Flagged Listing
+app.post('/api/admin/moderate-listing', (req, res) => {
+  const { reportId, listingId, action } = req.body; // action = 'approve' | 'remove'
+  if (!reportId || !listingId || !action) {
+    return res.status(400).json({ error: 'Missing moderation parameters' });
+  }
+
+  db.run("UPDATE marketplace_reports SET status = 'resolved' WHERE id = ?", [reportId]);
+  if (action === 'remove') {
+    db.run("UPDATE marketplace_listings SET status = 'removed' WHERE id = ?", [listingId]);
+  } else if (action === 'approve') {
+    db.run("UPDATE marketplace_listings SET status = 'active' WHERE id = ?", [listingId]);
+  }
+  res.json({ success: true, action });
+});
+
+// 3f. Super Admin: Ban / Suspend / Unban User (For App Owner Jason Mounts)
+app.post('/api/admin/ban-user', (req, res) => {
+  const { userId, action, reason = 'Violation of Marketplace Terms' } = req.body;
+  if (!userId || !action) {
+    return res.status(400).json({ error: 'User ID and action required' });
+  }
+
+  const timestamp = new Date().toISOString();
+
+  if (action === 'ban') {
+    db.run(
+      "UPDATE breeders SET status = 'banned', banned = 1, ban_reason = ?, banned_at = ? WHERE id = ?",
+      [reason, timestamp, userId],
+      (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to ban user' });
+        // Hide all listings created by banned user
+        db.run("UPDATE marketplace_listings SET status = 'banned_removed' WHERE breeder_id = ?", [userId]);
+        res.json({ success: true, message: `User ${userId} has been permanently banned.` });
+      }
+    );
+  } else if (action === 'suspend_marketplace') {
+    db.run(
+      "UPDATE breeders SET marketplace_suspended = 1, ban_reason = ? WHERE id = ?",
+      [reason, userId],
+      (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to suspend marketplace access' });
+        res.json({ success: true, message: `Marketplace access suspended for user ${userId}.` });
+      }
+    );
+  } else if (action === 'unban') {
+    db.run(
+      "UPDATE breeders SET status = 'active', banned = 0, marketplace_suspended = 0, ban_reason = NULL, banned_at = NULL WHERE id = ?",
+      [userId],
+      (err) => {
+        if (err) return res.status(500).json({ error: 'Failed to unban user' });
+        // Restore listings
+        db.run("UPDATE marketplace_listings SET status = 'active' WHERE breeder_id = ? AND status = 'banned_removed'", [userId]);
+        res.json({ success: true, message: `User ${userId} unbanned and restored.` });
+      }
+    );
+  } else {
+    res.status(400).json({ error: 'Invalid ban action' });
+  }
+});
+
 
 // 4. Reserve / Purchase Listed Rabbit (Anonymous/Stripe)
 app.post('/api/public/buy', async (req, res) => {

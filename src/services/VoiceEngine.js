@@ -119,7 +119,21 @@ export class VoiceEngine {
       return;
     }
 
-    // 2. Add rabbit command
+    // 2. Kindling / Litter logging command (e.g. "log kindling 6 kits" or "litter size 7")
+    const kindlingMatch = text.match(/(?:log\s+kindling|kindle|litter\s+size)\s*([0-9]+)?/);
+    if (kindlingMatch) {
+      const count = parseInt(kindlingMatch[1] || '6', 10);
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'LOG_KINDLING',
+          kitCount: count,
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 3. Add rabbit command
     if (text.includes('add new rabbit') || text.includes('add rabbit') || text.includes('create rabbit')) {
       if (this.onCommandCallback) {
         this.onCommandCallback({ action: 'ADD_RABBIT', originalText: transcript });
@@ -127,7 +141,7 @@ export class VoiceEngine {
       return;
     }
 
-    // 3. Breed command
+    // 4. Breed command
     if (text.includes('breed') || text.includes('schedule breeding') || text.includes('kindle date')) {
       if (this.onCommandCallback) {
         this.onCommandCallback({ action: 'OPEN_BREEDING', originalText: transcript });
@@ -135,7 +149,7 @@ export class VoiceEngine {
       return;
     }
 
-    // 4. Start 4-H Quiz or Open 4-H Coach
+    // 5. Start 4-H Quiz or Open 4-H Coach
     if (text.includes('4-h coach') || text.includes('quiz') || text.includes('showmanship') || text.includes('coach')) {
       if (this.onCommandCallback) {
         this.onCommandCallback({ action: 'OPEN_COACH', originalText: transcript });
@@ -143,7 +157,28 @@ export class VoiceEngine {
       return;
     }
 
-    // 5. Navigation Commands
+    // 6. Navigation Commands
+    if (text.includes('marketplace') || text.includes('browse sales') || text.includes('market')) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({ action: 'NAVIGATE', tab: 'marketplace', originalText: transcript });
+      }
+      return;
+    }
+
+    if (text.includes('terms') || text.includes('rules') || text.includes('policies')) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({ action: 'OPEN_TERMS', originalText: transcript });
+      }
+      return;
+    }
+
+    if (text.includes('sync') || text.includes('conflict') || text.includes('resolve')) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({ action: 'OPEN_SYNC', originalText: transcript });
+      }
+      return;
+    }
+
     if (text.includes('pedigree') || text.includes('lineage')) {
       if (this.onCommandCallback) {
         this.onCommandCallback({ action: 'NAVIGATE', tab: 'pedigree', originalText: transcript });

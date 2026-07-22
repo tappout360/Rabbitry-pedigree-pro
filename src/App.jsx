@@ -66,6 +66,97 @@ const ONBOARDING_RABBITS = [
 ];
 
 
+function MarketplaceModerationQueue() {
+  const [flagged, setFlagged] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchFlagged = async () => {
+    try {
+      setLoading(true);
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const res = await fetch(`${API_ROOT}/api/admin/flagged-listings`);
+      const data = await res.json();
+      setFlagged(data || []);
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFlagged();
+  }, []);
+
+  const handleModerate = async (reportId, listingId, action) => {
+    try {
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const res = await fetch(`${API_ROOT}/api/admin/moderate-listing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, listingId, action })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Listing moderation completed: ${action}`);
+        fetchFlagged();
+      }
+    } catch(e) {
+      alert('Moderation action failed');
+    }
+  };
+
+  return (
+    <div className="glass-container p-6 flex flex-col gap-4 border-2 border-red-500/30 bg-red-950/10 text-left">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-black text-white flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-red-400" /> Marketplace Abuse Moderation Queue (App Owner Panel)
+        </h3>
+        <button onClick={fetchFlagged} className="text-xs text-indigo-300 hover:text-white cursor-pointer font-bold border-none bg-transparent">Refresh Queue</button>
+      </div>
+
+      {loading ? (
+        <div className="text-xs text-slate-400 opacity-60">Checking flagged reports...</div>
+      ) : flagged.length === 0 ? (
+        <div className="p-4 bg-slate-900/60 border border-white/5 rounded-xl text-xs text-emerald-400 font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> All clear! No pending marketplace abuse reports.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {flagged.map(item => (
+            <div key={item.id} className="p-3 bg-slate-900 border border-red-500/30 rounded-xl flex flex-col gap-2 text-left">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-red-500/20 text-red-300 rounded border border-red-500/30">
+                    Reason: {item.reason}
+                  </span>
+                  <p className="text-xs font-bold text-white mt-1">Breeder: {item.breeder_name} ({item.breeder_email})</p>
+                  <p className="text-[11px] text-slate-300 italic mt-0.5">Report Details: "{item.details || 'No additional notes'}"</p>
+                </div>
+                <span className="text-[9px] font-mono text-slate-400">{new Date(item.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-white/5 pt-2">
+                <button
+                  onClick={() => handleModerate(item.id, item.listing_id, 'approve')}
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg border-none cursor-pointer"
+                >
+                  Approve & Clear Flag
+                </button>
+                <button
+                  onClick={() => handleModerate(item.id, item.listing_id, 'remove')}
+                  className="px-3 py-1 bg-red-650 hover:bg-red-750 text-white font-bold text-xs rounded-lg border-none cursor-pointer"
+                >
+                  Remove Listing
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
   const [showPass, setShowPass] = useState(false);
   const [editPassVal, setEditPassVal] = useState(b.password);
@@ -121,6 +212,35 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
     ));
   };
 
+  const handleAdminBanUser = (action) => {
+    const reason = prompt(`Enter reason for ${action === 'ban' ? 'banning' : action === 'suspend_marketplace' ? 'suspending marketplace privileges for' : 'unbanning'} ${b.name}:`, 'Violation of Marketplace Rules');
+    if (!reason && action !== 'unban') return;
+
+    const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+    fetch(`${API_ROOT}/api/admin/ban-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: b.id, action, reason })
+    }).then(res => res.json()).then(data => {
+      if (data.success) {
+        alert(data.message);
+        setAdminBreeders(prev => prev.map(item => {
+          if (item.id === b.id) {
+            if (action === 'ban') return { ...item, status: 'banned', banned: true, banReason: reason };
+            if (action === 'suspend_marketplace') return { ...item, marketplaceSuspended: true, banReason: reason };
+            if (action === 'unban') return { ...item, status: 'active', banned: false, marketplaceSuspended: false, banReason: null };
+          }
+          return item;
+        }));
+      } else {
+        alert(data.error || 'Failed to update ban status.');
+      }
+    }).catch(err => {
+      console.error(err);
+      alert('Error updating ban status');
+    });
+  };
+
   return (
     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col gap-4">
       {/* Breeder top info bar */}
@@ -128,8 +248,12 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
         <div>
           <h4 className="font-bold text-sm flex items-center gap-2">
             {b.name}
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${b.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
-              {b.status}
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+              b.status === 'banned' || b.banned ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+              b.marketplaceSuspended ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+              b.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'
+            }`}>
+              {b.status === 'banned' || b.banned ? '⛔ Banned' : b.marketplaceSuspended ? '🚫 MP Suspended' : b.status}
             </span>
             {b.isDemo && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
@@ -139,10 +263,11 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
           </h4>
           <p className="text-xs opacity-75">{b.email} | {b.phone || 'No phone'}</p>
           <p className="text-[11px] text-indigo-300 font-semibold mt-0.5">Rabbitry: {b.rabbitryName}</p>
+          {b.banReason && <p className="text-[10px] text-red-300 italic mt-0.5">Ban Reason: "{b.banReason}"</p>}
         </div>
 
-        {/* Approve/Reject Buttons */}
-        <div className="flex gap-2">
+        {/* Approve/Reject & Ban Buttons */}
+        <div className="flex gap-2 items-center">
           {b.status === 'pending' ? (
             <>
               <button
@@ -164,16 +289,41 @@ function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
             </>
           ) : (
             !b.isSuperAdmin && !b.isProtected && (
-              <button
-                onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete breeder ${b.name}? This action cannot be undone.`)) {
-                    setAdminBreeders(prev => prev.filter(item => item.id !== b.id));
-                  }
-                }}
-                className="text-red-400 hover:text-red-300 text-xs py-1"
-              >
-                Purge Breeder
-              </button>
+              <div className="flex items-center gap-1.5">
+                {b.status === 'banned' || b.banned ? (
+                  <button
+                    onClick={() => handleAdminBanUser('unban')}
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-lg border-none cursor-pointer shadow"
+                  >
+                    Unban User
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleAdminBanUser('suspend_marketplace')}
+                      className="px-2.5 py-1 bg-orange-600 hover:bg-orange-500 text-white font-bold text-[10px] rounded-lg border-none cursor-pointer shadow"
+                    >
+                      Suspend MP
+                    </button>
+                    <button
+                      onClick={() => handleAdminBanUser('ban')}
+                      className="px-2.5 py-1 bg-red-650 hover:bg-red-750 text-white font-bold text-[10px] rounded-lg border-none cursor-pointer shadow"
+                    >
+                      Ban User
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete breeder ${b.name}? This action cannot be undone.`)) {
+                      setAdminBreeders(prev => prev.filter(item => item.id !== b.id));
+                    }
+                  }}
+                  className="text-red-400 hover:text-red-300 text-xs py-1 ml-1"
+                >
+                  Purge
+                </button>
+              </div>
             )
           )}
         </div>
@@ -4577,15 +4727,22 @@ export default function App() {
   if (!currentUser) {
     if (authView === 'home') {
       return (
-        <LandingHomePage 
-          onSignIn={() => setAuthView('login')}
-          onRegister={() => setAuthView('signup')}
-          onTryDemo={(demoId) => handleTryDemo(demoId)}
-          onSelectPlan={(planKey) => {
-            setProfileForm(prev => ({ ...prev, subscriptionTier: planKey }));
-            setAuthView('signup');
-          }}
-        />
+        <>
+          <LandingHomePage 
+            onSignIn={() => setAuthView('login')}
+            onRegister={() => setAuthView('signup')}
+            onTryDemo={(demoId) => handleTryDemo(demoId)}
+            onSelectPlan={(planKey) => {
+              setProfileForm(prev => ({ ...prev, subscriptionTier: planKey }));
+              setAuthView('signup');
+            }}
+            onOpenMarketplace={() => setAuthView('marketplace')}
+            onOpenTerms={() => setShowPrivacyPolicy(true)}
+          />
+          {showPrivacyPolicy && (
+            <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />
+          )}
+        </>
       );
     }
 
@@ -4593,27 +4750,46 @@ export default function App() {
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
           <header className="w-full p-4 bg-slate-900 border-b border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl animate-bounce">🐇👑</span>
-              <div>
-                <h1 className="text-lg font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
-                  WarrenWise Marketplace
-                </h1>
-                <span className="text-[8px] uppercase tracking-widest text-indigo-300 font-mono font-bold">Public Show & Meat Stock Directory</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setAuthView('home')}
+                className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-1.5 px-3 rounded-xl border border-white/10 cursor-pointer flex items-center gap-1"
+              >
+                ← Back to Home Page
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl animate-bounce">🐇👑</span>
+                <div>
+                  <h1 className="text-lg font-black bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent leading-none">
+                    WarrenWise Marketplace
+                  </h1>
+                  <span className="text-[8px] uppercase tracking-widest text-indigo-300 font-mono font-bold">100% Legal Public Show & Meat Stock Directory</span>
+                </div>
               </div>
             </div>
-            <button 
-              onClick={() => setAuthView('login')}
-              className="text-xs bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl border-none cursor-pointer"
-            >
-              Sign In to Your Hutch
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPrivacyPolicy(true)}
+                className="text-xs bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 font-bold py-2 px-3 rounded-xl border border-emerald-500/30 cursor-pointer"
+              >
+                📜 Terms & Rules Policy
+              </button>
+              <button 
+                onClick={() => setAuthView('login')}
+                className="text-xs bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl border-none cursor-pointer"
+              >
+                Sign In to Your Hutch
+              </button>
+            </div>
           </header>
           <div className="flex-1 overflow-y-auto">
             <React.Suspense fallback={<div className="p-12 text-center text-xs opacity-50 font-bold">Loading Marketplace...</div>}>
-              <Marketplace />
+              <Marketplace currentUser={currentUser} />
             </React.Suspense>
           </div>
+          {showPrivacyPolicy && (
+            <PrivacyPolicy onClose={() => setShowPrivacyPolicy(false)} />
+          )}
         </div>
       );
     }
@@ -9556,6 +9732,9 @@ export default function App() {
                 {/* List and Actions (Left side) */}
                 <div className="lg:col-span-8 flex flex-col gap-6">
                   
+                  {/* Marketplace Moderation Queue for App Owner Jason Mounts */}
+                  <MarketplaceModerationQueue />
+
                   {/* Breeder Search Bar */}
                   <div className="glass-container p-4 flex items-center justify-between gap-4">
                     <input
