@@ -4,7 +4,7 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe
+  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe, Beef
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
@@ -29,6 +29,7 @@ const BreedingScheduler = React.lazy(() => import('./views/BreedingScheduler'));
 const FinancialLedger = React.lazy(() => import('./views/FinancialLedger'));
 const ShowPlanner = React.lazy(() => import('./views/ShowPlanner'));
 const HealthLogger = React.lazy(() => import('./views/HealthLogger'));
+import MeatProductionModule from './views/MeatProductionModule';
 import { useSubscription } from './hooks/useSubscription';
 import ParentConsentGate from './views/ParentConsentGate';
 import PrivacyPolicy from './views/PrivacyPolicy';
@@ -6267,6 +6268,12 @@ export default function App() {
             >
               <FileText className="w-5 h-5 text-indigo-400" /> 📜 Registrar Prep
             </button>
+            <button 
+              onClick={() => setActiveTab('meat')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'meat' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <Beef className="w-5 h-5 text-emerald-400" /> 🥩 Commercial Meat Yield
+            </button>
             {(sub.evansVerified || sub.tier === 'evans_lifetime') && (
               <button 
                 onClick={() => setActiveTab('evansMigrator')}
@@ -9268,6 +9275,17 @@ export default function App() {
                   setSelectedRabbitId={setPrepRabbitId}
                 />
               </React.Suspense>
+            </ErrorBoundary>
+          )}
+
+          {/* TAB: COMMERCIAL MEAT PRODUCTION & PROCESSING */}
+          {activeTab === 'meat' && (
+            <ErrorBoundary>
+              <MeatProductionModule 
+                rabbits={rabbits} 
+                currentUser={currentUser} 
+                onUpgrade={() => setActiveTab('billing')} 
+              />
             </ErrorBoundary>
           )}
 
