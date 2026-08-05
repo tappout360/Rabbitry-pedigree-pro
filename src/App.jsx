@@ -984,9 +984,7 @@ export default function App() {
   const [adminBreeders, setAdminBreeders] = useState(() => {
     const saved = localStorage.getItem('rp_admin_breeders');
     const defaultList = [
-      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', isProtected: true },
-      { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', isDemo: true, isProtected: true },
-      { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032', isDemo: true, isProtected: true }
+      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', isProtected: true }
     ];
     let list = defaultList;
     if (saved) {
@@ -1036,16 +1034,7 @@ export default function App() {
     if (email) {
       const saved = localStorage.getItem('rp_admin_breeders');
       let list = [];
-      const defaultList = [
-        { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40' },
-        { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' },
-        { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032' },
-        { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0103', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'active', status: 'active', password: 'a2e97b3afb9c5d2b6d75c53c7c0e6c0b4e5f8a9d2c1b3e4f5a6b7c8d9e0f1a2' },
-        { id: 'ab-4', name: 'Emily Watson', username: 'ewatson', email: 'emily@rabbitry.net', rabbitryName: 'Blue Meadows', phone: '555-0104', role: 'owner', status: 'active', password: 'b3f97c4bfc0d6e3c7e86d64d8d1f7d1c5f6g9b0e3d2c4f6a7b8c9d0e1f2a3b4' },
-        { id: 'ab-5', name: 'Arthur Pendragon', username: 'apendragon', email: 'arthur@camelot.com', rabbitryName: 'Excalibur Buns', phone: '555-0105', role: 'assistant', employerEmail: 'jason@grandview.com', employerStatus: 'pending', status: 'pending', password: 'c4a08d5cad1e7f4d8f97e75e9e2a8e2d6a7h0c1f4e3d5a7b8c9d0e1f2a3b4c5' },
-        { id: 'ab-6', name: 'Bruce Wayne', username: 'bwayne', email: 'bruce@batcave.org', rabbitryName: 'Wayne Manor Hutch', phone: '555-0106', role: 'owner', status: 'active', password: 'd5b19e6dbe2f8a5e9a08f86f0f3b9f3e7b8i1d2a5f4e6b8c9d0e1f2a3b4c5d6' },
-        { id: 'ab-7', name: 'Sarah Jenkins', username: 'sjenkins', email: 'sarah.jenkins@farm.com', rabbitryName: 'Jenkins Giant Barn', phone: '555-0107', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' }
-      ];
+      const defaultList = [];
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -1096,11 +1085,7 @@ export default function App() {
       }
       const saved = localStorage.getItem('rp_admin_breeders');
       let list = [];
-      const defaultList = [
-        { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: '', phone: '', role: 'owner', isSuperAdmin: true, status: 'active', password: 'JakylieRabbitry4388$$' },
-        { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', rabbitryName: 'Grandview Rabbitry', phone: '555-0101', role: 'owner', status: 'active', password: 'password123' },
-        { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', rabbitryName: 'Clover Barns', phone: '555-0102', role: 'owner', status: 'active', password: 'arba_pass_2026' }
-      ];
+      const defaultList = [];
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -2471,16 +2456,7 @@ export default function App() {
     }
 
     const localLoginFallback = () => {
-      const hardcodedDefaults = [
-        { id: 'ab-admin', email: 'jasonmounts77@yahoo.com', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40' },
-        { id: 'ab-1', email: 'jason@grandview.com', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' },
-        { id: 'ab-2', email: 'sarah@arba.org', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032' },
-        { id: 'ab-3', email: 'tommy@barn.com', password: 'a2e97b3afb9c5d2b6d75c53c7c0e6c0b4e5f8a9d2c1b3e4f5a6b7c8d9e0f1a2' },
-        { id: 'ab-4', email: 'emily@rabbitry.net', password: 'b3f97c4bfc0d6e3c7e86d64d8d1f7d1c5f6g9b0e3d2c4f6a7b8c9d0e1f2a3b4' },
-        { id: 'ab-5', email: 'arthur@camelot.com', password: 'c4a08d5cad1e7f4d8f97e75e9e2a8e2d6a7h0c1f4e3d5a7b8c9d0e1f2a3b4c5' },
-        { id: 'ab-6', email: 'bruce@batcave.org', password: 'd5b19e6dbe2f8a5e9a08f86f0f3b9f3e7b8i1d2a5f4e6b8c9d0e1f2a3b4c5d6' },
-        { id: 'ab-7', email: 'sarah.jenkins@farm.com', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e' }
-      ];
+      const hardcodedDefaults = [];
 
       const matchedDefault = hardcodedDefaults.find(d => d.email.toLowerCase() === loginEmail.toLowerCase());
 
@@ -6108,7 +6084,7 @@ export default function App() {
             <div className="text-left">
               <h4 className="text-sm font-black text-red-400 tracking-wide uppercase">Local Database Conflict Detected</h4>
               <p className="text-xs opacity-90 leading-relaxed mt-1">
-                Your browser holds an older, incompatible local IndexedDB database version ({dbError}). Reset the local cache to self-heal and sync cleanly with PostgreSQL cloud servers.
+                Your browser holds an older, incompatible local IndexedDB database version ({dbError}). Reset the local cache to self-heal and sync cleanly with cloud servers.
               </p>
             </div>
           </div>
@@ -6116,11 +6092,11 @@ export default function App() {
             <button 
               onClick={() => {
                 db.delete().then(() => {
-                  localStorage.removeItem('rp_migrated_to_dexie_v9');
+                  localStorage.clear();
                   window.location.reload();
                 }).catch(err => {
                   console.error("Failed to delete database:", err);
-                  localStorage.removeItem('rp_migrated_to_dexie_v9');
+                  localStorage.clear();
                   window.location.reload();
                 });
               }}
@@ -6246,7 +6222,7 @@ export default function App() {
               onClick={() => setActiveTab('sync')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'sync' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
             >
-              <RefreshCw className="w-5 h-5" /> SQLite Sync ({syncQueue.length})
+              <RefreshCw className="w-5 h-5" /> Cloud Sync ({syncQueue.length})
             </button>
             <button 
               onClick={() => setActiveTab('diagnostics')}
@@ -12534,7 +12510,7 @@ export default function App() {
               </span>
               <div className="flex flex-col">
                 <span className="text-xs font-black text-white">{toast.message}</span>
-                <span className="text-[9px] opacity-75 text-indigo-200 font-mono">SQLite Storage Synced</span>
+                <span className="text-[9px] opacity-75 text-indigo-200 font-mono">Cloud Storage Synced</span>
               </div>
             </div>
             <button
