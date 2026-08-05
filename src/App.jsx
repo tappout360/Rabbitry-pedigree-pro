@@ -36,8 +36,10 @@ import PrivacyPolicy from './views/PrivacyPolicy';
 import ParentControls from './components/ui/ParentControls';
 import LandingHomePage from './views/LandingHomePage';
 import WarrenWiseCoachModal from './components/ai/WarrenWiseCoachModal';
-// VoiceCommandBar removed — voice input is now inline via VoiceInputButton
 import VoiceInputButton from './components/ui/VoiceInputButton';
+import VoiceTextInput from './components/ui/VoiceTextInput';
+import RootVoiceAssistantModal from './components/ai/RootVoiceAssistantModal';
+import { rootAiEngine } from './services/RootAiEngine';
 import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
@@ -1215,6 +1217,7 @@ export default function App() {
   const [successMascot, setSuccessMascot] = useState(null);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showCoachModal, setShowCoachModal] = useState(false);
+  const [showRootAiModal, setShowRootAiModal] = useState(false);
   const [selectedChildControlsId, setSelectedChildControlsId] = useState(null);
   const [conflictsCount, setConflictsCount] = useState(0);
 
@@ -7612,6 +7615,14 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setShowRootAiModal(true)}
+                    className="btn-interactive w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white flex items-center justify-center gap-2 font-black shadow-lg cursor-pointer"
+                    title="Hands-free Root AI voice assistant for smart form auto-fill"
+                  >
+                    <span>🥕 Talk to Root AI</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setShowEmailImportModal(true)}
                     className="btn-interactive w-full sm:w-auto bg-indigo-600 hover:bg-indigo-750 text-white flex items-center justify-center gap-2"
                   >
@@ -12479,7 +12490,44 @@ export default function App() {
         />
       )}
 
-      {/* Inline mic replaces the old floating bar — VoiceInputButton is now placed next to text inputs */}
+      {/* Root AI Voice Assistant Modal */}
+      {showRootAiModal && (
+        <RootVoiceAssistantModal 
+          onClose={() => setShowRootAiModal(false)} 
+          onAutoFillForm={(parsed) => {
+            if (showAddRabbit) {
+              setNewRabbit(prev => ({
+                ...prev,
+                name: parsed.name || prev.name,
+                tattooNumber: parsed.tattooNumber || prev.tattooNumber,
+                breed: parsed.breed || prev.breed,
+                sex: parsed.sex || prev.sex,
+                variety: parsed.variety || prev.variety,
+                weightOz: parsed.weightOz || prev.weightOz
+              }));
+              showToast("Root 🥕 auto-filled registration fields!", "success");
+            } else {
+              // Open Add Rabbit modal pre-filled
+              setNewRabbit({
+                tattooNumber: parsed.tattooNumber || '',
+                name: parsed.name || '',
+                breed: parsed.breed || 'Holland Lop',
+                variety: parsed.variety || 'Blue',
+                sex: parsed.sex || 'doe',
+                dob: new Date().toISOString().split('T')[0],
+                weightOz: parsed.weightOz || (weightUnit === 'lbs' ? 2.5 : 40),
+                sireId: '', damId: '', location: '', notes: parsed.notes || '', registrationNumber: '', gcNumber: '',
+                isCharlie: false, colorCarrier: '',
+                winningsBOB: 0, winningsBOV: 0, winningsBOS: 0, winningsBOSV: 0, winningsBIS: 0, winningsOther: 0,
+                showClass: 'Auto', species: 'rabbit', status: 'active'
+              });
+              setShowAddRabbit(true);
+              showToast("Root 🥕 opened new registration with detected info!", "info");
+            }
+          }}
+          onExecuteCommand={handleExecuteVoiceCommand}
+        />
+      )}
 
       {/* Privacy Policy and COPPA Disclosures Modal */}
       {showPrivacyPolicy && (

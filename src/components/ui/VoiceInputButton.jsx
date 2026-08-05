@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { globalVoiceEngine } from '../../services/VoiceEngine';
+import { rootAiEngine } from '../../services/RootAiEngine';
 
 /**
- * Inline microphone button that sits next to any text input.
- * - Fills the adjacent input via onTranscript when dictation completes.
- * - Optionally forwards detected voice commands via onExecuteCommand.
+ * Inline Root 🥕 microphone button that sits next to any text input.
+ * - Dictates text cleanly into the input field.
+ * - Automatically parses structured commands via Root AI.
  */
 export default function VoiceInputButton({ onTranscript, onExecuteCommand, size = 'md' }) {
   const [isListening, setIsListening] = useState(false);
@@ -23,10 +24,16 @@ export default function VoiceInputButton({ onTranscript, onExecuteCommand, size 
           if (isFinal && onTranscript) {
             onTranscript(text);
             setIsListening(false);
+
+            // Optional Root AI Voice Feedback
+            const parsed = rootAiEngine.parseNaturalInput(text);
+            if (parsed.confidence > 0.5) {
+              const reply = rootAiEngine.generateResponse(parsed);
+              console.log("[Root AI]:", reply);
+            }
           }
         },
         (command) => {
-          // If a structured command is detected, forward it
           if (command.action === 'DICTATION' && onTranscript) {
             onTranscript(command.text);
           } else if (onExecuteCommand) {
@@ -48,7 +55,7 @@ export default function VoiceInputButton({ onTranscript, onExecuteCommand, size 
     <button
       type="button"
       onClick={toggleListening}
-      title={isListening ? "Listening... Click to stop" : "Voice input (click to dictate)"}
+      title={isListening ? "Root 🥕 is listening... Click to stop" : "Root 🥕 Voice Input (click to dictate)"}
       className={`${btnPad} rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
         isListening
           ? 'bg-rose-500 text-white border-rose-400 animate-pulse shadow-lg shadow-rose-500/30'
