@@ -75,7 +75,8 @@ export default function ParentControls({ childId, coachId, onClose }) {
     }
 
     // Sync to backend if online
-    fetch(`http://localhost:5000/api/parent/controls/${childId}`, {
+    const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:4000/api' : '/api';
+    fetch(`${API_ROOT}/parent/controls/${childId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
