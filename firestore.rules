@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Breeder profiles: users can read/write their own profile
+    match /breeders/{breederId} {
+      allow read: if request.auth != null && request.auth.uid == breederId;
+      allow write: if request.auth != null && request.auth.uid == breederId;
+
+      // All subcollections (rabbits, breedings, weights, medical, etc.)
+      // Only the owning breeder can read/write their own data
+      match /{subcollection}/{docId} {
+        allow read: if request.auth != null && request.auth.uid == breederId;
+        allow write: if request.auth != null && request.auth.uid == breederId;
+      }
+    }
+
+    // Public marketplace listings: anyone authenticated can read, only owner can write
+    match /marketplace/{listingId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data._breederId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data._breederId == request.auth.uid;
+    }
+
+    // Public social posts: authenticated users can read, owner can write
+    match /socialPosts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data._breederId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data._breederId == request.auth.uid;
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

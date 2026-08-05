@@ -6,3 +6,11 @@ dist/
 .idea/
 .vscode/
 *.local
+
+# Environment variables (NEVER commit secrets)
+.env
+.env.local
+.env.production
+
+# Firebase
+.firebase/

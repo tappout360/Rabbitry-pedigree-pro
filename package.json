@@ -9,15 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.6.0",
     "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
     "dexie": "^4.4.4",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "firebase": "^12.17.1",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.344.0",
+    "mongodb": "^7.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^3.9.2",
