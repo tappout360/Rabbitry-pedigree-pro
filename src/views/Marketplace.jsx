@@ -71,7 +71,7 @@ export default function Marketplace({ currentUser }) {
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_ROOT}/api/public/listings`);
       const data = await res.json();
       setListings(data || []);
@@ -86,7 +86,7 @@ export default function Marketplace({ currentUser }) {
     try {
       setPedigreeLoading(true);
       setPedigreeTree(null);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_ROOT}/api/public/listings/${listingId}/pedigree`);
       const data = await res.json();
       setPedigreeTree(data);
@@ -100,7 +100,7 @@ export default function Marketplace({ currentUser }) {
   const handlePurchaseListing = async (listingId) => {
     try {
       setPurchaseLoading(listingId);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_ROOT}/api/public/buy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,7 +139,7 @@ export default function Marketplace({ currentUser }) {
 
     try {
       setCreateSubmitting(true);
-      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
       const res = await fetch(`${API_ROOT}/api/marketplace/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
