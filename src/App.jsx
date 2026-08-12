@@ -39,6 +39,7 @@ import WarrenWiseCoachModal from './components/ai/WarrenWiseCoachModal';
 import VoiceInputButton from './components/ui/VoiceInputButton';
 import VoiceTextInput from './components/ui/VoiceTextInput';
 import RootVoiceAssistantModal from './components/ai/RootVoiceAssistantModal';
+import FeedbackModal from './components/ui/FeedbackModal';
 import { rootAiEngine } from './services/RootAiEngine';
 import SyncIssues from './components/ui/SyncIssues';
 import BarnMode from './components/barn/BarnMode';
@@ -1218,6 +1219,7 @@ export default function App() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showCoachModal, setShowCoachModal] = useState(false);
   const [showRootAiModal, setShowRootAiModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedChildControlsId, setSelectedChildControlsId] = useState(null);
   const [conflictsCount, setConflictsCount] = useState(0);
 
@@ -6292,6 +6294,12 @@ export default function App() {
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'help' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
               <HelpCircle className="w-5 h-5 text-sky-400" /> Help & Policy
+            </button>
+            <button 
+              onClick={() => setShowFeedbackModal(true)}
+              className="flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all opacity-85 hover:bg-white/5 text-amber-300 cursor-pointer border-none bg-transparent"
+            >
+              <MessageSquare className="w-5 h-5 text-amber-400" /> 💬 App Feedback
             </button>
             {currentUser?.id === 'ab-admin' && selectedBreederContext === 'ab-admin' && (
               <button 
@@ -12526,6 +12534,14 @@ export default function App() {
             }
           }}
           onExecuteCommand={handleExecuteVoiceCommand}
+        />
+      )}
+
+      {/* Feedback & Rating Modal */}
+      {showFeedbackModal && (
+        <FeedbackModal 
+          onClose={() => setShowFeedbackModal(false)} 
+          currentUser={currentUser}
         />
       )}
 
