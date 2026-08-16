@@ -6071,11 +6071,16 @@ export default function App() {
             ⚖️ Unit: {weightUnit.toUpperCase()}
           </button>
 
-          {/* Quick 4-Gen Demo Data Hydrator */}
+          {/* Quick 4-Gen Adult Demo Data Hydrator */}
           <button
             type="button"
             onClick={async () => {
               try {
+                const adultUser = DEFAULT_BREEDERS[0];
+                setCurrentUser(adultUser);
+                localStorage.setItem('rp_current_user', JSON.stringify(adultUser));
+                setSelectedBreederContext('all');
+
                 await db.rabbits.clear();
                 await db.adminBreeders.clear();
                 await db.breedings.clear();
@@ -6097,16 +6102,62 @@ export default function App() {
                 setAllWeights(DEFAULT_WEIGHTS);
                 setAllMedical(DEFAULT_MEDICAL);
 
-                showToast("🎉 Loaded complete 4-Gen Pedigree & 4-H Youth Demo Herd!", "success");
+                setActiveTab('rabbits');
+                showToast("🎉 Loaded complete 4-Generation Holland Lop Pedigree & Purebred Herd!", "success");
                 triggerConfetti();
               } catch (err) {
                 console.error("Demo hydration error:", err);
               }
             }}
-            className="btn-interactive text-xs py-2 px-3 border border-amber-500/40 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer"
-            title="Hydrate 4-Generation Pedigree & 4-H Youth Demo Data"
+            className="btn-interactive text-xs py-2 px-3 border border-amber-500/40 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Hydrate 4-Generation Pedigree & Purebred Demo Data"
           >
             <span>✨ Load 4-Gen Demo</span>
+          </button>
+
+          {/* Quick 4-H Youth Demo Hydrator */}
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const youthUser = DEFAULT_BREEDERS[1];
+                setCurrentUser(youthUser);
+                localStorage.setItem('rp_current_user', JSON.stringify(youthUser));
+                setSelectedBreederContext('ab-youth-1');
+
+                await db.rabbits.clear();
+                await db.adminBreeders.clear();
+                await db.breedings.clear();
+                await db.litters.clear();
+                await db.weights.clear();
+                await db.medical.clear();
+
+                await db.adminBreeders.bulkAdd(DEFAULT_BREEDERS);
+                await db.rabbits.bulkAdd(DEFAULT_RABBITS);
+                await db.breedings.bulkAdd(DEFAULT_BREEDINGS);
+                await db.litters.bulkAdd(DEFAULT_LITTERS);
+                await db.weights.bulkAdd(DEFAULT_WEIGHTS);
+                await db.medical.bulkAdd(DEFAULT_MEDICAL);
+
+                setAllRabbits(DEFAULT_RABBITS);
+                setAdminBreeders(DEFAULT_BREEDERS);
+                setAllBreedings(DEFAULT_BREEDINGS);
+                setAllLitters(DEFAULT_LITTERS);
+                setAllWeights(DEFAULT_WEIGHTS);
+                setAllMedical(DEFAULT_MEDICAL);
+
+                setActiveTab('academy');
+                setShowCoachModal(true);
+                showToast("🎓 Switched to Alex Rivera 4-H Youth Demo (Intermediate Showman, Age 12)!", "success");
+                triggerConfetti();
+              } catch (err) {
+                console.error("4-H Youth Demo hydration error:", err);
+              }
+            }}
+            className="btn-interactive text-xs py-2 px-3 border border-pink-500/40 bg-pink-950/60 hover:bg-pink-900/80 text-pink-300 font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Switch to 4-H Youth Showmanship Demo (Alex Rivera, Age 12)"
+          >
+            <span>🎓 4-H Youth Demo</span>
           </button>
 
           {/* Barn Mode Switcher (Scoped to Cages tab) */}
@@ -6264,14 +6315,12 @@ export default function App() {
             >
               <ShieldAlert className="w-5 h-5 text-emerald-400" /> System Diagnostics
             </button>
-            {!currentUser?.isDemo && (
             <button 
               onClick={() => setActiveTab('academy')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'academy' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
             >
               <Award className="w-5 h-5 text-yellow-400" /> 🎓 4-H Academy
             </button>
-            )}
             <button 
               onClick={() => setActiveTab('registrarPrep')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'registrarPrep' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
@@ -9345,14 +9394,6 @@ export default function App() {
           {/* TAB: 4-H KIDS LEARNING ACADEMY */}
           {activeTab === 'academy' && (
             <ErrorBoundary>
-              {currentUser?.isDemo ? (
-                <div className="glass-container p-12 text-center max-w-lg mx-auto mt-8">
-                  <Award className="w-12 h-12 text-yellow-400 mx-auto mb-4 opacity-60" />
-                  <h3 className="text-lg font-bold text-white mb-2">4-H Academy Unavailable</h3>
-                  <p className="text-sm text-slate-400 mb-4">The 4-H Learning Academy is exclusive to active subscriber accounts and is not available in demo mode.</p>
-                  <button onClick={() => setActiveTab('dashboard')} className="btn-interactive text-xs py-2 px-6 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold">Return to Dashboard</button>
-                </div>
-              ) : (
               <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Learning Academy...</div>}>
                 <Academy
                   rabbits={rabbits}
@@ -9360,7 +9401,6 @@ export default function App() {
                   currentUser={currentUser}
                 />
               </React.Suspense>
-              )}
             </ErrorBoundary>
           )}
 
