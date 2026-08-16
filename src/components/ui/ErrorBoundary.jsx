@@ -11,29 +11,48 @@ export default class ErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+  async componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+    
+    // Auto-recover from dynamic module chunk load 404 errors (caused by new deployment updates)
     if (error && (
       error.message?.includes('Failed to fetch dynamically imported module') ||
       error.message?.includes('Loading chunk failed') ||
-      error.name === 'ChunkLoadError'
+      error.name === 'ChunkLoadError' ||
+      error.toString().includes('dynamically imported module')
     )) {
-      const pageHasBeenReloaded = sessionStorage.getItem('chunk_error_reloaded');
+      const pageHasBeenReloaded = sessionStorage.getItem('chunk_error_reloaded_v2');
       if (!pageHasBeenReloaded) {
-        sessionStorage.setItem('chunk_error_reloaded', 'true');
-        window.location.reload();
+        sessionStorage.setItem('chunk_error_reloaded_v2', 'true');
+        await this.purgeAllCachesAndHardReload();
       }
     }
   }
 
-  handleRecovery = () => {
-    if (window.confirm("Would you like to reset application settings (theme and logo) to recover? (Your rabbit registry data will remain safe)")) {
-      localStorage.removeItem('rp_theme');
-      localStorage.removeItem('rp_logo');
-      localStorage.removeItem('rp_dash_widgets');
-      this.setState({ hasError: false, error: null });
-      window.location.reload();
+  purgeAllCachesAndHardReload = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (let key of keys) {
+          await caches.delete(key);
+        }
+      }
+      localStorage.removeItem('rp_migrated_to_dexie_v9');
+    } catch (e) {
+      console.warn("Purge cache error:", e);
+    } finally {
+      window.location.reload(true);
     }
+  };
+
+  handleRecovery = async () => {
+    await this.purgeAllCachesAndHardReload();
   };
 
   render() {
@@ -50,10 +69,10 @@ export default class ErrorBoundary extends React.Component {
               {this.state.error?.toString()}
             </div>
             <button
-              onClick={() => this.setState({ hasError: false, error: null })}
+              onClick={this.purgeAllCachesAndHardReload}
               className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-[9px] flex items-center justify-center gap-1 cursor-pointer"
             >
-              <RefreshCw className="w-3 h-3" /> Reload Component
+              <RefreshCw className="w-3 h-3" /> Purge Cache & Reload
             </button>
           </div>
         );
@@ -61,16 +80,16 @@ export default class ErrorBoundary extends React.Component {
 
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-slate-950 text-white font-sans">
-          <div className="glass-container p-8 max-w-md border border-rose-500/30 flex flex-col gap-6 items-center bg-slate-900/60 backdrop-blur-md">
+          <div className="glass-container p-8 max-w-md border border-rose-500/30 flex flex-col gap-6 items-center bg-slate-900/60 backdrop-blur-md rounded-3xl shadow-2xl">
             
             <div className="w-16 h-16 bg-gradient-to-tr from-rose-500 to-indigo-500 rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg animate-bounce">
               🐰🩺
             </div>
             
             <div>
-              <h2 className="text-xl font-black text-rose-400 tracking-wide">Something Hopped Away!</h2>
+              <h2 className="text-xl font-black text-rose-400 tracking-wide">Update Available or Chunk Mismatch</h2>
               <p className="text-xs opacity-75 mt-2 leading-relaxed text-slate-300">
-                WarrenWise mascot detected a rendering error. Don't worry — your rabbit registry and pedigree databases are safe offline.
+                A new app deployment was detected or an old cached module failed to load. Click below to unregister old caches and load the live production build instantly.
               </p>
             </div>
             
@@ -78,22 +97,19 @@ export default class ErrorBoundary extends React.Component {
               {this.state.error?.toString()}
             </div>
             
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-2.5 w-full">
               <button 
-                onClick={() => {
-                  this.setState({ hasError: false, error: null });
-                  window.location.reload();
-                }}
-                className="btn-interactive w-full text-xs font-bold py-2.5 bg-rose-600 hover:bg-rose-700 text-white border-none rounded-xl flex items-center justify-center gap-1.5"
+                onClick={this.purgeAllCachesAndHardReload}
+                className="btn-interactive w-full text-xs font-bold py-3 bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white border-none rounded-xl flex items-center justify-center gap-2 shadow-lg cursor-pointer"
               >
-                <RefreshCw className="w-4 h-4" /> Try Reloading
+                <RefreshCw className="w-4 h-4" /> Purge Stale Cache & Load Fresh App
               </button>
               
               <button 
                 onClick={this.handleRecovery}
-                className="text-xs text-slate-400 hover:text-white underline mt-1"
+                className="text-xs text-slate-400 hover:text-white underline mt-1 cursor-pointer border-none bg-transparent"
               >
-                Reset App Settings & Clear Cache
+                Reset Browser Caches & Database
               </button>
             </div>
 
