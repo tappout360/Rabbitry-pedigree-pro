@@ -9399,6 +9399,7 @@ export default function App() {
                   rabbits={rabbits}
                   triggerConfetti={triggerConfetti}
                   currentUser={currentUser}
+                  setActiveTab={setActiveTab}
                 />
               </React.Suspense>
             </ErrorBoundary>

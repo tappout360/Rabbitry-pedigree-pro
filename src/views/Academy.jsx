@@ -1616,6 +1616,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 1 - Step 1: Carrying Style 🐾",
               mascot: "How do you pick up and carry your rabbit safely to the show table?",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Lift by the ears and carry them high.", correct: false, score: 0, feedback: "❌ Carrying a rabbit by its ears is a severe safety violation and causes permanent damage to the ear cartilage!" },
                 { key: "B", text: "Slide one hand under the chest, lift, support the rump with the other hand (Football Carry) and tuck under your arm.", correct: true, score: 10, feedback: "🎉 Correct! The football carry is the official, safest method to transport rabbits. Support that rump!" },
@@ -1625,6 +1626,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 1 - Step 2: Calming & Flipping 🐾",
               mascot: "How do you securely flip the rabbit over onto its back to inspect the belly?",
+              photo: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80",
               options: [
                 { key: "A", text: "Grab by the ears and twist quickly.", correct: false, score: 0, feedback: "❌ Unsafe! Never grab or twist a rabbit by the ears. This can snap their neck or injure their back." },
                 { key: "B", text: "Gently hold the scruff at the shoulders with one hand, support the rump with the other hand, and pivot them back smoothly onto the table cushion.", correct: true, score: 10, feedback: "🎉 Correct! Supporting the weight by the scruff and rump while pivoting is the safest flipping method." },
@@ -1634,6 +1636,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 1 - Step 3: Grooming & Condition 🐾",
               mascot: "You notice small wool mats on the flanks of a Holland Lop before showing. What should you do?",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "Blow them out or groom them out gently before taking the rabbit to the table.", correct: true, score: 10, feedback: "🎉 Correct! Rabbits must be clean and groomed prior to showing. Clean flanks prevent points deductions." },
                 { key: "B", text: "Cut them out with scissors right at the judge's table.", correct: false, score: 1, feedback: "❌ Incorrect. Trimming or scissoring on the show table is prohibited and looks unprofessional!" },
@@ -1646,6 +1649,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 2 - Step 1: Posing Body Types 📐",
               mascot: "You are posing a New Zealand. It is a Commercial body type breed. How should they be posed?",
+              photo: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80",
               options: [
                 { key: "A", text: "Tucked up in a round ball like a compact Holland Lop.", correct: false, score: 2, feedback: "❌ Incorrect. Commercial body type breeds should not be tucked compactly like compact breeds." },
                 { key: "B", text: "Posed with front feet slightly behind the eyes and hind feet flat under hips, allowing the back to rise and show a deep loin curve.", correct: true, score: 10, feedback: "🎉 Correct! This showcases the deep loin, round rump, and length of a commercial body type." },
@@ -1655,6 +1659,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 2 - Step 2: Broken Pattern Rules 📐",
               mascot: "You present a Broken Black Mini Rex. You notice a patch of white hairs inside the black ears. Is this allowed?",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Yes, broken pattern allows white anywhere.", correct: false, score: 2, feedback: "❌ Incorrect. Under ARBA standards, the ears of broken patterned rabbits must show standard colored markings." },
                 { key: "B", text: "No, the ears of broken patterned rabbits must show colored pattern standard markings. It is a DQ.", correct: true, score: 10, feedback: "🎉 Correct! White spots inside the ears of broken patterned rabbits is a disqualification (DQ)!" },
@@ -1664,6 +1669,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 2 - Step 3: Maximum Weight limits 📐",
               mascot: "Under the ARBA Standard of Perfection, what is the maximum weight limit for a Senior Holland Lop?",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "4.0 lbs (64 oz).", correct: true, score: 10, feedback: "🎉 Correct! The maximum registration and show weight limit for a Senior Holland Lop is 4.0 lbs." },
                 { key: "B", text: "6.5 lbs (104 oz).", correct: false, score: 2, feedback: "❌ Incorrect. 6.5 lbs is too heavy for a Holland Lop (it would be disqualified for weight)." },
@@ -1676,6 +1682,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 1: Carrying Style 🐾",
               mascot: "How do you carry the rabbit safely to the table?",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Lift by the ears and carry them high.", correct: false, score: 0, feedback: "❌ Carrying a rabbit by its ears is a severe safety violation and causes permanent damage to the ear cartilage!" },
                 { key: "B", text: "Slide one hand under the chest, lift, support the rump with the other hand (Football Carry) and tuck under your arm.", correct: true, score: 10, feedback: "🎉 Correct! The football carry is the official, safest method to transport rabbits. Support that rump!" },
@@ -1685,6 +1692,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 2: Posing Stance 🐰",
               mascot: "Pose your rabbit. Bella is a Holland Lop (Compact body type).",
+              photo: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80",
               options: [
                 { key: "A", text: "Stretch the front legs out straight and pull the hind legs flat.", correct: false, score: 2, feedback: "❌ Incorrect. Holland Lops are a Compact breed and should be posed tucked in a tight ball. Stretched pose is only for Cylindrical/Full-Arch breeds. Deduct 4 points." },
                 { key: "B", text: "Tuck the front feet under the eyes, and push the rear feet in line with the hips so they look round and compact.", correct: true, score: 10, feedback: "🎉 Correct! Posing compactly is standard for Compact type breeds. They should look like a round ball!" },
@@ -1694,6 +1702,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 3: Ears Inspection 👂",
               mascot: "Inspect inside the ears. You find brown crusty scales and scabs at the base. What is this?",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "Normal dirt. Clean it with a dry paper towel.", correct: false, score: 1, feedback: "❌ Incorrect. Brown scales indicate ear mites (Ear Canker). Prying it can cause pain and infection." },
                 { key: "B", text: "Ear Canker (Mites) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Ear Canker is an active mite infection and is an official ARBA Disqualification. The animal must be treated and not shown." },
@@ -1703,6 +1712,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 4: Eyes Inspection 👁️",
               mascot: "Check the eyes. You spot a cloudy white film covering the pupil of the left eye. What is this?",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Cataracts (Blindness) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Blindness or cataracts in one or both eyes is a standard ARBA DQ." },
                 { key: "B", text: "Eye dust from bedding.", correct: false, score: 1, feedback: "❌ Incorrect. Film over the pupil is a cataract, not dust." },
@@ -1712,6 +1722,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 5: Nose Inspection 👃",
               mascot: "Check the nose. There is white, sticky wet discharge around both nostrils.",
+              photo: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80",
               options: [
                 { key: "A", text: "Cold / Snuffles - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! White nasal discharge is a sign of pasteurellosis (Snuffles), which is highly contagious and an official DQ." },
                 { key: "B", text: "Normal condensation from drinking water.", correct: false, score: 2, feedback: "❌ Incorrect. Water is clear, not white and sticky." },
@@ -1721,6 +1732,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 6: Teeth Inspection 🦷",
               mascot: "Open the muzzle. The top front incisors are positioned permanently behind the bottom incisors.",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "Normal teeth alignment.", correct: false, score: 0, feedback: "❌ Incorrect. In normal rabbits, the top teeth overlap in front of the bottom teeth." },
                 { key: "B", text: "Malocclusion (Wolf Teeth) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Malocclusion is an inherited teeth misalignment DQ where the incisors do not meet properly." },
@@ -1730,6 +1742,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 7: Front Feet & Nails 🦵",
               mascot: "Check the front feet. You count 4 nails on the right paw and 5 nails on the left paw. The right paw is missing a toenail.",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Missing claw / toenail - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Missing claws, cut claws, or extra claws are standard ARBA show DQs." },
                 { key: "B", text: "Normal. Compact breeds have fewer claws.", correct: false, score: 1, feedback: "❌ Incorrect. All breeds must have 5 claws on front feet (including the dewclaw) and 4 on hind feet." },
@@ -1739,6 +1752,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 8: Underbelly & Sexing 🐑",
               mascot: "Turn the rabbit over. You check the vent area and find swollen, inflamed tissue with raw scabs.",
+              photo: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80",
               options: [
                 { key: "A", text: "Vent Disease (Spirochetosis) - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Vent disease is a contagious venereal infection and is an immediate DQ." },
                 { key: "B", text: "Normal localized molting.", correct: false, score: 2, feedback: "❌ Incorrect. Molting doesn't cause raw scabs or swelling in the vent area." },
@@ -1748,6 +1762,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 9: Hocks & Rear Feet 🦶",
               mascot: "Inspect the hind feet soles. You see red, raw patches of exposed skin without fur covering.",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "Dirty feet. Needs a foot bath.", correct: false, score: 2, feedback: "❌ Incorrect. Foot baths won't cure raw bleeding sores on the hocks." },
                 { key: "B", text: "Sore Hocks - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Sore hocks (ulcerative pododermatitis) that are raw or bleeding are an official DQ." },
@@ -1757,6 +1772,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 10: Tail Check 🥕",
               mascot: "Inspect the tail. It is permanently crooked/bent to the left, and does not sit straight.",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Wry Tail / Crooked Tail - This is a disqualification (DQ)!", correct: true, score: 10, feedback: "🎉 Correct! Wry tail (permanently bent tail) is an official ARBA show DQ." },
                 { key: "B", text: "Standard wagging position.", correct: false, score: 2, feedback: "❌ Incorrect. A wry tail cannot be straightened manually." },
@@ -1766,6 +1782,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 3 - Step 11: Final Presentation 🎓",
               mascot: "You have finished inspecting the animal! How do you end your presentation?",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "Re-pose the rabbit, face the judge, smile, make eye contact, and politely say: 'This completes my presentation.'", correct: true, score: 10, feedback: "🎉 Correct! Showmanship judges grade confidence, poise, and clean endings. Outstanding job!" },
                 { key: "B", text: "Walk away immediately to let the next exhibitor take their turn.", correct: false, score: 1, feedback: "❌ Incorrect. Always wait for the judge to acknowledge or dismiss you." },
@@ -1778,6 +1795,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 4 - Step 1: Agouti Genotype Crosses 🧬",
               mascot: "You cross a heterozygous Agouti buck (A/a) with a self black doe (a/a). What percentage of offspring will be Agouti?",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "50% Agouti (A/a) and 50% Self (a/a).", correct: true, score: 10, feedback: "🎉 Correct! The cross is A/a x a/a. The Agouti gene (A) is dominant, yielding 50% A/a (Agouti) and 50% a/a (Self)." },
                 { key: "B", text: "100% Agouti.", correct: false, score: 1, feedback: "❌ Incorrect. The Agouti buck only carries one Agouti allele, so half the offspring will get the recessive self allele." },
@@ -1787,19 +1805,11 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 4 - Step 2: Wright's Coefficient Calculation 🧬",
               mascot: "You breed a buck to his own daughter. What is the Wright's Inbreeding Coefficient (Fx) of the offspring (assuming zero prior inbreeding)?",
+              photo: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80",
               options: [
                 { key: "A", text: "25.0% (Fx = 0.25).", correct: true, score: 10, feedback: "🎉 Correct! Sire-to-daughter breeding shares 50% genetics, resulting in a 25.0% inbreeding coefficient." },
                 { key: "B", text: "12.5% (Fx = 0.125).", correct: false, score: 2, feedback: "❌ Incorrect. 12.5% is for half-sibling or grandparent crossings." },
                 { key: "C", text: "50.0% (Fx = 0.50).", correct: false, score: 0, feedback: "❌ Incorrect. Fx is calculated as 1/2 of relationship coefficient (0.50), resulting in 0.25." }
-              ]
-            },
-            {
-              title: "Stage 4 - Step 3: Linebreeding Strategy 🧬",
-              mascot: "What is the primary agricultural purpose of using linebreeding over outcrossing in show stock?",
-              options: [
-                { key: "A", text: "To consistently lock in desirable homozygous standard traits and breed-conforming type.", correct: true, score: 10, feedback: "🎉 Correct! Linebreeding concentrates genes of outstanding ancestors to build consistency in pedigree lines." },
-                { key: "B", text: "To prevent all mutations entirely.", correct: false, score: 1, feedback: "❌ Incorrect. Inbreeding cannot stop genetic mutations." },
-                { key: "C", text: "To increase genetic diversity as much as possible.", correct: false, score: 2, feedback: "❌ Incorrect. Inbreeding reduces genetic diversity to stabilize characteristics." }
               ]
             }
           ];
@@ -1808,6 +1818,7 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 5 - Step 1: Judge Scorecard Run 🏆",
               mascot: "You are evaluating an exhibitor who presented their animal correctly but had grease on their shirt sleeves (-5 pts) and dropped the rabbit during pose check (-10 pts). How many points are deducted from their 100-point total?",
+              photo: "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&q=80",
               options: [
                 { key: "A", text: "15 points deducted (Score: 85/100).", correct: true, score: 30, feedback: "🎉 Correct! Grease stains and dropping the rabbit are graded under attire and handling. 15 points deducted." },
                 { key: "B", text: "5 points deducted (Score: 95/100).", correct: false, score: 5, feedback: "❌ Mismatch! Dropping the rabbit is a severe handling deduction (-10) on top of the attire stain." },
@@ -1817,48 +1828,67 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
             {
               title: "Stage 5 - Step 2: Advanced SOP Fault Check 🏆",
               mascot: "You are judging a senior Netherland Dwarf buck. He weighs exactly 2.5 lbs (40 oz), has a compact body, but has a slight roll back coat and ears measuring 3 inches. Which of these is a disqualification?",
+              photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80",
               options: [
                 { key: "A", text: "Ears measuring 3 inches.", correct: true, score: 35, feedback: "🎉 Correct! Under ARBA standards, Netherland Dwarf ears must not exceed 2.5 inches. 3 inches is an immediate DQ!" },
                 { key: "B", text: "Weight of 2.5 lbs.", correct: false, score: 5, feedback: "❌ Incorrect. 2.5 lbs is well within the Senior Netherland Dwarf standard (max 2.5 lbs)." },
                 { key: "C", text: "Roll back coat type.", correct: false, score: 10, feedback: "❌ Incorrect. Netherland Dwarfs are roll back coat types. This is standard, not a fault." }
               ]
-            },
-            {
-              title: "Stage 5 - Step 3: Sportsmanship Scenario 🏆",
-              mascot: "A judge places your rabbit last in class. What is the correct response under the ARBA Youth Showmanship code of conduct?",
-              options: [
-                { key: "A", text: "Shake the judge's hand, congratulate the winner, and politely ask the judge for pointers to improve your stock.", correct: true, score: 35, feedback: "🎉 Correct! Sportsmanship is the foundation of 4-H. Graceful losing and seeking feedback show maturity!" },
-                { key: "B", text: "Argue with the judge about standard markings.", correct: false, score: 0, feedback: "❌ Severe penalty! Arguing with show officials is grounds for immediate exhibition suspension." },
-                { key: "C", text: "Walk off and complain on the social feed.", correct: false, score: 5, feedback: "❌ Incorrect. Unsportsmanlike conduct ruins the community experience." }
-              ]
             }
           ];
         }
 
-        const currentStepData = steps[walkthroughStep];
+        const currentStepData = steps[walkthroughStep] || steps[0];
 
         return (
           <div className="max-w-2xl mx-auto w-full flex flex-col gap-6">
-            <div className="glass-container p-6 border border-cyan-500/30 flex flex-col gap-4">
+            <div className="glass-container p-6 border border-cyan-500/30 flex flex-col gap-4 relative shadow-2xl">
               
-              {/* Header progress info */}
+              {/* Header progress info & Close X button */}
               <div className="flex justify-between items-center text-xs opacity-75 border-b border-white/10 pb-3">
                 <span className="font-bold text-cyan-400 uppercase tracking-widest">{currentStepData.title}</span>
-                <span className="font-mono text-slate-300">Score: {walkthroughScore} pts</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-slate-300 font-bold">Score: {walkthroughScore} pts</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setActiveTab) setActiveTab('dashboard');
+                      else setAcademyMode('menu');
+                    }}
+                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-red-600 text-white font-bold flex items-center justify-center border-none cursor-pointer transition-colors"
+                    title="Close & return to dashboard"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Step Visual Inspection Photo */}
+              <div className="relative w-full h-48 rounded-2xl overflow-hidden border border-cyan-500/30 shadow-lg bg-black">
+                <img 
+                  src={currentStepData.photo || 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&q=80'} 
+                  alt={currentStepData.title}
+                  className="w-full h-full object-cover object-center transform hover:scale-105 transition-all duration-500 opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent flex items-end p-3">
+                  <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider bg-black/75 px-2.5 py-1 rounded-full border border-cyan-500/40">
+                    📸 ARBA Showmanship Inspection Reference
+                  </span>
+                </div>
               </div>
 
               {/* Mascot Dialogue instruction */}
-              <div className="bg-cyan-950/20 border border-cyan-500/10 p-4 rounded-2xl flex gap-3 items-center">
-                <span className="text-3xl shrink-0">🎓</span>
+              <div className="bg-cyan-950/30 border border-cyan-500/20 p-4 rounded-2xl flex gap-3 items-center">
+                <span className="text-3xl shrink-0 animate-bounce">🎓</span>
                 <div className="text-left">
                   <span className="text-[10px] uppercase font-bold text-cyan-400 block mb-0.5">Judge's Challenge:</span>
-                  <p className="text-xs text-slate-200 font-sans leading-relaxed">{currentStepData.mascot}</p>
+                  <p className="text-xs text-slate-100 font-sans font-medium leading-relaxed">{currentStepData.mascot}</p>
                 </div>
               </div>
 
               {/* Options selection */}
               {!walkthroughFeedback ? (
-                <div className="flex flex-col gap-3.5 mt-2">
+                <div className="flex flex-col gap-3.5 mt-1">
                   {currentStepData.options.map(opt => (
                     <button
                       key={opt.key}
@@ -1867,17 +1897,17 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
                         setWalkthroughFeedback(opt.feedback);
                         setWalkthroughScore(prev => prev + opt.score);
                       }}
-                      className="p-3.5 text-left bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-400/35 rounded-xl transition-all text-xs font-semibold text-slate-250 flex items-start gap-3 w-full"
+                      className="p-3.5 text-left bg-white/5 border border-white/10 hover:bg-cyan-950/40 hover:border-cyan-400/50 rounded-xl transition-all text-xs font-semibold text-slate-200 flex items-start gap-3 w-full cursor-pointer hover:scale-[1.01]"
                     >
-                      <span className="w-5 h-5 rounded-full bg-cyan-600/20 text-cyan-400 flex items-center justify-center font-bold shrink-0">{opt.key}</span>
+                      <span className="w-5 h-5 rounded-full bg-cyan-600/30 text-cyan-300 flex items-center justify-center font-bold shrink-0">{opt.key}</span>
                       <span className="leading-snug">{opt.text}</span>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col gap-4 mt-2">
+                <div className="flex flex-col gap-4 mt-1">
                   <div className={`p-4 rounded-xl border text-xs leading-relaxed ${
-                    selectedWalkthroughOption?.correct ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 'bg-red-950/30 border-red-500/30 text-red-300'
+                    selectedWalkthroughOption?.correct ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-250 font-medium' : 'bg-red-950/40 border-red-500/40 text-red-200'
                   }`}>
                     {walkthroughFeedback}
                   </div>
@@ -1889,37 +1919,54 @@ link.download = `${parentExhibitorName.replace(/\s+/g, '_')}_4H_Certificate.png`
                         setSelectedWalkthroughOption(null);
                         setWalkthroughFeedback('');
                       }}
-                      className="btn-interactive w-full py-2.5 bg-cyan-600 border-none font-bold text-white text-xs rounded-xl"
+                      className="btn-interactive w-full py-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 border-none font-bold text-white text-xs rounded-xl cursor-pointer shadow-lg"
                     >
                       Proceed to Next Step ➡️
                     </button>
                   ) : (
                     <div className="flex flex-col gap-3 mt-2">
-                      <div className="p-4 bg-gradient-to-tr from-yellow-500/10 to-indigo-500/10 border border-yellow-500/20 rounded-2xl text-center flex flex-col gap-2">
+                      <div className="p-5 bg-gradient-to-tr from-yellow-500/15 via-indigo-500/10 to-emerald-500/15 border border-yellow-500/30 rounded-2xl text-center flex flex-col gap-2 shadow-inner">
                         <span className="text-4xl animate-bounce">🏆</span>
-                        <h4 className="text-base font-bold text-white">Stage {walkthroughStage} Completed!</h4>
-                        <p className="text-xs opacity-75">You scored {walkthroughScore} points.</p>
+                        <h4 className="text-lg font-black text-white">Stage {walkthroughStage} Completed!</h4>
+                        <p className="text-xs text-amber-300 font-bold">You scored {walkthroughScore} XP points.</p>
                       </div>
                       
-                      <button
-                        onClick={() => {
-                          addPoints(walkthroughScore);
-                          
-                          // Dynamic progressive unlocking of the next milestone!
-                          const nextLevel = walkthroughStage + 1;
-                          if (nextLevel <= 5) {
-                            unlockMilestone(nextLevel);
-                            showToast(`🏆 Milestone stage ${nextLevel} unlocked!`, "success");
-                          } else {
-                            unlockBadge("Showmanship Champion 👑");
-                          }
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            addPoints(walkthroughScore);
+                            const nextLevel = walkthroughStage + 1;
+                            if (nextLevel <= 5) {
+                              unlockMilestone(nextLevel);
+                            } else {
+                              unlockBadge("Showmanship Champion 👑");
+                            }
+                            if (setActiveTab) setActiveTab('dashboard');
+                            else setAcademyMode('menu');
+                          }}
+                          className="btn-interactive py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl border-none flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/30 cursor-pointer"
+                        >
+                          <span>📊 Claim XP & Return to Dashboard</span>
+                        </button>
 
-                          setAcademyMode('menu');
-                        }}
-                        className="btn-interactive w-full py-2.5 bg-indigo-600 border-none font-bold text-white text-xs rounded-xl"
-                      >
-                        Claim XP Points & Exit
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            addPoints(walkthroughScore);
+                            const nextLevel = walkthroughStage + 1;
+                            if (nextLevel <= 5) {
+                              unlockMilestone(nextLevel);
+                            } else {
+                              unlockBadge("Showmanship Champion 👑");
+                            }
+                            setAcademyMode('menu');
+                          }}
+                          className="btn-interactive py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl border-none flex items-center justify-center gap-1.5 shadow-lg cursor-pointer"
+                        >
+                          <span>🎓 Claim XP & Stay in 4-H Academy</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
