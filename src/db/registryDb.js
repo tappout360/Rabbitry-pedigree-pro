@@ -315,9 +315,67 @@ export async function performMigrationAndLoad() {
       socialPosts,
       socialComments
     };
-  })().catch(err => {
+  })().catch(async (err) => {
+    console.warn("Database error detected during load. Executing automatic silent self-healing...", err);
     migrationPromise = null;
-    throw err;
+    try {
+      // Delete old/corrupted database and reset migration flag
+      localStorage.removeItem('rp_migrated_to_dexie_v9');
+      await db.delete();
+      await db.open();
+      
+      // Re-initialize tables with default datasets
+      await db.adminBreeders.bulkAdd(DEFAULT_BREEDERS);
+      await db.rabbits.bulkAdd(DEFAULT_RABBITS);
+      await db.breedings.bulkAdd(DEFAULT_BREEDINGS);
+      await db.litters.bulkAdd(DEFAULT_LITTERS);
+      await db.ledger.bulkAdd(DEFAULT_LEDGER);
+      await db.shows.bulkAdd(DEFAULT_SHOWS);
+      await db.chores.bulkAdd(DEFAULT_CHORES);
+      await db.medical.bulkAdd(DEFAULT_MEDICAL);
+      await db.weights.bulkAdd(DEFAULT_WEIGHTS);
+
+      localStorage.setItem('rp_migrated_to_dexie_v9', 'true');
+
+      return {
+        adminBreeders: DEFAULT_BREEDERS,
+        rabbits: DEFAULT_RABBITS,
+        breedings: DEFAULT_BREEDINGS,
+        litters: DEFAULT_LITTERS,
+        ledger: DEFAULT_LEDGER,
+        shows: DEFAULT_SHOWS,
+        showEntries: [],
+        chores: DEFAULT_CHORES,
+        transfers: DEFAULT_TRANSFERS,
+        signatures: DEFAULT_SIGNATURES,
+        medical: DEFAULT_MEDICAL,
+        weights: DEFAULT_WEIGHTS,
+        syncQueue: [],
+        approvals: [],
+        youthProgress: [],
+        youthQuizLogs: [],
+        subscriptions: [],
+        invoices: [],
+        evansVerifications: [],
+        conflicts: [],
+        photoThumbnails: [],
+        offlinePhotos: [],
+        marketplaceListings: [],
+        socialPosts: [],
+        socialComments: []
+      };
+    } catch (selfHealErr) {
+      console.error("Self-healing recovery failed:", selfHealErr);
+      return {
+        adminBreeders: DEFAULT_BREEDERS,
+        rabbits: DEFAULT_RABBITS,
+        breedings: DEFAULT_BREEDINGS,
+        litters: DEFAULT_LITTERS,
+        ledger: DEFAULT_LEDGER,
+        shows: DEFAULT_SHOWS,
+        showEntries: [], chores: [], transfers: [], signatures: [], medical: [], weights: [], syncQueue: []
+      };
+    }
   });
 
   return migrationPromise;

@@ -2438,6 +2438,28 @@ export default function App() {
     }
   };
 
+  // Full Cache & Service Worker Reset Helper (Unregisters old SWs, clears caches, deletes DB)
+  const handleFullCacheReset = async () => {
+    try {
+      showToast("Executing complete cache purge & self-healing reset...", "info");
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) await reg.unregister();
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (let key of keys) await caches.delete(key);
+      }
+      await db.delete();
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (err) {
+      console.warn("Reset error:", err);
+    } finally {
+      window.location.reload(true);
+    }
+  };
+
   // Direct Live Demo Login Handler
   const handleTryDemo = (demoId = 'ab-1') => {
     const demoUser = adminBreeders.find(b => b.id === demoId) || adminBreeders.find(b => b.isDemo) || adminBreeders[0];
@@ -6080,38 +6102,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Database Version / Schema Upgrade Conflict Recovery Alert Banner */}
-      {dbError && (
-        <div className="mx-6 mb-4 p-5 glass-container border-2 border-red-500/50 bg-gradient-to-br from-slate-900 via-slate-900/95 to-red-950/20 text-white flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden animate-fade-in-up">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-red-650"></div>
-          <div className="flex items-center gap-3.5 pl-2">
-            <span className="text-3xl shrink-0 animate-pulse">⚠️</span>
-            <div className="text-left">
-              <h4 className="text-sm font-black text-red-400 tracking-wide uppercase">Local Database Conflict Detected</h4>
-              <p className="text-xs opacity-90 leading-relaxed mt-1">
-                Your browser holds an older, incompatible local IndexedDB database version ({dbError}). Reset the local cache to self-heal and sync cleanly with cloud servers.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2.5 shrink-0 pl-2 md:pl-0">
-            <button 
-              onClick={() => {
-                db.delete().then(() => {
-                  localStorage.clear();
-                  window.location.reload();
-                }).catch(err => {
-                  console.error("Failed to delete database:", err);
-                  localStorage.clear();
-                  window.location.reload();
-                });
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl border-none cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-md shadow-red-500/20"
-            >
-              Reset Database Cache
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Offline Performance Suggestion Banner */}
       {isOffline && designMode === 'fun' && !dismissedOfflineTip && (
@@ -6582,6 +6573,74 @@ export default function App() {
             >
               💾 Save Barn Settings
             </button>
+
+            {/* Barn Actions & Tools Panel */}
+            <div className="flex flex-col gap-3 pt-3 border-t border-white/10">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Barn Tools & Actions</span>
+              
+              {/* 🎙 Barn Voice Assistant Action Card */}
+              <div className="p-3.5 bg-slate-900/60 border border-cyan-500/30 rounded-2xl flex flex-col gap-2.5 text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span>🎙</span> Barn Voice Assistant & Root 🥕 AI
+                  </span>
+                  <span className="text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                    Hands-Free Active
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Use Siri/Alexa-style voice commands or tap the inline 🎤 mic next to any field to dictate or execute hands-free barn actions.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowRootAiModal(true)}
+                  className="btn-interactive py-2 px-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl border-none flex items-center justify-center gap-1.5 shadow cursor-pointer"
+                >
+                  <span>🥕 Launch Voice Assistant & Dictation</span>
+                </button>
+              </div>
+
+              {/* 🎓 4-H Coach WarrenWise Action Card (Youth Accounts) */}
+              {currentUser?.isYouth && (
+                <div className="p-3.5 bg-slate-900/60 border border-amber-500/30 rounded-2xl flex flex-col gap-2.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white flex items-center gap-1.5">
+                      <span>🎓</span> 4-H Coach WarrenWise
+                    </span>
+                    <span className="text-[9px] font-mono font-bold bg-amber-950 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
+                      Youth Portal
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Interactive ARBA showmanship quizzes, body part identification, and 4-H record book learning tools.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowCoachModal(true)}
+                    className="btn-interactive py-2 px-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl border-none flex items-center justify-center gap-1.5 shadow cursor-pointer"
+                  >
+                    <span>🎓 Open 4-H Coach WarrenWise</span>
+                  </button>
+                </div>
+              )}
+
+              {/* 🧹 Reset Database & Purge Cache Action Card */}
+              <div className="p-3.5 bg-slate-900/60 border border-red-500/30 rounded-2xl flex flex-col gap-2 text-left">
+                <span className="text-xs font-black text-red-300 flex items-center gap-1.5">
+                  <span>🧹</span> System Cache & Database Reset
+                </span>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Unregisters stale Service Worker caches, purges old browser storage, and self-heals your local database.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleFullCacheReset}
+                  className="btn-interactive py-2 px-3 bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs rounded-xl border-none flex items-center justify-center gap-1.5 shadow cursor-pointer"
+                >
+                  <span>Reset Database & Purge Cache</span>
+                </button>
+              </div>
+            </div>
 
             {/* WarrenWise AI Mascot Dialogue (Fun Mode Only) */}
             {designMode === 'fun' && (
