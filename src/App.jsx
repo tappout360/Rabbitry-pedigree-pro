@@ -6071,6 +6071,44 @@ export default function App() {
             ⚖️ Unit: {weightUnit.toUpperCase()}
           </button>
 
+          {/* Quick 4-Gen Demo Data Hydrator */}
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await db.rabbits.clear();
+                await db.adminBreeders.clear();
+                await db.breedings.clear();
+                await db.litters.clear();
+                await db.weights.clear();
+                await db.medical.clear();
+
+                await db.adminBreeders.bulkAdd(DEFAULT_BREEDERS);
+                await db.rabbits.bulkAdd(DEFAULT_RABBITS);
+                await db.breedings.bulkAdd(DEFAULT_BREEDINGS);
+                await db.litters.bulkAdd(DEFAULT_LITTERS);
+                await db.weights.bulkAdd(DEFAULT_WEIGHTS);
+                await db.medical.bulkAdd(DEFAULT_MEDICAL);
+
+                setAllRabbits(DEFAULT_RABBITS);
+                setAdminBreeders(DEFAULT_BREEDERS);
+                setAllBreedings(DEFAULT_BREEDINGS);
+                setAllLitters(DEFAULT_LITTERS);
+                setAllWeights(DEFAULT_WEIGHTS);
+                setAllMedical(DEFAULT_MEDICAL);
+
+                showToast("🎉 Loaded complete 4-Gen Pedigree & 4-H Youth Demo Herd!", "success");
+                triggerConfetti();
+              } catch (err) {
+                console.error("Demo hydration error:", err);
+              }
+            }}
+            className="btn-interactive text-xs py-2 px-3 border border-amber-500/40 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer"
+            title="Hydrate 4-Generation Pedigree & 4-H Youth Demo Data"
+          >
+            <span>✨ Load 4-Gen Demo</span>
+          </button>
+
           {/* Barn Mode Switcher (Scoped to Cages tab) */}
           {activeTab === 'cages' && (
             <button
