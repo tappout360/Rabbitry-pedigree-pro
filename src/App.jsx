@@ -1133,6 +1133,16 @@ export default function App() {
   // Onboarding profile status derived from currentUser
   const hasProfile = currentUser !== null;
 
+  // Strict check: Control Center & App Owner features ONLY accessible to authenticated Jason Mounts session
+  const loggedInEmail = (localStorage.getItem('rp_logged_in_email') || '').toLowerCase();
+  const isOwnerAuthenticated = Boolean(
+    currentUser &&
+    !currentUser.isDemo &&
+    currentUser.id === 'ab-admin' &&
+    (currentUser.email?.toLowerCase() === 'jasonmounts77@yahoo.com' || currentUser.username?.toLowerCase() === 'jmounts') &&
+    (loggedInEmail === 'jasonmounts77@yahoo.com' || loggedInEmail === 'jmounts')
+  );
+
   // Authentication Views: 'home', 'login', 'signup', 'forgot-password', 'reset-password', 'pending-approval'
   const [authView, setAuthView] = useState('home');
 
@@ -1857,50 +1867,20 @@ export default function App() {
   }, [breederState]);
 
   useEffect(() => {
-    // Prevent non-admin users from accessing ab-admin context or the admin tab
-    if (currentUser) {
-      if (currentUser.id !== 'ab-admin') {
-        // Non-admin user logged in
-        if (activeTab === 'admin') {
-          setActiveTab('dashboard');
-        }
-        // Validate selectedBreederContext is allowed for this user
-        const employer = adminBreeders.find(b => b.email.toLowerCase() === currentUser.employerEmail?.toLowerCase());
-        const allowedContexts = [currentUser.id];
-        if (employer && currentUser.role === 'assistant' && currentUser.employerStatus === 'active') {
-          allowedContexts.push(employer.id);
-        }
-        if (!allowedContexts.includes(selectedBreederContext)) {
-          setSelectedBreederContext(currentUser.id);
-          localStorage.setItem('rp_selected_context', currentUser.id);
-        }
-        
-        // Ensure non-admin users have controlCenterUnlocked always locked
-        setControlCenterUnlocked(false);
-        setAdminPasswordInput('');
-        setAdminPasswordError('');
-      } else {
-        // Admin user logged in
-        // If context switches away from ab-admin, make sure we lock and exit the admin tab
-        if (selectedBreederContext !== 'ab-admin') {
-          if (activeTab === 'admin') {
-            setActiveTab('dashboard');
-          }
-          setControlCenterUnlocked(false);
-          setAdminPasswordInput('');
-          setAdminPasswordError('');
-        }
-      }
-    } else {
-      // Logged out
+    // Prevent non-owner or demo users from accessing ab-admin context or the admin control center tab
+    if (!isOwnerAuthenticated) {
       if (activeTab === 'admin') {
         setActiveTab('dashboard');
+      }
+      if (selectedBreederContext === 'ab-admin') {
+        setSelectedBreederContext('all');
+        localStorage.setItem('rp_selected_context', 'all');
       }
       setControlCenterUnlocked(false);
       setAdminPasswordInput('');
       setAdminPasswordError('');
     }
-  }, [currentUser?.id, selectedBreederContext, activeTab, adminBreeders]);
+  }, [isOwnerAuthenticated, activeTab, selectedBreederContext]);
 
   // Sync breeder profile edits back to currentUser and adminBreeders dynamically
   useEffect(() => {
@@ -5888,7 +5868,7 @@ export default function App() {
  
       {/* Top Banner Navigation */}
       <header className="glass-container mx-6 mt-6 mb-4 p-4 flex flex-wrap items-center justify-between gap-4 z-10 relative">
-        {currentUser?.isSuperAdmin && currentUser?.id === 'ab-admin' && (
+        {isOwnerAuthenticated && (
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-rose-600 via-pink-600 to-indigo-600 text-white text-[10px] font-black tracking-widest uppercase px-4 py-1 rounded-full shadow-lg border border-indigo-400 flex items-center gap-1.5 shadow-indigo-500/35">
             <span className="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
             App Owner Administrative Session
@@ -5916,7 +5896,7 @@ export default function App() {
 
         {/* Global Connection Simulator Indicator & Settings */}
         <div className="flex flex-wrap items-center gap-2">
-          {((currentUser?.isSuperAdmin && currentUser?.id === 'ab-admin') || (currentUser?.role === 'assistant' && currentUser?.employerStatus === 'active')) && (() => {
+          {(isOwnerAuthenticated || (currentUser?.role === 'assistant' && currentUser?.employerStatus === 'active')) && (() => {
             const employer = adminBreeders.find(b => b.email.toLowerCase() === currentUser?.employerEmail?.toLowerCase());
             return (
               <div className="flex items-center gap-1.5 bg-indigo-950/65 border border-indigo-500/30 px-3 py-1.5 rounded-xl shadow-lg">
@@ -5930,7 +5910,7 @@ export default function App() {
                   }}
                   className="text-xs bg-slate-900 border border-indigo-500/20 text-indigo-200 rounded-lg p-1 cursor-pointer font-semibold focus:outline-none"
                 >
-                  {currentUser?.isSuperAdmin && currentUser?.id === 'ab-admin' ? (
+                  {isOwnerAuthenticated ? (
                     adminBreeders
                       .filter(b => b.email !== 'admin@rabbitrypedigree.pro')
                       .map(b => (
@@ -6076,7 +6056,7 @@ export default function App() {
             type="button"
             onClick={async () => {
               try {
-                const adultUser = DEFAULT_BREEDERS[0];
+                const adultUser = { ...DEFAULT_BREEDERS[0], isDemo: true };
                 setCurrentUser(adultUser);
                 localStorage.setItem('rp_current_user', JSON.stringify(adultUser));
                 setSelectedBreederContext('all');
@@ -6120,7 +6100,7 @@ export default function App() {
             type="button"
             onClick={async () => {
               try {
-                const youthUser = DEFAULT_BREEDERS[1];
+                const youthUser = { ...DEFAULT_BREEDERS[1], isDemo: true };
                 setCurrentUser(youthUser);
                 localStorage.setItem('rp_current_user', JSON.stringify(youthUser));
                 setSelectedBreederContext('ab-youth-1');
@@ -6379,7 +6359,7 @@ export default function App() {
             >
               <MessageSquare className="w-5 h-5 text-amber-400" /> 💬 App Feedback
             </button>
-            {currentUser?.id === 'ab-admin' && selectedBreederContext === 'ab-admin' && (
+            {isOwnerAuthenticated && (
               <button 
                 onClick={() => setActiveTab('admin')}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'admin' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
@@ -9753,7 +9733,7 @@ export default function App() {
           )}
 
           {/* TAB 6: ADMIN CONTROL CENTER */}
-          {activeTab === 'admin' && currentUser?.id === 'ab-admin' && (
+          {activeTab === 'admin' && isOwnerAuthenticated && (
             !controlCenterUnlocked ? (
               <div className="glass-container p-8 flex flex-col items-center justify-center text-center gap-6 max-w-md mx-auto my-12 border-2 border-red-500/20 shadow-xl shadow-red-950/20 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-indigo-600"></div>
