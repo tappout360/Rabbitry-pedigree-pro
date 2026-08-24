@@ -74,6 +74,8 @@ export default function Academy({
   const [activeMemberId, setActiveMemberId] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberAge, setNewMemberAge] = useState(10);
+  const [externalLinkCode, setExternalLinkCode] = useState('');
+  const [linkError, setLinkError] = useState('');
   const [coachFeedbackText, setCoachFeedbackText] = useState('');
   const [assignedQuizLevel, setAssignedQuizLevel] = useState('Beginner');
   const [quizLogs, setQuizLogs] = useState([]);
@@ -169,6 +171,46 @@ export default function Academy({
     setNewMemberName('');
     await loadMembers();
     setActiveMemberId(newM.id);
+  };
+
+  const handleLinkExternalStudent = async (e) => {
+    e.preventDefault();
+    setLinkError('');
+    if (!externalLinkCode.trim()) return;
+
+    try {
+      const code = externalLinkCode.trim().toUpperCase();
+      const allProgress = await db.youthProgress.toArray();
+      const matched = allProgress.find(m => 
+        m.id.toUpperCase() === code || 
+        m.memberName.toUpperCase().includes(code)
+      );
+
+      if (matched) {
+        setActiveMemberId(matched.id);
+        setExternalLinkCode('');
+        alert(`Successfully linked 4-H Student record for "${matched.memberName}"!`);
+      } else {
+        const newExt = {
+          id: `ext-${Date.now().toString(36)}`,
+          memberName: `External 4-H Student (${code})`,
+          ageGroup: 'Junior',
+          currentLevel: 1,
+          xp: 100,
+          streak: 1,
+          lastActiveDate: new Date().toISOString().split('T')[0],
+          coachId: currentUser?.id || 'ab-demo-1'
+        };
+        await db.youthProgress.add(newExt);
+        await loadMembers();
+        setActiveMemberId(newExt.id);
+        setExternalLinkCode('');
+        alert(`Successfully registered & linked external 4-H Student record!`);
+      }
+    } catch (err) {
+      console.error("Link student error:", err);
+      setLinkError("Failed to link student record. Please verify connection key.");
+    }
   };
 
   const handleSaveFeedback = async () => {
