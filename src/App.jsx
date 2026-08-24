@@ -11630,11 +11630,11 @@ export default function App() {
         const renderPrintBox = (ancestor, roleLabel, gender, isGen3 = false) => {
           if (!ancestor) {
             return (
-              <div className={`p-1.5 border border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[38px] py-1' : 'min-h-[50px] py-2'} print:p-1.5`}>
-                <span className={`${isGen3 ? 'text-[6px] print:text-[9px]' : 'text-[7px] print:text-[11px]'} uppercase font-bold text-slate-400 block leading-none`}>
+              <div className={`p-2 border border-slate-400 bg-slate-50/80 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[44px] py-1.5' : 'min-h-[60px] py-2.5'} print:p-1.5`}>
+                <span className={`${isGen3 ? 'text-[8px] print:text-[9.5px]' : 'text-[9px] print:text-[11px]'} uppercase font-black text-slate-600 block leading-none`}>
                   {isGen3 ? roleLabel.replace('Paternal', 'Pat.').replace('Maternal', 'Mat.').replace('Grand-Sire', 'G-Sire').replace('Grand-Dam', 'G-Dam') : roleLabel}
                 </span>
-                <span className={`${isGen3 ? 'text-[6.5px] print:text-[10px]' : 'text-[9px] print:text-[12px]'} italic text-slate-400 font-semibold mt-0.5`}>Unknown Ancestor</span>
+                <span className={`${isGen3 ? 'text-[9px] print:text-[10px]' : 'text-[11px] print:text-[12px]'} italic text-slate-500 font-bold mt-0.5`}>Unknown Ancestor</span>
               </div>
             );
           }
@@ -11665,27 +11665,27 @@ export default function App() {
               .replace('Grand-Dam', 'G-Dam');
               
             return (
-              <div className={`p-1 border border-black rounded-md flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} py-0.5 px-1.5 print:py-1.5 print:px-2.5`}>
-                <div className="leading-none">
+              <div className={`p-2 border-2 border-slate-900 rounded-lg flex flex-col justify-between text-left h-full ${gender === 'buck' ? 'bg-blue-50/40' : 'bg-pink-50/40'} py-1.5 px-2 print:py-1.5 print:px-2 shadow-sm`}>
+                <div>
                   <div className="flex justify-between items-start gap-1">
-                    <span className="text-[5.5px] print:text-[8px] uppercase font-bold text-slate-400 leading-none">{shortRole}</span>
-                    {winsText && <span className="text-[5.5px] print:text-[8px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-0.5 rounded leading-none truncate max-w-[65px] print:max-w-[100px]" title={winsText}>🏆 {winsText}</span>}
+                    <span className="text-[8px] print:text-[9.5px] uppercase font-black text-indigo-950 leading-none">{shortRole}</span>
+                    {winsText && <span className="text-[7.5px] print:text-[9px] bg-amber-200 text-amber-950 border border-amber-400 font-extrabold px-1 rounded leading-none shrink-0" title={winsText}>🏆 {winsText}</span>}
                   </div>
-                  <h5 className="font-serif font-bold text-[8.5px] print:text-[11.5px] leading-tight print:leading-[1.1] text-slate-900 uppercase mt-0.5 truncate max-w-[170px] print:max-w-[220px]">
+                  <h5 className="font-serif font-black text-[10px] print:text-[12px] leading-snug text-slate-950 uppercase mt-0.5 whitespace-normal break-words">
                     {namePrefix}{ancestor.name}
                   </h5>
                 </div>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-slate-200 mt-0.5 pt-0.5 print:mt-1 print:pt-1 text-[6.5px] print:text-[9.5px] text-slate-700 font-mono leading-tight">
-                  <div className="truncate">{ancestor.species === 'cavy' ? 'Tag:' : 'Tat:'} <strong>{ancestor.tattooNumber}</strong></div>
-                  <div className="truncate">Wt: <strong>{weightLbs} lbs</strong></div>
-                  <div className="truncate col-span-1">Var: <strong>{ancestor.variety}</strong></div>
-                  <div className="truncate col-span-1">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 border-t border-slate-300 mt-1 pt-1 text-[8.5px] print:text-[10px] text-slate-900 font-mono leading-tight">
+                  <div className="whitespace-normal">{ancestor.species === 'cavy' ? 'Tag:' : 'Tat:'} <strong className="text-black font-black">{ancestor.tattooNumber}</strong></div>
+                  <div>Wt: <strong className="text-black font-black">{weightLbs} lbs</strong></div>
+                  <div className="col-span-2 whitespace-normal">Var: <strong className="text-black font-black">{ancestor.variety}</strong></div>
+                  <div className="col-span-2 whitespace-normal">
                     {ancestor.registrationNumber ? (
-                      <span>Reg: <strong>{ancestor.registrationNumber}</strong></span>
+                      <span>Reg: <strong className="text-black font-black">{ancestor.registrationNumber}</strong></span>
                     ) : ancestor.gcNumber ? (
-                      <span className="text-yellow-700">GC: <strong>{ancestor.gcNumber}</strong></span>
+                      <span className="text-yellow-900 font-bold">GC: <strong className="text-black font-black">{ancestor.gcNumber}</strong></span>
                     ) : (
-                      <span className="opacity-40">Reg: —</span>
+                      <span className="opacity-50">Reg: —</span>
                     )}
                   </div>
                 </div>
@@ -11694,23 +11694,23 @@ export default function App() {
           }
 
           return (
-            <div className={`p-2 border border-black rounded-lg flex flex-col justify-between text-left h-full min-h-[50px] ${gender === 'buck' ? 'bg-blue-50/10' : 'bg-pink-50/10'} print:p-3`}>
+            <div className={`p-2.5 border-2 border-slate-900 rounded-xl flex flex-col justify-between text-left h-full min-h-[65px] ${gender === 'buck' ? 'bg-blue-50/40' : 'bg-pink-50/40'} print:p-3 shadow-sm`}>
               <div>
                 <div className="flex justify-between items-start gap-1 leading-none">
-                  <span className="text-[7px] print:text-[10px] uppercase font-bold text-slate-500">{roleLabel}</span>
-                  {winsText && <span className="text-[7px] print:text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 font-bold px-1 rounded truncate max-w-[100px] print:max-w-[140px]">🏆 {winsText}</span>}
+                  <span className="text-[9px] print:text-[11px] uppercase font-black text-indigo-950">{roleLabel}</span>
+                  {winsText && <span className="text-[8.5px] print:text-[10px] bg-amber-200 text-amber-950 border border-amber-400 font-extrabold px-1.5 py-0.5 rounded shrink-0">🏆 {winsText}</span>}
                 </div>
-                <h5 className="font-serif font-bold text-[10px] print:text-[14px] leading-tight text-slate-900 uppercase mt-1 truncate max-w-[170px] print:max-w-[240px]">
+                <h5 className="font-serif font-black text-[12px] print:text-[15px] leading-snug text-slate-950 uppercase mt-1 whitespace-normal break-words">
                   {namePrefix}{ancestor.name}
                 </h5>
               </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[8px] print:text-[11px] border-t border-slate-200 pt-1 print:mt-2 print:pt-2 text-slate-700 font-mono">
-                <div>Tat: <strong>{ancestor.tattooNumber}</strong></div>
-                <div>Wt: <strong>{weightLbs} lbs</strong></div>
-                <div className="col-span-2">Breed/Var: <strong>{ancestor.breed} - {ancestor.variety}</strong></div>
-                {ancestor.registrationNumber && <div className="col-span-2">Reg #: <strong>{ancestor.registrationNumber}</strong></div>}
-                {ancestor.gcNumber && <div className="col-span-2 text-[7px] print:text-[10px] text-yellow-700 font-bold">GC #: {ancestor.gcNumber}</div>}
-                {ancestor.colorCarrier && <div className="col-span-2 text-[7px] print:text-[10px] text-indigo-700 italic font-semibold truncate leading-tight">Carries: {ancestor.colorCarrier}</div>}
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[10px] print:text-[11.5px] border-t border-slate-300 pt-1 print:mt-1.5 print:pt-1.5 text-slate-900 font-mono">
+                <div>Tat: <strong className="text-black font-black">{ancestor.tattooNumber}</strong></div>
+                <div>Wt: <strong className="text-black font-black">{weightLbs} lbs</strong></div>
+                <div className="col-span-2 whitespace-normal">Breed/Var: <strong className="text-black font-black">{ancestor.breed} - {ancestor.variety}</strong></div>
+                {ancestor.registrationNumber && <div className="col-span-2">Reg #: <strong className="text-black font-black">{ancestor.registrationNumber}</strong></div>}
+                {ancestor.gcNumber && <div className="col-span-2 text-[9px] print:text-[10.5px] text-yellow-900 font-bold">GC #: <strong className="text-black font-black">{ancestor.gcNumber}</strong></div>}
+                {ancestor.colorCarrier && <div className="col-span-2 text-[9px] print:text-[10.5px] text-indigo-950 italic font-bold leading-tight">Carries: {ancestor.colorCarrier}</div>}
               </div>
             </div>
           );
