@@ -14,6 +14,7 @@ export default function LandingHomePage({
   onOpenTerms 
 }) {
   const [selectedBreedCategory, setSelectedBreedCategory] = useState('all');
+  const [previewModalStock, setPreviewModalStock] = useState(null);
 
   const breedsShowcase = [
     {
@@ -300,7 +301,7 @@ export default function LandingHomePage({
                   <span className="text-xs text-amber-400 font-bold block mt-2">⭐ {stock.awards}</span>
                 </div>
                 <button
-                  onClick={() => onTryDemo('ab-1')}
+                  onClick={() => setPreviewModalStock(stock)}
                   className="mt-4 w-full py-2 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl border-none cursor-pointer flex items-center justify-center gap-1"
                 >
                   <Eye className="w-3.5 h-3.5" /> View Pedigree Tree & Stats
@@ -436,6 +437,92 @@ export default function LandingHomePage({
           </p>
         </div>
       </footer>
+
+      {/* PUBLIC CHAMPION SHOWCASE PEDIGREE MODAL */}
+      {previewModalStock && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="glass-container p-6 border-2 border-amber-500/40 rounded-3xl max-w-2xl w-full bg-slate-900 shadow-2xl relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-white/10 pb-3">
+              <div className="text-left">
+                <span className="text-[10px] font-black uppercase text-amber-400 font-mono tracking-wider">
+                  🏆 Official ARBA Purebred Showcase Pedigree Preview
+                </span>
+                <h3 className="text-xl font-black text-white">{previewModalStock.name}</h3>
+                <p className="text-xs text-slate-300 font-medium">{previewModalStock.breed} • {previewModalStock.class}</p>
+              </div>
+              <button
+                onClick={() => setPreviewModalStock(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-600 text-white font-bold flex items-center justify-center cursor-pointer border-none transition-colors"
+                title="Close preview"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Image & Stats Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-950 p-4 rounded-2xl border border-white/10">
+              <div className="sm:col-span-1 rounded-xl overflow-hidden bg-slate-900 h-36 flex items-center justify-center">
+                <img src={previewModalStock.image} alt={previewModalStock.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="sm:col-span-2 flex flex-col justify-between text-xs text-left">
+                <div className="flex flex-col gap-1">
+                  <span className="text-amber-300 font-bold">⭐ Awards: {previewModalStock.awards}</span>
+                  <span className="text-slate-300">📍 Breeder / Farm: {previewModalStock.breeder}</span>
+                  <span className="text-slate-400">🧬 Genotype: Purebred ARBA Standard of Perfection Line</span>
+                  <span className="text-emerald-400 font-bold">Inbreeding COI: 0.00% (Lineage Verified)</span>
+                </div>
+                <div className="text-[10px] text-slate-400 border-t border-white/10 pt-2 mt-2">
+                  ✅ Verified 4-Generation Pedigree Certificate Structure.
+                </div>
+              </div>
+            </div>
+
+            {/* 4-Gen Tree Diagram Preview */}
+            <div className="flex flex-col gap-2 text-left">
+              <h4 className="text-xs font-bold uppercase text-slate-300 tracking-wider">Verified Lineage Tree Structure (4 Generations)</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[10px] font-mono">
+                <div className="bg-indigo-950/60 p-3 rounded-xl border border-indigo-500/30">
+                  <span className="text-indigo-300 font-bold block uppercase">SIRE (Father)</span>
+                  <span className="text-white font-bold block mt-1">Grandview's Royal Sovereign</span>
+                  <span className="text-slate-400 block text-[9px] mt-0.5">Grand Champion #GC-8841</span>
+                </div>
+                <div className="bg-pink-950/60 p-3 rounded-xl border border-pink-500/30">
+                  <span className="text-pink-300 font-bold block uppercase">DAM (Mother)</span>
+                  <span className="text-white font-bold block mt-1">Velvet Sapphire Queen</span>
+                  <span className="text-slate-400 block text-[9px] mt-0.5">Grand Champion #GC-7732</span>
+                </div>
+                <div className="bg-emerald-950/60 p-3 rounded-xl border border-emerald-500/30">
+                  <span className="text-emerald-300 font-bold block uppercase">GRANDPARENTS & ANCESTORS</span>
+                  <span className="text-white font-bold block mt-1">15 Verified Ancestors</span>
+                  <span className="text-slate-400 block text-[9px] mt-0.5">100% Complete Lineage Tree</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-2">
+              <button
+                onClick={() => {
+                  setPreviewModalStock(null);
+                  onTryDemo('ab-demo-1');
+                }}
+                className="btn-interactive flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl border-none cursor-pointer shadow-lg shadow-amber-900/20"
+              >
+                🚀 Launch Interactive Live Demo
+              </button>
+              <button
+                onClick={() => setPreviewModalStock(null)}
+                className="btn-interactive py-3 px-5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-white/10 cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

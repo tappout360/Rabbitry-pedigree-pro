@@ -3,17 +3,17 @@
 
 export const DEFAULT_BREEDERS = [
   {
-    id: 'ab-admin',
-    name: 'Jason Mounts',
-    username: 'jmounts',
-    email: 'jasonmounts77@yahoo.com',
-    rabbitryName: 'Grandview Rabbitry & Cavy Barn',
-    phone: '555-0199',
+    id: 'ab-demo-1',
+    name: 'Demo Breeder (Grandview Barn)',
+    username: 'demobreeder',
+    email: 'demo@rabbitrypedigree.pro',
+    rabbitryName: 'Grandview Pedigree Barn',
+    phone: '555-0100',
     role: 'owner',
-    isSuperAdmin: true,
+    isDemo: true,
     status: 'active',
     subscriptionTier: 'pro',
-    arbaMemberNumber: 'ARBA-984123',
+    arbaMemberNumber: 'ARBA-554123',
     state: 'OH',
     zip: '43015'
   },
@@ -45,7 +45,7 @@ export const DEFAULT_RABBITS = [
   // --- GENERATION 3: Great-Grandparents (8 Ancestors) ---
   {
     id: 'r-hl-gg-1',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG1',
     name: 'Camelot\'s Excalibur',
     breed: 'Holland Lop',
@@ -65,7 +65,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-2',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG2',
     name: 'Oakridge Blue Ribbon',
     breed: 'Holland Lop',
@@ -85,7 +85,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-3',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG3',
     name: 'Grandview Midnight Boss',
     breed: 'Holland Lop',
@@ -105,7 +105,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-4',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG4',
     name: 'Sapphire Velvet',
     breed: 'Holland Lop',
@@ -125,7 +125,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-5',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG5',
     name: 'Lakeside Golden Boy',
     breed: 'Holland Lop',
@@ -145,7 +145,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-6',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG6',
     name: 'Copper Duchess',
     breed: 'Holland Lop',
@@ -165,7 +165,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-7',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG7',
     name: 'Highland Chief',
     breed: 'Holland Lop',
@@ -185,7 +185,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-gg-8',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-GG8',
     name: 'Grandview Autumn Glow',
     breed: 'Holland Lop',
@@ -207,7 +207,7 @@ export const DEFAULT_RABBITS = [
   // --- GENERATION 2: Grandparents (4 Ancestors) ---
   {
     id: 'r-hl-g1-s',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-G1S',
     name: 'Oakridge Royal Crown',
     breed: 'Holland Lop',
@@ -227,7 +227,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-g1-d',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-G1D',
     name: 'Grandview Sapphire',
     breed: 'Holland Lop',
@@ -247,7 +247,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-g2-s',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-G2S',
     name: 'Lakeside Copper Chief',
     breed: 'Holland Lop',
@@ -267,7 +267,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-g2-d',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-G2D',
     name: 'Grandview Autumn Charm',
     breed: 'Holland Lop',
@@ -289,7 +289,7 @@ export const DEFAULT_RABBITS = [
   // --- GENERATION 1: Parents (2 Ancestors) ---
   {
     id: 'r-hl-1',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-SIRE1',
     name: 'Grandview\'s Thunder King',
     breed: 'Holland Lop',
@@ -312,7 +312,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-2',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-DAM1',
     name: 'Grandview\'s Velvet Queen',
     breed: 'Holland Lop',
@@ -336,7 +336,7 @@ export const DEFAULT_RABBITS = [
   // --- GENERATION 0: Target Offspring (4-Gen Star Rabbit) ---
   {
     id: 'r-hl-3',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-F1-01',
     name: 'Grandview\'s Blue Lightning',
     breed: 'Holland Lop',
@@ -358,7 +358,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-hl-4',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'HL-F1-02',
     name: 'Grandview\'s Opal Star',
     breed: 'Holland Lop',
@@ -382,7 +382,7 @@ export const DEFAULT_RABBITS = [
   // ==========================================
   {
     id: 'r-mr-1',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'MR-ROYAL',
     name: 'Clover Barn\'s Velvet Prince',
     breed: 'Mini Rex',
@@ -404,7 +404,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-mr-2',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'MR-RUBY',
     name: 'Clover Barn\'s Ruby Charm',
     breed: 'Mini Rex',
@@ -424,7 +424,7 @@ export const DEFAULT_RABBITS = [
   },
   {
     id: 'r-mr-3',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     tattooNumber: 'MR-F1-10',
     name: 'Grandview\'s Shadow Rex',
     breed: 'Mini Rex',
@@ -493,7 +493,7 @@ export const DEFAULT_RABBITS = [
 export const DEFAULT_BREEDINGS = [
   {
     id: 'b-01',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     buckId: 'r-hl-1',
     doeId: 'r-hl-2',
     breedDate: '2024-02-12',
@@ -503,7 +503,7 @@ export const DEFAULT_BREEDINGS = [
   },
   {
     id: 'b-02',
-    breederId: 'ab-admin',
+    breederId: 'ab-demo-1',
     buckId: 'r-mr-1',
     doeId: 'r-mr-2',
     breedDate: '2024-03-30',
@@ -524,37 +524,37 @@ export const DEFAULT_BREEDINGS = [
 ];
 
 export const DEFAULT_LITTERS = [
-  { id: 'l-01', breederId: 'ab-admin', breedingId: 'b-01', kindleDate: '2024-03-15', bornAlive: 5, bornDead: 0, weanedCount: 4, notes: 'Show prospect kits' },
-  { id: 'l-02', breederId: 'ab-admin', breedingId: 'b-02', kindleDate: '2024-05-01', bornAlive: 4, bornDead: 0, weanedCount: 4, notes: 'Plush coat kits' },
+  { id: 'l-01', breederId: 'ab-demo-1', breedingId: 'b-01', kindleDate: '2024-03-15', bornAlive: 5, bornDead: 0, weanedCount: 4, notes: 'Show prospect kits' },
+  { id: 'l-02', breederId: 'ab-demo-1', breedingId: 'b-02', kindleDate: '2024-05-01', bornAlive: 4, bornDead: 0, weanedCount: 4, notes: 'Plush coat kits' },
   { id: 'l-youth-1', breederId: 'ab-youth-1', breedingId: 'b-youth-1', kindleDate: '2024-06-11', bornAlive: 4, bornDead: 0, weanedCount: 4, notes: 'Alex 4-H Record Book Litter #1' }
 ];
 
 export const DEFAULT_LEDGER = [
-  { id: 'ld-1', breederId: 'ab-admin', date: '2024-06-10', type: 'income', category: 'sale', amount: 150.00, notes: 'Sold 2 show junior Holland Lops' },
-  { id: 'ld-2', breederId: 'ab-admin', date: '2024-06-14', type: 'expense', category: 'feed', amount: 65.00, notes: 'Bulk pellet feed (200 lbs)' },
-  { id: 'ld-3', breederId: 'ab-admin', date: '2024-06-25', type: 'expense', category: 'vet', amount: 35.00, notes: 'Routine health checkup & deworming' },
-  { id: 'ld-4', breederId: 'ab-admin', date: '2024-07-02', type: 'income', category: 'show', amount: 80.00, notes: 'Show premiums & BOB cash prize' }
+  { id: 'ld-1', breederId: 'ab-demo-1', date: '2024-06-10', type: 'income', category: 'sale', amount: 150.00, notes: 'Sold 2 show junior Holland Lops' },
+  { id: 'ld-2', breederId: 'ab-demo-1', date: '2024-06-14', type: 'expense', category: 'feed', amount: 65.00, notes: 'Bulk pellet feed (200 lbs)' },
+  { id: 'ld-3', breederId: 'ab-demo-1', date: '2024-06-25', type: 'expense', category: 'vet', amount: 35.00, notes: 'Routine health checkup & deworming' },
+  { id: 'ld-4', breederId: 'ab-demo-1', date: '2024-07-02', type: 'income', category: 'show', amount: 80.00, notes: 'Show premiums & BOB cash prize' }
 ];
 
 export const DEFAULT_SHOWS = [
-  { id: 'sh-1', breederId: 'ab-admin', name: 'ARBA State Convention', date: '2024-09-20', location: 'Columbus, OH', notes: 'Double All-Breeds Show' }
+  { id: 'sh-1', breederId: 'ab-demo-1', name: 'ARBA State Convention', date: '2024-09-20', location: 'Columbus, OH', notes: 'Double All-Breeds Show' }
 ];
 
 export const DEFAULT_CHORES = [
-  { id: 'c-1', breederId: 'ab-admin', title: 'Deep Clean Hutch A-Block', dueDate: '2024-09-01', status: 'pending', notes: 'Sanitize drop pans & replace bedding' },
-  { id: 'c-2', breederId: 'ab-admin', title: 'Weigh Fryer Batch #1', dueDate: '2024-09-03', status: 'pending', notes: 'Log 10-week weights' }
+  { id: 'c-1', breederId: 'ab-demo-1', title: 'Deep Clean Hutch A-Block', dueDate: '2024-09-01', status: 'pending', notes: 'Sanitize drop pans & replace bedding' },
+  { id: 'c-2', breederId: 'ab-demo-1', title: 'Weigh Fryer Batch #1', dueDate: '2024-09-03', status: 'pending', notes: 'Log 10-week weights' }
 ];
 
 export const DEFAULT_TRANSFERS = [];
 export const DEFAULT_SIGNATURES = [];
 
 export const DEFAULT_MEDICAL = [
-  { id: 'm-1', breederId: 'ab-admin', rabbitId: 'r-hl-3', date: '2024-05-01', treatment: 'Annual Deworming & Nail Trim', cost: 12.00, notes: 'Clean health check' }
+  { id: 'm-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', date: '2024-05-01', treatment: 'Annual Deworming & Nail Trim', cost: 12.00, notes: 'Clean health check' }
 ];
 
 export const DEFAULT_WEIGHTS = [
-  { id: 'w-1', breederId: 'ab-admin', rabbitId: 'r-hl-3', weightOz: 20, date: '2024-04-15', notes: '4 week check' },
-  { id: 'w-2', breederId: 'ab-admin', rabbitId: 'r-hl-3', weightOz: 38, date: '2024-05-15', notes: '8 week weaning' },
-  { id: 'w-3', breederId: 'ab-admin', rabbitId: 'r-hl-3', weightOz: 52, date: '2024-06-15', notes: 'Junior weight' },
-  { id: 'w-4', breederId: 'ab-admin', rabbitId: 'r-hl-3', weightOz: 60, date: '2024-07-15', notes: 'Senior weight' }
+  { id: 'w-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 20, date: '2024-04-15', notes: '4 week check' },
+  { id: 'w-2', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 38, date: '2024-05-15', notes: '8 week weaning' },
+  { id: 'w-3', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 52, date: '2024-06-15', notes: 'Junior weight' },
+  { id: 'w-4', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 60, date: '2024-07-15', notes: 'Senior weight' }
 ];
