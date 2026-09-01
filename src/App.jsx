@@ -2342,7 +2342,7 @@ export default function App() {
       breederId: chore.breederId
     };
     
-    // 3. Add to SQLite local sync log
+    // 3. Add to local sync log
     addSyncAction('UPDATE', 'chores', actionPayload);
     
     // 4. Update the last saved timestamp
@@ -2369,7 +2369,7 @@ export default function App() {
     } else {
       showToast(`Chore '${chore.taskName}' autosaved & synced!`, 'success');
       setTimeout(() => {
-        showToast(`PostgreSQL server updated!`, 'success');
+        showToast(`Cloud database updated!`, 'success');
       }, 700);
     }
     
@@ -5957,7 +5957,7 @@ export default function App() {
               onClick={handleSyncNow}
               disabled={isOffline}
               className={`btn-interactive text-xs py-2 px-4 bg-indigo-600 border border-indigo-400 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 animate-pulse ${isOffline ? 'opacity-50 cursor-not-allowed animate-none' : ''}`}
-              title={isOffline ? "Cannot push changes while offline!" : "Push local modifications to PostgreSQL server"}
+              title={isOffline ? "Cannot push changes while offline!" : "Push local modifications to Cloud database"}
             >
               ☁️ Push Sync ({syncQueue.length})
             </button>
@@ -6317,12 +6317,12 @@ export default function App() {
             >
               <Beef className="w-5 h-5 text-emerald-400" /> 🥩 Commercial Meat Yield
             </button>
-            {(sub.evansVerified || sub.tier === 'evans_lifetime') && (
+            {(!currentUser || !currentUser.isYouth) && (
               <button 
                 onClick={() => setActiveTab('evansMigrator')}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'evansMigrator' ? 'bg-white/10 text-white shadow-inner border border-emerald-500/30' : 'opacity-85 hover:bg-white/5'}`}
               >
-                <RefreshCw className="w-5 h-5 text-pink-400 font-bold animate-pulse" /> 📦 Evans Migrator
+                <RefreshCw className="w-5 h-5 text-pink-400 font-bold" /> 📦 Evans Migrator
               </button>
             )}
             <button 
@@ -9250,8 +9250,8 @@ export default function App() {
             <div className="glass-container p-6 flex flex-col gap-6">
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
-                  <h3 className="text-xl font-bold">SQLCipher & SQLite Sync Queue</h3>
-                  <p className="text-xs opacity-75">Simulates local on-device transaction caches ready to resolve with PostgreSQL backend.</p>
+                  <h3 className="text-xl font-bold">Offline & Cloud Sync Queue</h3>
+                  <p className="text-xs opacity-75">Tracks on-device transaction caches ready to resolve with MongoDB Cloud backend.</p>
                 </div>
 
                 <button 
@@ -9295,12 +9295,12 @@ export default function App() {
               <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs flex gap-3 items-start">
                 <AlertCircle className="w-5 h-5 text-orange-400 shrink-0" />
                 <p className="leading-relaxed text-orange-200">
-                  When the device goes offline (e.g. out in rural barns or show tables), all writes are tracked inside a SQL change-log table. Once a network ping is validated, the queue reconciles using conflict-free timestamp ordering.
+                  When the device goes offline (e.g. out in rural barns or show tables), all writes are safely cached in local storage. Once network connectivity is restored, the queue automatically reconciles with the cloud database.
                 </p>
               </div>
 
               <div className="flex flex-col gap-3">
-                <h4 className="text-sm font-bold uppercase tracking-wider opacity-70">Queued SQLite Operations</h4>
+                <h4 className="text-sm font-bold uppercase tracking-wider opacity-70">Queued Offline Operations</h4>
                 {syncQueue.map(item => (
                   <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center justify-between text-xs">
                     <div>
@@ -9312,7 +9312,7 @@ export default function App() {
                   </div>
                 ))}
                 {syncQueue.length === 0 && (
-                  <p className="text-center py-10 opacity-60">No pending SQLite logs. Local state is fully synced with the PostgreSQL server!</p>
+                  <p className="text-center py-10 opacity-60">No pending offline logs. Local state is fully synced with the Cloud database!</p>
                 )}
               </div>
             </div>
@@ -9434,19 +9434,14 @@ export default function App() {
           {/* TAB: EVANS SOFTWARE MIGRATOR */}
           {activeTab === 'evansMigrator' && (
             <ErrorBoundary>
-              <UpgradeGate 
-                featureName="evans_import"
-                fallbackMessage="Evans Software one-click import engine is a Pro plan exclusive feature. Upgrade to Pro/Commercial to migrate your local Evans database files instantly."
-              >
-                <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Evans Migrator...</div>}>
-                  <EvansMigrator
-                    allRabbits={allRabbits}
-                    setAllRabbits={setAllRabbits}
-                    currentUser={currentUser}
-                    triggerConfetti={triggerConfetti}
-                  />
-                </React.Suspense>
-              </UpgradeGate>
+              <React.Suspense fallback={<div className="glass-container p-12 text-center text-xs opacity-50 font-bold">Loading Evans Migrator...</div>}>
+                <EvansMigrator
+                  allRabbits={allRabbits}
+                  setAllRabbits={setAllRabbits}
+                  currentUser={currentUser}
+                  triggerConfetti={triggerConfetti}
+                />
+              </React.Suspense>
             </ErrorBoundary>
           )}
 
@@ -9620,7 +9615,7 @@ export default function App() {
                   <div>
                     <h4 className="text-base font-bold text-white mb-2">5. Offline Diagnostics & Sync</h4>
                     <p className="opacity-80">
-                      This application operates offline. All operations are cached and can be synced via the **SQLite Sync** queue. Perform database health audits from the **System Diagnostics** tab.
+                      This application operates completely offline. All operations are cached locally in IndexedDB and automatically synchronized via the **Cloud Sync** queue. Perform database health audits from the **System Diagnostics** tab.
                     </p>
                   </div>
                   <hr className="border-white/5" />
@@ -9663,7 +9658,7 @@ export default function App() {
                   <div>
                     <h4 className="text-base font-bold text-white mb-2">⚖️ Terms of Service & Privacy Declarations</h4>
                     <p className="opacity-80">
-                      By utilizing the WarrenWise Pro platform, you agree to safeguard client identities, log veterinary procedures accurately under FDA guidelines, and refrain from uploading human health datasets. All database information is stored locally on-device and transmitted via end-to-end encrypted SQLite databases.
+                      By utilizing the WarrenWise Pro platform, you agree to safeguard client identities, log veterinary procedures accurately under FDA guidelines, and refrain from uploading human health datasets. All database information is stored locally on-device with AES-GCM encryption and transmitted via secure cloud synchronization.
                     </p>
                   </div>
                 </div>
@@ -11896,10 +11891,18 @@ export default function App() {
                     </svg>
                   </div>
 
-                  {/* Right Column: Registry sync details */}
-                  <div className="flex flex-col justify-center items-end text-right col-span-1">
-                    <span className="text-[10px] print:text-[8px] font-bold tracking-widest text-indigo-905 uppercase font-cinzel">Rabbitry Registry Sync Certified</span>
-                    <p className="text-[8px] print:text-[7px] font-mono opacity-50 mt-1 print:mt-0.5">Hash verification token: rp-block-{rabbit.id.slice(-6)}-{Date.now().toString().slice(-4)}</p>
+                  {/* Right Column: Registry sync details & QR Code */}
+                  <div className="flex items-center justify-end gap-2.5 col-span-1 text-right">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] print:text-[8px] font-black tracking-wider text-indigo-950 uppercase font-cinzel">ARBA Lineage Verified</span>
+                      <span className="text-[8px] print:text-[7px] text-slate-500 font-sans">Scan QR to verify ancestry & owner registry</span>
+                      <p className="text-[8px] print:text-[6.5px] font-mono text-slate-400 mt-0.5">Token: rp-{rabbit.id.slice(-6)}-{rabbit.tattooNumber || 'VAL'}</p>
+                    </div>
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`https://rabbitrypedigree.pro/pedigree/${rabbit.id}?tat=${rabbit.tattooNumber}&name=${rabbit.name}`)}`} 
+                      alt="Pedigree QR Verification"
+                      className="w-12 h-12 print:w-10 print:h-10 rounded border border-slate-400 p-0.5 bg-white shrink-0"
+                    />
                   </div>
 
                 </div>

@@ -10,24 +10,24 @@ export default async function handler(req, res) {
 
   try {
     const db = await getDb();
-    const breederId = req.body?.breederId || 'ab-admin';
+    const breederId = req.body?.breederId || 'ab-demo-1';
 
     // 1. Breeders collection seed
     const breedersCol = db.collection('adminBreeders');
     const demoBreeders = [
       {
-        _localId: 'ab-admin',
-        _breederId: 'ab-admin',
-        email: 'jasonmounts77@yahoo.com',
-        name: 'Jason Mounts',
-        rabbitryName: 'Grandview Rabbitry & Cavy Barn',
-        phone: '555-0199',
+        _localId: 'ab-demo-1',
+        _breederId: 'ab-demo-1',
+        email: 'demo@rabbitrypedigree.pro',
+        name: 'Demo Breeder (Grandview Barn)',
+        rabbitryName: 'Grandview Pedigree Barn',
+        phone: '555-0100',
         role: 'owner',
-        isSuperAdmin: true,
+        isDemo: true,
         isYouth: false,
         status: 'active',
         subscriptionTier: 'pro',
-        arbaMemberNumber: 'ARBA-984123',
+        arbaMemberNumber: 'ARBA-554123',
         state: 'OH',
         zip: '43015',
         _lastModified: new Date()
