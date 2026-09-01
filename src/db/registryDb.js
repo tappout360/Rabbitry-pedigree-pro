@@ -1,8 +1,8 @@
 import Dexie from 'dexie';
 import {
   DEFAULT_BREEDERS, DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS,
-  DEFAULT_LEDGER, DEFAULT_SHOWS, DEFAULT_CHORES, DEFAULT_TRANSFERS,
-  DEFAULT_SIGNATURES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS
+  DEFAULT_LEDGER, DEFAULT_SHOWS, DEFAULT_SHOW_ENTRIES, DEFAULT_CHORES, DEFAULT_TRANSFERS,
+  DEFAULT_SIGNATURES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS, DEFAULT_YOUTH_PROGRESS
 } from './defaults';
 
 export const db = new Dexie('RabbitryPedigreeProDB');
@@ -260,7 +260,7 @@ export async function performMigrationAndLoad() {
     const litters = await migrateOrLoadTable('rp_litters', db.litters, DEFAULT_LITTERS);
     const ledger = await migrateOrLoadTable('rp_ledger', db.ledger, DEFAULT_LEDGER);
     const shows = await migrateOrLoadTable('rp_shows', db.shows, DEFAULT_SHOWS);
-    const showEntries = await migrateOrLoadTable('rp_show_entries', db.showEntries, []);
+    const showEntries = await migrateOrLoadTable('rp_show_entries', db.showEntries, DEFAULT_SHOW_ENTRIES);
     const chores = await migrateOrLoadTable('rp_chores', db.chores, DEFAULT_CHORES);
     const transfers = await migrateOrLoadTable('rp_transfers', db.transfers, DEFAULT_TRANSFERS);
     
@@ -269,7 +269,7 @@ export async function performMigrationAndLoad() {
     const weights = await migrateOrLoadTable('rp_weights', db.weights, DEFAULT_WEIGHTS);
     const syncQueue = await migrateOrLoadTable('rp_sync_queue', db.syncQueue, []);
     const approvals = await migrateOrLoadTable('rp_approvals', db.approvals, []);
-    const youthProgress = await migrateOrLoadTable('rp_youth_progress', db.youthProgress, []);
+    const youthProgress = await migrateOrLoadTable('rp_youth_progress', db.youthProgress, DEFAULT_YOUTH_PROGRESS);
     const youthQuizLogs = await migrateOrLoadTable('rp_youth_quiz_logs', db.youthQuizLogs, []);
 
     // Seed defaults for Subscriptions

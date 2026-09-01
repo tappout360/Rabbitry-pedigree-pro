@@ -661,24 +661,93 @@ export const DEFAULT_LEDGER = [
 ];
 
 export const DEFAULT_SHOWS = [
-  { id: 'sh-1', breederId: 'ab-demo-1', name: 'ARBA State Convention', date: '2024-09-20', location: 'Columbus, OH', notes: 'Double All-Breeds Show' }
+  { id: 'sh-1', breederId: 'ab-demo-1', name: '2026 ARBA National Convention', date: '2026-10-18', location: 'Louisville, KY', notes: 'National Triple All-Breeds & Specialty Show' },
+  { id: 'sh-2', breederId: 'ab-demo-1', name: 'Buckeye State Rabbit & Cavy Classic', date: '2026-09-12', location: 'Columbus, OH', notes: 'Double Show & Youth Showmanship Ring' },
+  { id: 'sh-3', breederId: 'ab-youth-1', name: 'Delaware County 4-H Fair Rabbit Show', date: '2026-09-05', location: 'Delaware, OH', notes: 'Alex Rivera 4-H Project Exhibition' }
+];
+
+export const DEFAULT_SHOW_ENTRIES = [
+  { id: 'se-1', breederId: 'ab-demo-1', showId: 'sh-1', rabbitId: 'r-hl-1', entryClass: 'Senior Buck', tattoo: 'HL-F1-01', entryFee: 9.00, status: 'entered', remarks: 'Best of Variety contender' },
+  { id: 'se-2', breederId: 'ab-demo-1', showId: 'sh-1', rabbitId: 'r-mr-1', entryClass: 'Senior Buck', tattoo: 'MR-F1-01', entryFee: 9.00, status: 'entered', remarks: 'Grand Champion Castor' },
+  { id: 'se-3', breederId: 'ab-youth-1', showId: 'sh-3', rabbitId: 'r-youth-1', entryClass: 'Junior Showmanship', tattoo: '4H-CLOVER', entryFee: 5.00, status: 'entered', remarks: 'County Fair Showmanship Ring' }
 ];
 
 export const DEFAULT_CHORES = [
-  { id: 'c-1', breederId: 'ab-demo-1', title: 'Deep Clean Hutch A-Block', dueDate: '2024-09-01', status: 'pending', notes: 'Sanitize drop pans & replace bedding' },
-  { id: 'c-2', breederId: 'ab-demo-1', title: 'Weigh Fryer Batch #1', dueDate: '2024-09-03', status: 'pending', notes: 'Log 10-week weights' }
+  { id: 'c-1', breederId: 'ab-demo-1', title: 'Morning Feed & Timothy Hay Replenish', dueDate: '2026-09-01', status: 'completed', notes: 'Fresh pellets & unlimited orchard grass hay in all racks' },
+  { id: 'c-2', breederId: 'ab-demo-1', title: 'Nesting Box Check — Dutch & Holland Doe Pens', dueDate: '2026-09-01', status: 'pending', notes: 'Verify nest fur & warmth for day 28 check' },
+  { id: 'c-3', breederId: 'ab-demo-1', title: 'Clean Drop Pans & Sanitize A-Block', dueDate: '2026-09-03', status: 'pending', notes: 'Replace pine pellets in drop trays' },
+  { id: 'c-4', breederId: 'ab-youth-1', title: 'Daily 4-H Showmanship Handling Practice', dueDate: '2026-09-01', status: 'completed', notes: '15 min table pose & ear/teeth check with Lucky Clover' }
 ];
 
-export const DEFAULT_TRANSFERS = [];
-export const DEFAULT_SIGNATURES = [];
+export const DEFAULT_TRANSFERS = [
+  {
+    id: 'tx-1001',
+    breederId: 'ab-demo-1',
+    rabbitId: 'r-hl-1',
+    rabbitName: 'Grandview\'s Blue Lightning',
+    rabbitTattoo: 'HL-F1-01',
+    rabbitBreed: 'Holland Lop',
+    rabbitVariety: 'Solid Blue',
+    rabbitSex: 'buck',
+    rabbitDob: '2024-03-15',
+    rabbitWeightOz: 60,
+    rabbitReg: 'REG-HL-1001',
+    rabbitGc: 'GC-10088',
+    buyerName: 'Emily Clark',
+    buyerEmail: 'emily.clark@homestead.org',
+    buyerPhone: '555-0188',
+    price: 150.00,
+    type: 'sale',
+    date: '2026-08-20',
+    certificateId: 'TX-8842-1092',
+    hash: 'e89a74cf09b211d088a291f03348120b'
+  }
+];
+
+export const DEFAULT_SIGNATURES = [
+  {
+    id: 'sig-1001',
+    transferId: 'tx-1001',
+    sellerSignature: 'Jason Mounts',
+    buyerSignature: 'Emily Clark',
+    signedAt: '2026-08-20T14:30:00Z',
+    sellerSignatureType: 'typed',
+    buyerSignatureType: 'typed'
+  }
+];
 
 export const DEFAULT_MEDICAL = [
-  { id: 'm-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', date: '2024-05-01', treatment: 'Annual Deworming & Nail Trim', cost: 12.00, notes: 'Clean health check' }
+  { id: 'm-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', date: '2026-08-01', treatment: 'Annual Preventative Health & Nail Trim', cost: 15.00, notes: 'Clear eyes, clean ears, healthy weight' },
+  { id: 'm-2', breederId: 'ab-demo-1', rabbitId: 'r-mr-1', date: '2026-07-15', treatment: 'Probiotic Gut Health Booster', cost: 8.00, notes: 'Post-show digestive support' },
+  { id: 'm-3', breederId: 'ab-youth-1', rabbitId: 'r-youth-1', date: '2026-08-10', treatment: 'Pre-Fair Showmanship Vet Check', cost: 10.00, notes: 'Perfect 4-H health certificate clearance' }
 ];
 
 export const DEFAULT_WEIGHTS = [
-  { id: 'w-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 20, date: '2024-04-15', notes: '4 week check' },
-  { id: 'w-2', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 38, date: '2024-05-15', notes: '8 week weaning' },
-  { id: 'w-3', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 52, date: '2024-06-15', notes: 'Junior weight' },
-  { id: 'w-4', breederId: 'ab-demo-1', rabbitId: 'r-hl-3', weightOz: 60, date: '2024-07-15', notes: 'Senior weight' }
+  { id: 'w-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', weightOz: 22, date: '2024-04-15', notes: '4 week check' },
+  { id: 'w-2', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', weightOz: 40, date: '2024-05-15', notes: '8 week weaning' },
+  { id: 'w-3', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', weightOz: 54, date: '2024-06-15', notes: 'Junior show weight' },
+  { id: 'w-4', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', weightOz: 60, date: '2024-07-15', notes: 'Senior standard weight' },
+  { id: 'w-5', breederId: 'ab-demo-1', rabbitId: 'r-mr-1', weightOz: 20, date: '2024-05-01', notes: '4 week kit check' },
+  { id: 'w-6', breederId: 'ab-demo-1', rabbitId: 'r-mr-1', weightOz: 52, date: '2024-07-01', notes: 'Junior prime weight' },
+  { id: 'w-7', breederId: 'ab-youth-1', rabbitId: 'r-youth-1', weightOz: 34, date: '2026-08-01', notes: 'Pre-fair official weigh-in' }
+];
+
+export const DEFAULT_YOUTH_PROGRESS = [
+  {
+    id: 'yp-alex-1',
+    breederId: 'ab-youth-1',
+    memberName: 'Alex Rivera',
+    ageGroup: 'Intermediate (Ages 12-14)',
+    currentLevel: 'Intermediate',
+    xp: 680,
+    streak: 8,
+    lastActiveDate: '2026-08-31',
+    coachId: 'coach-warren',
+    badges: [
+      { id: 'b-showmanship', name: 'Showmanship Master', icon: '🏆', unlockedAt: '2026-07-20' },
+      { id: 'b-breeds', name: 'ARBA Breed Identifier', icon: '🐇', unlockedAt: '2026-08-02' },
+      { id: 'b-genetics', name: 'Locus Genetics Scholar', icon: '🧬', unlockedAt: '2026-08-15' },
+      { id: 'b-chores', name: 'Barn Care Champion', icon: '🌾', unlockedAt: '2026-08-28' }
+    ]
+  }
 ];
