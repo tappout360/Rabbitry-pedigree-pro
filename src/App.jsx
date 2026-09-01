@@ -9376,6 +9376,22 @@ export default function App() {
             </div>
           )}
 
+          {/* TAB: MEDIA GALLERY & ALBUMS */}
+          {activeTab === 'media' && (
+            <ErrorBoundary>
+              <PhotoGallery
+                rabbits={rabbits}
+                allRabbits={allRabbits}
+                onUpdateRabbit={(updatedRabbit) => {
+                  setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
+                  db.rabbits.put(updatedRabbit).catch(err => console.error("Error updating rabbit photo:", err));
+                  if (showToast) showToast(`Gallery updated for ${updatedRabbit.name}!`, "success");
+                }}
+                showToast={showToast}
+              />
+            </ErrorBoundary>
+          )}
+
           {/* TAB: 4-H KIDS LEARNING ACADEMY */}
           {activeTab === 'academy' && (
             <ErrorBoundary>

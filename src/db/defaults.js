@@ -60,7 +60,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-7011',
     location: 'Retired Sire Pen',
     notes: 'Foundational sire for crown shape.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'l-gg1', date: '2022-04-10', showName: 'National Convention', judge: 'Dr. John Miller', award: 'Best of Breed (BOB)', classSize: 60 }]
   },
   {
@@ -80,7 +81,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: 'Retired Doe Pen',
     notes: 'Dense blue coat & wide ears.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   },
   {
@@ -100,7 +102,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-8001',
     location: 'Hutch A-10',
     notes: '3-Leg winner.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'l-gg3', date: '2022-06-15', showName: 'Buckeye Regional', judge: 'Tom Evans', award: 'Best Group', classSize: 32 }]
   },
   {
@@ -120,7 +123,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: 'Hutch A-11',
     notes: 'Smooth roll-back fur.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   },
   {
@@ -140,7 +144,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-7600',
     location: 'Hutch A-12',
     notes: 'Thick bone structure.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'l-gg5', date: '2022-03-20', showName: 'Spring Specialty', judge: 'Alan Stevens', award: 'Best Variety (BOV)', classSize: 40 }]
   },
   {
@@ -160,7 +165,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: 'Hutch A-13',
     notes: 'Excellent dam line.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   },
   {
@@ -180,7 +186,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-8100',
     location: 'Hutch A-14',
     notes: 'Grand Champion winner.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'l-gg7', date: '2022-05-12', showName: 'Tri-State Classic', judge: 'Robert Vance', award: 'Best Opposite Sex (BOS)', classSize: 45 }]
   },
   {
@@ -200,7 +207,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-8500',
     location: 'Hutch A-15',
     notes: 'Vibrant color saturation.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   },
 
@@ -222,7 +230,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-9102',
     location: 'Hutch A-05',
     notes: 'Paternal Grandfather. Supreme crown curvature & mass.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [{ id: 'l-g1s', date: '2023-04-12', showName: 'ARBA National Convention', judge: 'Alan Stevens', award: 'Best of Breed (BOB)', classSize: 75 }]
   },
   {
@@ -242,7 +251,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-8811',
     location: 'Hutch A-06',
     notes: 'Paternal Grandmother. Dense plush undercoat.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   },
   {
@@ -259,11 +269,12 @@ export const DEFAULT_RABBITS = [
     species: 'rabbit',
     sireId: 'r-hl-gg-5', damId: 'r-hl-gg-6',
     registrationNumber: 'REG-HL-771',
-    gcNumber: '',
+    gcNumber: 'GC-8899',
     location: 'Hutch A-07',
-    notes: 'Maternal Grandfather. Compact 4-class body ratio.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
-    legs: []
+    notes: 'Maternal Grandfather. Robust bone and bold eye placement.',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
+    legs: [{ id: 'l-g2s', date: '2023-05-18', showName: 'Spring Buckeye Show', judge: 'Mary Vance', award: 'Best Opposite (BOS)', classSize: 50 }]
   },
   {
     id: 'r-hl-g2-d',
@@ -273,17 +284,18 @@ export const DEFAULT_RABBITS = [
     breed: 'Holland Lop',
     variety: 'Broken Tortoise',
     sex: 'doe',
-    dob: '2022-05-18',
+    dob: '2022-03-01',
     weightOz: 63,
     status: 'active',
     species: 'rabbit',
     sireId: 'r-hl-gg-7', damId: 'r-hl-gg-8',
     registrationNumber: 'REG-HL-820',
-    gcNumber: 'GC-9304',
+    gcNumber: 'GC-9201',
     location: 'Hutch A-08',
-    notes: 'Maternal Grandmother. Excellent litter size & milk production.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
-    legs: [{ id: 'l-g2d', date: '2023-06-10', showName: 'Buckeye Regional', judge: 'Sarah Jenkins', award: 'Best Opposite Sex (BOS)', classSize: 40 }]
+    notes: 'Maternal Grandmother. Wide muzzle & clear markings.',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
+    legs: []
   },
 
   // --- GENERATION 1: Parents (2 Ancestors) ---
@@ -304,7 +316,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-9942',
     location: 'Hutch A-01',
     notes: 'Father (Sire). Grand Champion sire. Supreme crown & thick bone.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [
       { id: 'leg-1', date: '2024-05-10', showName: 'Ohio State ARBA Convention', judge: 'Dr. John Miller', award: 'Best of Breed (BOB)', classSize: 42 },
       { id: 'leg-2', date: '2024-09-15', showName: 'Midwest Regional Show', judge: 'Sarah Jenkins', award: 'Best in Show (BIS)', classSize: 110 }
@@ -327,7 +340,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-9943',
     location: 'Hutch A-02',
     notes: 'Mother (Dam). Proven dam with excellent maternal traits.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: [
       { id: 'leg-3', date: '2024-06-20', showName: 'Buckeye Classic', judge: 'Tom Evans', award: 'Best Opposite Sex (BOS)', classSize: 35 }
     ]
@@ -351,7 +365,15 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-10088',
     location: 'Hutch A-03',
     notes: 'Star 4-Gen Pedigree Buck! Ideal 4-class crown and rollback fur.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: [
+      '/assets/holland_lop.png',
+      'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=800&q=80'
+    ],
+    timeline: [
+      { id: 'tm-hl3-1', date: '2024-04-15', title: '4-Week Growth Check', weightOz: 20, notes: 'Healthy weaning weight and compact bone.', photo: '/assets/holland_lop.png' },
+      { id: 'tm-hl3-2', date: '2024-07-15', title: 'Senior Evaluation', weightOz: 60, notes: 'Grand Champion crown curvature achieved.', photo: '/assets/holland_lop.png' }
+    ],
     legs: [
       { id: 'leg-hl3-1', date: '2024-08-10', showName: 'Summer ARBA Showcase', judge: 'Alan Stevens', award: 'Best Junior Buck (BJB)', classSize: 28 }
     ]
@@ -373,7 +395,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: 'Hutch A-04',
     notes: 'Sister to Blue Lightning. Dense coat & compact body.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   },
 
@@ -397,7 +420,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-8812',
     location: 'Hutch B-01',
     notes: 'Plush velvet fur depth (5/8 inch). Ideal head & ear set.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/mini_rex.png',
+    photos: ['/assets/mini_rex.png'],
     legs: [
       { id: 'leg-4', date: '2024-04-12', showName: 'National Mini Rex Show', judge: 'Alan Stevens', award: 'Best Variety (BOV)', classSize: 64 }
     ]
@@ -419,7 +443,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: 'Hutch B-02',
     notes: 'Excellent body density & fur texture.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/mini_rex.png',
+    photos: ['/assets/mini_rex.png'],
     legs: []
   },
   {
@@ -439,8 +464,105 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: 'Hutch B-03',
     notes: 'Jet black plush fur.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/mini_rex.png',
+    photos: ['/assets/mini_rex.png'],
     legs: []
+  },
+
+  // ==========================================
+  // COMMERCIAL & FANCY CHAMPION SHOW STOCK
+  // ==========================================
+  {
+    id: 'r-nzw-1',
+    breederId: 'ab-demo-1',
+    tattooNumber: 'NZ-SNOW1',
+    name: 'Grandview\'s Snow Monarch',
+    breed: 'New Zealand',
+    variety: 'White',
+    sex: 'buck',
+    dob: '2023-06-10',
+    weightOz: 178,
+    status: 'active',
+    species: 'rabbit',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-NZ-12345',
+    gcNumber: 'GC-9901',
+    location: 'Barn Row C-01',
+    notes: 'National Best in Show (BIS) Commercial Champion Senior Buck. 11 lbs 2 oz.',
+    photo: '/assets/new_zealand_white.png',
+    photos: ['/assets/new_zealand_white.png'],
+    legs: [
+      { id: 'leg-nzw-1', date: '2024-06-15', showName: 'National ARBA Show', judge: 'William Clark', award: 'Best in Show (BIS)', classSize: 140 }
+    ]
+  },
+  {
+    id: 'r-nzr-1',
+    breederId: 'ab-demo-1',
+    tattooNumber: 'NZ-RED01',
+    name: 'Copper Ridge Champion',
+    breed: 'New Zealand',
+    variety: 'Red',
+    sex: 'doe',
+    dob: '2023-07-20',
+    weightOz: 182,
+    status: 'active',
+    species: 'rabbit',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-NZ-8821',
+    gcNumber: 'GC-9924',
+    location: 'Barn Row C-02',
+    notes: 'Best of Breed (BOB) 4 Grand Legs Senior Doe.',
+    photo: '/assets/new_zealand_red.png',
+    photos: ['/assets/new_zealand_red.png'],
+    legs: [
+      { id: 'leg-nzr-1', date: '2024-07-10', showName: 'Midwest Classic', judge: 'Alan Stevens', award: 'Best of Breed (BOB)', classSize: 85 }
+    ]
+  },
+  {
+    id: 'r-cal-1',
+    breederId: 'ab-demo-1',
+    tattooNumber: 'CAL-SMUDGE',
+    name: 'Valley Mark Smudge',
+    breed: 'Californian',
+    variety: 'Standard Smudge',
+    sex: 'buck',
+    dob: '2023-08-15',
+    weightOz: 168,
+    status: 'active',
+    species: 'rabbit',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-CAL-4411',
+    gcNumber: 'GC-9810',
+    location: 'Barn Row C-03',
+    notes: 'Best Commercial Meat Type National Winner.',
+    photo: '/assets/californian_rabbit.png',
+    photos: ['/assets/californian_rabbit.png'],
+    legs: [
+      { id: 'leg-cal-1', date: '2024-05-22', showName: 'State Commercial Specialty', judge: 'Dr. John Miller', award: 'Best Commercial Type', classSize: 90 }
+    ]
+  },
+  {
+    id: 'r-nd-1',
+    breederId: 'ab-demo-1',
+    tattooNumber: 'ND-KNIGHT',
+    name: 'Midnight Knight',
+    breed: 'Netherland Dwarf',
+    variety: 'Black',
+    sex: 'buck',
+    dob: '2023-09-01',
+    weightOz: 36,
+    status: 'active',
+    species: 'rabbit',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-ND-9900',
+    gcNumber: 'GC-9712',
+    location: 'Hutch D-01',
+    notes: 'Tiny erect show ears & compact body. Best of Breed Gotham Classic.',
+    photo: '/assets/netherland_dwarf.png',
+    photos: ['/assets/netherland_dwarf.png'],
+    legs: [
+      { id: 'leg-nd-1', date: '2024-06-05', showName: 'Gotham Classic', judge: 'Sarah Connors', award: 'Best of Breed (BOB)', classSize: 52 }
+    ]
   },
 
   // ==========================================
@@ -463,7 +585,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: 'GC-Y-901',
     location: '4-H Hutch Pen 1',
     notes: '4-H County Fair Grand Champion Showmanship Rabbit!',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/netherland_dwarf.png',
+    photos: ['/assets/netherland_dwarf.png'],
     legs: [
       { id: 'l-y1', date: '2024-07-20', showName: 'Delaware County 4-H Fair', judge: 'Mary Henderson', award: 'Grand Champion Showmanship', classSize: 45 }
     ]
@@ -485,7 +608,8 @@ export const DEFAULT_RABBITS = [
     gcNumber: '',
     location: '4-H Hutch Pen 2',
     notes: 'Alex\'s 4-H breeding project buck.',
-    photo: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&q=80',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
     legs: []
   }
 ];
