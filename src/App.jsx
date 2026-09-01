@@ -46,6 +46,8 @@ import BarnMode from './components/barn/BarnMode';
 import TimelineGallery from './components/gallery/TimelineGallery';
 import PhotoGallery from './components/gallery/PhotoGallery';
 import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
+import SalesAndTransfers from './components/sales/SalesAndTransfers';
+import PrintableBillOfSaleModal from './components/sales/PrintableBillOfSaleModal';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
 import { uuidv7 } from './db/uuid';
@@ -1407,6 +1409,7 @@ export default function App() {
   const [sellerSignature, setSellerSignature] = useState('');
   const [buyerSignature, setBuyerSignature] = useState('');
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [showBillOfSaleModal, setShowBillOfSaleModal] = useState(null);
 
   // Offline Sync State
   const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
@@ -8221,17 +8224,32 @@ export default function App() {
                           📋 Profile Details
                         </h3>
                         {!editProfileMode && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPrepRabbitId(selectedRabbit.id);
-                              setActiveTab('registrarPrep');
-                              setSelectedRabbit(null); // Close details overlay
-                            }}
-                            className="btn-interactive text-[10px] py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold border border-white/10 rounded-lg flex items-center gap-1 cursor-pointer"
-                          >
-                            📜 Registrar Prep Packet
-                          </button>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowBillOfSaleModal({
+                                  rabbit: selectedRabbit,
+                                  transfer: null
+                                });
+                              }}
+                              className="btn-interactive text-[10px] py-1 px-2.5 bg-emerald-700/60 hover:bg-emerald-600 text-white font-bold border border-emerald-500/30 rounded-lg flex items-center gap-1 cursor-pointer"
+                              title="Print Bill of Sale, Health Guarantee & Care Guide"
+                            >
+                              📜 Bill of Sale & Care Guide
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPrepRabbitId(selectedRabbit.id);
+                                setActiveTab('registrarPrep');
+                                setSelectedRabbit(null); // Close details overlay
+                              }}
+                              className="btn-interactive text-[10px] py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold border border-white/10 rounded-lg flex items-center gap-1 cursor-pointer"
+                            >
+                              📜 Registrar Prep Packet
+                            </button>
+                          </div>
                         )}
                       </div>
                       {!editProfileMode ? (
@@ -8779,6 +8797,36 @@ export default function App() {
                 setSearchQuery={setSearchQuery}
               />
             </React.Suspense>
+          )}
+
+          {/* TAB: SALES, TRANSFERS & HEALTH WARRANTIES */}
+          {activeTab === 'sales' && (
+            <ErrorBoundary>
+              <SalesAndTransfers
+                transfers={transfers}
+                rabbits={rabbits}
+                ledger={ledger}
+                activeBreeder={adminBreeders.find(b => b.id === (selectedBreederContext === 'all' ? (currentUser?.id || 'ab-2') : selectedBreederContext)) || adminBreeders[0]}
+                currentUser={currentUser}
+                onStartTransfer={() => {
+                  if (rabbits.length > 0) {
+                    setShowTransferWizard(rabbits[0]);
+                    setTransferWizardStep(1);
+                  } else {
+                    alert('Please add or select a rabbit first before starting a transfer.');
+                  }
+                }}
+                onDeleteTransfer={(id) => {
+                  if (window.confirm('Delete this sales transfer record?')) {
+                    setAllTransfers(prev => prev.filter(t => t.id !== id));
+                    if (isOffline) {
+                      addSyncAction('DELETE', 'transfers', { id });
+                    }
+                  }
+                }}
+                showToast={showToast}
+              />
+            </ErrorBoundary>
           )}
 
           {/* TAB: CAGE & BARN MAP */}
@@ -10923,8 +10971,38 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => {
+                          setShowBillOfSaleModal({
+                            rabbit,
+                            transfer: {
+                              rabbitId: rabbit.id,
+                              rabbitName: rabbit.name,
+                              rabbitTattoo: rabbit.tattooNumber,
+                              rabbitBreed: rabbit.breed,
+                              rabbitVariety: rabbit.variety,
+                              rabbitSex: rabbit.sex,
+                              rabbitDob: rabbit.dob,
+                              rabbitWeightOz: rabbit.weightOz,
+                              rabbitReg: rabbit.registrationNumber,
+                              rabbitGc: rabbit.gcNumber,
+                              buyerName: buyerDetails.name,
+                              buyerEmail: buyerDetails.email,
+                              buyerPhone: buyerDetails.phone,
+                              price: parseFloat(buyerDetails.price) || 0,
+                              type: buyerDetails.type,
+                              date: new Date().toISOString().split('T')[0]
+                            }
+                          });
                           setShowTransferWizard(null);
-                          alert(`Printing pedigree packet for ${rabbit.name}...`);
+                        }}
+                        className="btn-interactive py-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl border-none shadow-md shadow-emerald-950/40 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        📜 Print Bill of Sale, Warranty & Care Guide
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTransferWizard(null);
+                          setShowPrintPedigreeModal(rabbit);
                         }}
                         className="btn-interactive py-2 text-xs bg-indigo-600 text-white font-bold"
                       >
@@ -10935,7 +11013,7 @@ export default function App() {
                         onClick={() => {
                           const mockUrl = `${window.location.origin}/transfer-verification/${rabbit.id}?cert=TX-SIMULATED`;
                           navigator.clipboard.writeText(mockUrl);
-                          alert("Shareable digital verification link copied to clipboard!");
+                          if (showToast) showToast("Shareable digital verification link copied to clipboard!", "info");
                         }}
                         className="btn-interactive py-2 text-xs bg-slate-800 text-slate-200"
                       >
@@ -10947,9 +11025,9 @@ export default function App() {
                           setShowTransferWizard(null);
                           setActiveTab('sales');
                         }}
-                        className="btn-interactive py-2 text-xs bg-emerald-650 text-white font-bold border-none"
+                        className="btn-interactive py-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold border border-white/10"
                       >
-                        Go to Sales Logs
+                        Go to Sales & Warranty Logs
                       </button>
                     </div>
                   </div>
@@ -11117,6 +11195,16 @@ export default function App() {
           </div>
         );
       })()}
+
+      {/* 5. Printable Bill of Sale & Care Packet Modal */}
+      {showBillOfSaleModal && (
+        <PrintableBillOfSaleModal
+          transfer={showBillOfSaleModal.transfer}
+          rabbit={showBillOfSaleModal.rabbit}
+          breeder={adminBreeders.find(b => b.id === (selectedBreederContext === 'all' ? (currentUser?.id || 'ab-2') : selectedBreederContext)) || adminBreeders[0] || currentUser}
+          onClose={() => setShowBillOfSaleModal(null)}
+        />
+      )}
 
       {/* Pedigree Node Editor Modal */}
       {pedigreeEditNode && (() => {
