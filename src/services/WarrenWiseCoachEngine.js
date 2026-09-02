@@ -189,8 +189,7 @@ export async function getWarrenWiseCoachAdvice(query, division = 'junior') {
     // Naive keyword matching for the demo
     const queryWords = q.split(' ').filter(w => w.length > 3);
     for (const item of approved) {
-      if (item.isFlagged) continue; // NEVER surface flagged medical content, even if accidentally approved
-      
+      // If Root (Jason) approved this item, we trust it and serve it regardless of its initial AI flag status.
       const itemText = item.content.toLowerCase();
       if (queryWords.some(w => itemText.includes(w))) {
         communityTips.push(item.content);
@@ -258,10 +257,10 @@ export async function getWarrenWiseCoachAdvice(query, division = 'junior') {
   }
 
   // 5. Append Community Knowledge
-  if (communityTips.length > 0 && !medicalFlag) {
+  if (communityTips.length > 0) {
     if (!response.tips) response.tips = [];
     response.tips.push('---');
-    response.tips.push('**According to verified community knowledge:**');
+    response.tips.push('**According to Root-Verified Community Knowledge:**');
     communityTips.forEach(tip => response.tips.push(`• ${tip}`));
   }
 
