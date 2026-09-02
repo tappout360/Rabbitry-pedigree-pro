@@ -8991,7 +8991,7 @@ export default function App() {
           {activeTab === 'sales' && (
             <ErrorBoundary>
               <SalesAndTransfers
-                transfers={transfers}
+                transfers={allTransfers}
                 rabbits={rabbits}
                 ledger={ledger}
                 activeBreeder={adminBreeders.find(b => b.id === (selectedBreederContext === 'all' ? (currentUser?.id || 'ab-2') : selectedBreederContext)) || adminBreeders[0]}
