@@ -4,7 +4,7 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe, Beef, MessageSquare
+  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe, Beef, MessageSquare, Mic
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
