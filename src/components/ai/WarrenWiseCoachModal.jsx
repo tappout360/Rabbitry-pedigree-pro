@@ -9,20 +9,56 @@ import {
   ARBA_BREED_BODY_TYPES,
   getWarrenWiseCoachAdvice 
 } from '../../services/WarrenWiseCoachEngine';
+import { db } from '../../db/registryDb';
+import { uuidv7 } from '../../db/uuid';
 
-export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junior' }) {
+export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junior', currentUser }) {
   const [selectedDivision, setSelectedDivision] = useState(defaultDivision);
   const [activeTab, setActiveTab] = useState('showmanship');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [userQuery, setUserQuery] = useState('');
   const [coachResponse, setCoachResponse] = useState(null);
 
+  const [submissionContent, setSubmissionContent] = useState('');
+  const [submissionCategory, setSubmissionCategory] = useState('General');
+  const [submissionSource, setSubmissionSource] = useState('');
+  const [submitStatus, setSubmitStatus] = useState('');
+
   const currentStep = ARBA_SHOWMANSHIP_ROUTINE[currentStepIndex];
 
-  const handleSearchAdvice = (e) => {
+  const handleSubmitKnowledge = async (e) => {
+    e.preventDefault();
+    if (!submissionContent.trim()) return;
+
+    // Animal Safety Keywords that trigger automatic flagging
+    const medicalKeywords = ['dose', 'medication', 'ivermectin', 'penicillin', 'antibiotic', 'symptom', 'disease', 'treat', 'remedy', 'injection', 'drops', 'syrup', 'vet'];
+    const lowerContent = submissionContent.toLowerCase();
+    const isFlagged = medicalKeywords.some(word => lowerContent.includes(word));
+
+    try {
+      await db.communityKnowledge.add({
+        id: uuidv7(),
+        authorId: currentUser?.email || currentUser?.name || 'Anonymous',
+        category: submissionCategory,
+        content: submissionContent,
+        sourceLink: submissionSource,
+        status: 'pending',
+        isFlagged,
+        timestamp: new Date().toISOString()
+      });
+      setSubmitStatus(isFlagged ? 'Submitted! Flagged for advanced medical review.' : 'Submitted! Pending community review.');
+      setSubmissionContent('');
+      setSubmissionSource('');
+    } catch(err) {
+      console.error(err);
+      setSubmitStatus('Failed to submit. Try again later.');
+    }
+  };
+
+  const handleSearchAdvice = async (e) => {
     e.preventDefault();
     if (!userQuery.trim()) return;
-    const advice = getWarrenWiseCoachAdvice(userQuery, selectedDivision);
+    const advice = await getWarrenWiseCoachAdvice(userQuery, selectedDivision);
     setCoachResponse(advice);
   };
 
@@ -79,10 +115,11 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
         {/* NAVIGATION TABS */}
         <div className="flex border-b border-white/10 bg-slate-900 px-6 py-2 gap-2 overflow-x-auto">
           {[
-            { id: 'showmanship', icon: '🏆', label: '12-Step Showmanship Routine' },
-            { id: 'bodytypes', icon: '📜', label: 'Body Types & Breed Standards' },
-            { id: 'health', icon: '🩺', label: 'Faults & Disqualifications' },
-            { id: 'ask', icon: '💬', label: 'Ask Coach WarrenWise' }
+            { id: 'showmanship', icon: '🐇', label: '12-Step Showmanship Routine' },
+            { id: 'bodytypes', icon: '📏', label: 'Body Types & Breed Standards' },
+            { id: 'health', icon: '🏥', label: 'Faults & Disqualifications' },
+            { id: 'ask', icon: '💡', label: 'Ask Coach WarrenWise' },
+            { id: 'submit', icon: '🌍', label: 'Submit Community Tip' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -94,7 +131,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
               }`}
             >
               <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              {tab.label}
             </button>
           ))}
         </div>
@@ -274,6 +311,74 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 5: SUBMIT KNOWLEDGE */}
+          {activeTab === 'submit' && (
+            <div className="flex flex-col gap-6">
+              <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl">
+                <h4 className="text-sm font-black text-emerald-300 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5" /> Help Train WarrenWise!
+                </h4>
+                <p className="text-xs text-emerald-200 mt-2 leading-relaxed">
+                  Submit helpful breeding tips, show advice, or general husbandry knowledge. All submissions undergo strict Root AI and human moderation to ensure animal safety.
+                  <strong> Note: Do not submit medication dosages or veterinary diagnoses. Medical advice will be heavily restricted.</strong>
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmitKnowledge} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300">Category</label>
+                  <select 
+                    value={submissionCategory}
+                    onChange={(e) => setSubmissionCategory(e.target.value)}
+                    className="bg-slate-900 border border-white/10 p-3 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option>General Care</option>
+                    <option>Showmanship</option>
+                    <option>Breeding</option>
+                    <option>Nutrition</option>
+                    <option>Health Observation</option>
+                  </select>
+                </div>
+                
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300">Your Tip or Knowledge</label>
+                  <textarea
+                    rows={4}
+                    value={submissionContent}
+                    onChange={(e) => setSubmissionContent(e.target.value)}
+                    placeholder="e.g. Always check the water bottles twice a day in freezing temperatures..."
+                    className="bg-slate-900 border border-white/10 p-3 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-300">Source / Reference (Optional)</label>
+                  <input
+                    type="url"
+                    value={submissionSource}
+                    onChange={(e) => setSubmissionSource(e.target.value)}
+                    placeholder="Link to ARBA standard or university extension article"
+                    className="bg-slate-900 border border-white/10 p-3 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-interactive py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl border-none cursor-pointer mt-2"
+                >
+                  Submit for Verification
+                </button>
+
+                {submitStatus && (
+                  <p className={`text-xs font-bold p-3 rounded-xl mt-2 text-center ${submitStatus.includes('Failed') ? 'bg-red-950/40 text-red-400' : 'bg-emerald-950/40 text-emerald-400'}`}>
+                    {submitStatus}
+                  </p>
+                )}
+              </form>
             </div>
           )}
 

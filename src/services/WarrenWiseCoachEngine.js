@@ -164,38 +164,106 @@ export const ARBA_BREED_BODY_TYPES = {
   }
 };
 
-export function getWarrenWiseCoachAdvice(query, division = 'junior') {
+import { db } from '../db/registryDb';
+import { uuidv7 } from '../db/uuid';
+
+export async function getWarrenWiseCoachAdvice(query, division = 'junior') {
   const q = query.toLowerCase();
   const divInfo = AGE_DIVISIONS[division] || AGE_DIVISIONS.junior;
 
-  if (q.includes('showmanship') || q.includes('step') || q.includes('routine') || q.includes('pose')) {
-    return {
+  let knowledgeTiersUsed = ['Official Knowledge'];
+  let medicalFlag = false;
+
+  // 1. Strict Medical Rule Check
+  const medicalKeywords = ['sick', 'ill', 'vet', 'treat', 'medication', 'disease', 'sore', 'abscess', 'snuffles', 'pasteurella', 'ivermectin', 'dosage'];
+  if (medicalKeywords.some(word => q.includes(word))) {
+    medicalFlag = true;
+  }
+
+  // 2. Fetch Approved Community Knowledge
+  let communityTips = [];
+  try {
+    const allCommunity = await db.communityKnowledge.toArray();
+    const approved = allCommunity.filter(k => k.status === 'approved');
+    
+    // Naive keyword matching for the demo
+    const queryWords = q.split(' ').filter(w => w.length > 3);
+    for (const item of approved) {
+      if (item.isFlagged) continue; // NEVER surface flagged medical content, even if accidentally approved
+      
+      const itemText = item.content.toLowerCase();
+      if (queryWords.some(w => itemText.includes(w))) {
+        communityTips.push(item.content);
+      }
+    }
+  } catch(e) {
+    console.error('Failed to fetch community knowledge', e);
+  }
+
+  if (communityTips.length > 0) {
+    knowledgeTiersUsed.push('Verified Community Knowledge');
+  }
+
+  // 3. Log Audit Record
+  try {
+    await db.aiAuditLog.add({
+      id: uuidv7(),
+      query: q,
+      timestamp: new Date().toISOString(),
+      knowledgeTiersUsed
+    });
+  } catch(e) {}
+
+  // 4. Construct Response
+  let response = null;
+
+  if (medicalFlag) {
+    response = {
+      topic: 'Veterinary & Health Advisory',
+      summary: 'You have asked a health or medical-related question. Animal welfare is our highest priority.',
+      tips: [
+        '⚠️ **WarrenWise cannot provide veterinary treatment advice, dosages, or diagnoses.**',
+        'If your rabbit is showing signs of illness (e.g., lethargy, refusal to eat, nasal discharge, diarrhea), please consult a licensed exotic veterinarian immediately.',
+        'Isolate sick animals from the rest of the herd to prevent the spread of disease.'
+      ],
+      disclaimer: 'Official Knowledge Rule: Never rely on community or AI suggestions for medical treatment. Always consult a veterinarian.'
+    };
+  } else if (q.includes('showmanship') || q.includes('step') || q.includes('routine') || q.includes('pose')) {
+    response = {
       topic: 'Showmanship Routine',
       summary: `Here is your step-by-step showmanship guide tailored for ${divInfo.name}!`,
       steps: ARBA_SHOWMANSHIP_ROUTINE,
       disclaimer: 'For official showmanship scoring sheets, consult your local 4-H extension agent or licensed registrar.'
     };
-  }
-
-  if (q.includes('body type') || q.includes('commercial') || q.includes('compact') || q.includes('breed')) {
-    return {
+  } else if (q.includes('body type') || q.includes('commercial') || q.includes('compact') || q.includes('breed')) {
+    response = {
       topic: 'Body Type Classifications',
       summary: 'There are 5 distinct rabbit body types recognized in show standards:',
       types: ARBA_BREED_BODY_TYPES,
       disclaimer: 'Always verify breed weight minimums and maximums in the official Standard of Perfection.'
     };
+  } else {
+    // Default encouraging general advice response
+    response = {
+      topic: 'General 4-H Rabbit & Cavy Coaching',
+      summary: `Hello 4-H Exhibitor! WarrenWise Coach is here to help you excel in your 4-H rabbitry project.`,
+      tips: [
+        'Daily feeding at the same time creates calm, manageable show rabbits.',
+        'Check water bottles every morning to ensure nozzles do not freeze or clog.',
+        'Practice your 12-step showmanship routine at least twice a week before fair.',
+        'Keep your 4-H project record book updated after every feed purchase or sale.'
+      ],
+      disclaimer: 'WarrenWise Coach is an educational tool. For official rules, consult the Standard of Perfection from your local registry.'
+    };
   }
 
-  // Default encouraging general advice response
-  return {
-    topic: 'General 4-H Rabbit & Cavy Coaching',
-    summary: `Hello 4-H Exhibitor! WarrenWise Coach is here to help you excel in your 4-H rabbitry project.`,
-    tips: [
-      'Daily feeding at the same time creates calm, manageable show rabbits.',
-      'Check water bottles every morning to ensure nozzles do not freeze or clog.',
-      'Practice your 12-step showmanship routine at least twice a week before fair.',
-      'Keep your 4-H project record book updated after every feed purchase or sale.'
-    ],
-    disclaimer: 'WarrenWise Coach is an educational tool. For official rules, consult the Standard of Perfection from your local registry.'
-  };
+  // 5. Append Community Knowledge
+  if (communityTips.length > 0 && !medicalFlag) {
+    if (!response.tips) response.tips = [];
+    response.tips.push('---');
+    response.tips.push('**According to verified community knowledge:**');
+    communityTips.forEach(tip => response.tips.push(`• ${tip}`));
+  }
+
+  return response;
 }

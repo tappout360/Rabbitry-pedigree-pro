@@ -166,6 +166,100 @@ function MarketplaceModerationQueue() {
   );
 }
 
+function CommunityKnowledgeModerationQueue() {
+  const [knowledge, setKnowledge] = useState([]);
+
+  const fetchKnowledge = async () => {
+    try {
+      const data = await db.communityKnowledge.toArray();
+      setKnowledge(data.filter(k => k.status === 'pending' || k.status === 'approved').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchKnowledge();
+  }, []);
+
+  const handleModerate = async (id, action) => {
+    try {
+      if (action === 'delete') {
+        await db.communityKnowledge.delete(id);
+      } else {
+        await db.communityKnowledge.update(id, { status: action });
+      }
+      fetchKnowledge();
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <div className="glass-container p-6 flex flex-col gap-4 border-2 border-amber-500/30 bg-amber-950/10 text-left">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-black text-white flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-amber-400" /> Root AI Knowledge Moderation
+        </h3>
+        <button onClick={fetchKnowledge} className="text-xs text-indigo-300 hover:text-white cursor-pointer font-bold border-none bg-transparent">Refresh List</button>
+      </div>
+
+      {knowledge.length === 0 ? (
+        <div className="p-4 bg-slate-900/60 border border-white/5 rounded-xl text-xs text-slate-400 font-bold flex items-center gap-2">
+          No pending knowledge submissions.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-2">
+          {knowledge.map(item => (
+            <div key={item.id} className={`p-3 bg-slate-900 border rounded-xl flex flex-col gap-2 text-left ${item.isFlagged ? 'border-red-500/50' : 'border-amber-500/20'}`}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
+                      item.status === 'approved' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    }`}>
+                      {item.status} - {item.category}
+                    </span>
+                    {item.isFlagged && (
+                      <span className="text-[9px] font-bold text-red-400 bg-red-950/50 px-2 py-0.5 rounded border border-red-500/30">
+                        FLAGGED (MEDICAL/SAFETY)
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-white mt-2">Author: {item.authorId}</p>
+                </div>
+                <span className="text-[9px] font-mono text-slate-400">{new Date(item.timestamp).toLocaleDateString()}</span>
+              </div>
+              
+              <div className="mt-2 text-[11px] text-slate-200 leading-relaxed p-2 bg-white/5 rounded-lg border border-white/5 whitespace-pre-wrap">
+                {item.content}
+              </div>
+
+              {item.sourceLink && (
+                <a href={item.sourceLink} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-400 hover:underline">Source: {item.sourceLink}</a>
+              )}
+
+              <div className="flex justify-end gap-2 border-t border-white/5 pt-2 mt-2">
+                {item.status !== 'approved' && (
+                  <button onClick={() => handleModerate(item.id, 'approved')} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg border-none cursor-pointer">
+                    Approve
+                  </button>
+                )}
+                <button onClick={() => handleModerate(item.id, 'rejected')} className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg border-none cursor-pointer">
+                  Reject
+                </button>
+                <button onClick={() => handleModerate(item.id, 'delete')} className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-lg border-none cursor-pointer">
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminFeedbackViewer() {
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -10124,6 +10218,9 @@ export default function App() {
                   
                   {/* Marketplace Moderation Queue for App Owner Jason Mounts */}
                   <MarketplaceModerationQueue />
+                  
+                  {/* Root Knowledge Queue */}
+                  <CommunityKnowledgeModerationQueue />
                   
                   {/* User Feedback Viewer */}
                   <AdminFeedbackViewer />
