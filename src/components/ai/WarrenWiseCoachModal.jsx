@@ -11,6 +11,7 @@ import {
 } from '../../services/WarrenWiseCoachEngine';
 import { db } from '../../db/registryDb';
 import { uuidv7 } from '../../db/uuid';
+import TermsAndPolicies from '../../views/TermsAndPolicies';
 
 export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junior', currentUser }) {
   const [selectedDivision, setSelectedDivision] = useState(defaultDivision);
@@ -23,6 +24,7 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
   const [submissionCategory, setSubmissionCategory] = useState('General');
   const [submissionSource, setSubmissionSource] = useState('');
   const [submitStatus, setSubmitStatus] = useState('');
+  const [showSafetyPolicy, setShowSafetyPolicy] = useState(false);
 
   const currentStep = ARBA_SHOWMANSHIP_ROUTINE[currentStepIndex];
 
@@ -318,8 +320,16 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
           {activeTab === 'submit' && (
             <div className="flex flex-col gap-6">
               <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl">
-                <h4 className="text-sm font-black text-emerald-300 flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5" /> Help Train WarrenWise!
+                <h4 className="text-sm font-black text-emerald-300 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" /> Help Train WarrenWise!
+                  </div>
+                  <button 
+                    onClick={() => setShowSafetyPolicy(true)}
+                    className="text-[10px] bg-emerald-800 hover:bg-emerald-700 text-emerald-200 px-2 py-1 rounded-md border border-emerald-600 cursor-pointer"
+                  >
+                    View Animal Safety Policy
+                  </button>
                 </h4>
                 <p className="text-xs text-emerald-200 mt-2 leading-relaxed">
                   Submit helpful breeding tips, show advice, or general husbandry knowledge. All submissions undergo strict Root AI and human moderation to ensure animal safety.
@@ -386,11 +396,15 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
 
         {/* MODAL FOOTER DISCLAIMER */}
         <div className="p-4 bg-slate-950 border-t border-white/10 text-center text-[10px] text-slate-400 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>🛡️ Disclaimer: For official competition rules, consult your local registry's Standard of Perfection.</span>
+          <span>⚠️ Disclaimer: For official competition rules, consult your local registry's Standard of Perfection.</span>
           <span className="text-yellow-400 font-bold">4-H Family Safe • Neutral COPPA Gate Verified</span>
         </div>
 
       </div>
+
+      {showSafetyPolicy && (
+        <TermsAndPolicies initialTab="safety" onClose={() => setShowSafetyPolicy(false)} />
+      )}
     </div>
   );
 }

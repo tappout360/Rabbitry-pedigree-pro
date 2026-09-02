@@ -94,6 +94,16 @@ export default function TermsAndPolicies({ onClose, initialTab = 'terms' }) {
             <ShieldCheck className="w-3.5 h-3.5" /> 🛡️ Privacy & HIPAA Safe Harbor
           </button>
           <button
+            onClick={() => setActiveTab('safety')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'safety'
+                ? 'bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/30'
+                : 'bg-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <HeartPulse className="w-3.5 h-3.5" /> 🩺 Animal Safety Policy
+          </button>
+          <button
             onClick={() => setActiveTab('coppa')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'coppa'
@@ -296,6 +306,55 @@ export default function TermsAndPolicies({ onClose, initialTab = 'terms' }) {
                     </button>
                   </form>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ANIMAL SAFETY POLICY */}
+          {activeTab === 'safety' && (
+            <div className="space-y-5">
+              <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl flex items-start gap-3">
+                <HeartPulse className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-black text-emerald-300 uppercase tracking-wider">WarrenWise Animal Safety Policy</h4>
+                  <p className="text-xs text-emerald-200 mt-1">
+                    This policy protects rabbit and cavy welfare. Animal safety always comes first. No information may be used by the AI if it could encourage harm, unsafe treatment, or unverified medical advice.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-black text-white uppercase tracking-wider text-emerald-400">
+                  1. Core Rule & Knowledge Tiers
+                </h4>
+                <p className="text-slate-300 text-xs">When in doubt, do not add the information. Direct users to a qualified veterinarian for any health concern.</p>
+                <ul className="list-disc list-inside text-xs text-slate-400 space-y-1 pl-2">
+                  <li><strong>Official Knowledge:</strong> Highest trust. Preferred for all answers.</li>
+                  <li><strong>Verified Community Knowledge:</strong> Allowed only after human/Root review. Must be clearly labeled.</li>
+                  <li><strong>Pending Submissions:</strong> Never used by the AI until approved.</li>
+                </ul>
+
+                <h4 className="text-sm font-black text-white uppercase tracking-wider text-emerald-400 mt-6">
+                  2. Strictly Restricted Topics
+                </h4>
+                <p className="text-slate-300 text-xs">The following may not enter AI knowledge without elevated review and strong evidence:</p>
+                <ul className="list-disc list-inside text-xs text-red-400 space-y-1 pl-2">
+                  <li>Medications, dosages, or treatments</li>
+                  <li>Disease diagnosis or home remedies</li>
+                  <li>Emergency care instructions</li>
+                  <li>Unproven supplements or feeding practices that could cause harm</li>
+                </ul>
+
+                <h4 className="text-sm font-black text-white uppercase tracking-wider text-emerald-400 mt-6">
+                  3. AI Behavior & Moderation
+                </h4>
+                <p className="text-slate-300 text-xs">
+                  WarrenWise prefers Official Knowledge over community content and clearly labels community-verified information. It defaults to caution on all health-related questions, and recommends professional veterinary care when appropriate.
+                </p>
+                <p className="text-slate-300 text-xs mt-2">
+                  <strong>Root Authority:</strong> Root (Jason Mounts) has final authority to approve, edit, reject, or remove any knowledge. Previously approved content may be demoted or removed if safety concerns arise.
+                  This app provides educational support only. It is not a substitute for veterinary care. Unsafe or harmful submissions will be rejected.
+                </p>
               </div>
             </div>
           )}
