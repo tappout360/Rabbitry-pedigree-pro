@@ -37,6 +37,11 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
     const lowerContent = submissionContent.toLowerCase();
     const isFlagged = medicalKeywords.some(word => lowerContent.includes(word));
 
+    if (isFlagged) {
+      setSubmitStatus('❌ WarrenWise cannot verify the safety of this medical information. Please create a Support Ticket in the App Owner Control Center if you believe this should be officially added.');
+      return;
+    }
+
     try {
       await db.communityKnowledge.add({
         id: uuidv7(),
@@ -45,10 +50,10 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
         content: submissionContent,
         sourceLink: submissionSource,
         status: 'pending',
-        isFlagged,
+        isFlagged: false,
         timestamp: new Date().toISOString()
       });
-      setSubmitStatus(isFlagged ? 'Submitted! Flagged for advanced medical review.' : 'Submitted! Pending community review.');
+      setSubmitStatus('✅ Submitted! Pending Root community review.');
       setSubmissionContent('');
       setSubmissionSource('');
     } catch(err) {
@@ -384,7 +389,11 @@ export default function WarrenWiseCoachModal({ onClose, defaultDivision = 'junio
                 </button>
 
                 {submitStatus && (
-                  <p className={`text-xs font-bold p-3 rounded-xl mt-2 text-center ${submitStatus.includes('Failed') ? 'bg-red-950/40 text-red-400' : 'bg-emerald-950/40 text-emerald-400'}`}>
+                  <p className={`text-[11px] font-bold p-3 rounded-xl mt-2 text-center leading-relaxed ${
+                    submitStatus.includes('Failed') || submitStatus.includes('❌') 
+                      ? 'bg-red-950/40 text-red-400 border border-red-500/30' 
+                      : 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/30'
+                  }`}>
                     {submitStatus}
                   </p>
                 )}
