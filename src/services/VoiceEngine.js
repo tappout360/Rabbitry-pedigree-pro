@@ -103,8 +103,121 @@ export class VoiceEngine {
   parseCommand(transcript) {
     const text = transcript.toLowerCase().trim();
 
-    // 1. Log weight command (e.g. "log weight 5.2 pounds" or "weight 65 ounces")
-    const weightMatch = text.match(/(?:log\s+weight|weight)\s+([0-[#0-9.]+)\s*(pounds|lbs|ounces|oz)?/);
+    // 1. ADD RABBIT: "Add new junior doe, Netherland Dwarf, black self, weight 1.8 pounds, born May 12"
+    const addRabbitMatch = text.match(/(?:add|create)\s+(?:new\s+)?(junior|senior|intermediate|6\/8)?\s*(doe|buck)\s*,?\s*([^,]+)?\s*,?\s*([^,]+)?/i);
+    if (addRabbitMatch && (text.includes('add') || text.includes('create')) && (text.includes('doe') || text.includes('buck'))) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'ADD_RABBIT_INTENT',
+          ageClass: addRabbitMatch[1] || 'senior',
+          sex: addRabbitMatch[2] === 'buck' ? 'Buck' : 'Doe',
+          breed: addRabbitMatch[3] ? addRabbitMatch[3].trim() : '',
+          color: addRabbitMatch[4] ? addRabbitMatch[4].trim() : '',
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 2. HEALTH NOTE: "Add health note for Bella: clear eyes, good condition, no sneezing"
+    const healthNoteMatch = text.match(/add health note for\s+(.*?)(?:\s+is|:)\s+(.*)/i) || text.match(/add health note for\s+(.*)/i);
+    if (healthNoteMatch) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'ADD_HEALTH_NOTE',
+          subject: healthNoteMatch[1].trim(),
+          note: healthNoteMatch[2] ? healthNoteMatch[2].trim() : '',
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 3. BREEDING: "Breed Daisy to Thunder on September 1"
+    const breedMatch = text.match(/breed\s+(.*?)\s+to\s+(.*?)(?:\s+on\s+(.*))?$/i);
+    if (breedMatch && !text.includes('open')) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'RECORD_BREEDING',
+          doe: breedMatch[1].trim(),
+          buck: breedMatch[2].trim(),
+          date: breedMatch[3] ? breedMatch[3].trim() : new Date().toLocaleDateString(),
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 4. KINDLING: "Record litter of 7 for Daisy, 6 alive"
+    const kindlingMatch = text.match(/(?:record|log) litter of (\d+) for (.*?)(?:,?\s*(\d+)\s+alive)?/i);
+    if (kindlingMatch) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'RECORD_KINDLING',
+          totalKits: parseInt(kindlingMatch[1], 10),
+          doe: kindlingMatch[2].trim(),
+          aliveKits: kindlingMatch[3] ? parseInt(kindlingMatch[3], 10) : parseInt(kindlingMatch[1], 10),
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 5. STATUS CHANGE: "Mark Snow Monarch as sold"
+    const statusMatch = text.match(/mark\s+(.*?)\s+as\s+(sold|breeding stock|culled|meat|show)/i);
+    if (statusMatch) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'UPDATE_STATUS',
+          subject: statusMatch[1].trim(),
+          newStatus: statusMatch[2].trim(),
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 6. SHOW RESULT: "Add show result: Best of Breed, New Zealand..."
+    const showResultMatch = text.match(/(?:add|log)\s+show result:?\s*(.*)/i);
+    if (showResultMatch) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'ADD_SHOW_RESULT',
+          resultText: showResultMatch[1].trim(),
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 7. QUERY: "Show pedigree for Snow Monarch"
+    const queryPedigreeMatch = text.match(/show pedigree for\s+(.*)/i);
+    if (queryPedigreeMatch) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'QUERY_PEDIGREE',
+          subject: queryPedigreeMatch[1].trim(),
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 8. QUERY KNOWLEDGE: "What's the gestation period for a Mini Rex?"
+    const queryKnowledgeMatch = text.match(/(what is|what's|how long|which|tell me about)\s+(.*)/i);
+    if (queryKnowledgeMatch && !text.includes('log') && !text.includes('add')) {
+      if (this.onCommandCallback) {
+        this.onCommandCallback({
+          action: 'QUERY_KNOWLEDGE',
+          question: transcript,
+          originalText: transcript
+        });
+      }
+      return;
+    }
+
+    // 9. LOG WEIGHT: "log weight 5.2 pounds for Snow Monarch"
+    const weightMatch = text.match(/(?:log\s+weight|weight)\s+([0-9.]+)\s*(pounds|lbs|ounces|oz)?(?: for\s+(.*))?/);
     if (weightMatch) {
       const val = parseFloat(weightMatch[1]);
       const unit = weightMatch[2] || 'oz';
@@ -113,90 +226,20 @@ export class VoiceEngine {
         this.onCommandCallback({
           action: 'LOG_WEIGHT',
           value: weightOz,
+          subject: weightMatch[3] ? weightMatch[3].trim() : null,
           originalText: transcript
         });
       }
       return;
     }
 
-    // 2. Kindling / Litter logging command (e.g. "log kindling 6 kits" or "litter size 7")
-    const kindlingMatch = text.match(/(?:log\s+kindling|kindle|litter\s+size)\s*([0-9]+)?/);
-    if (kindlingMatch) {
-      const count = parseInt(kindlingMatch[1] || '6', 10);
-      if (this.onCommandCallback) {
-        this.onCommandCallback({
-          action: 'LOG_KINDLING',
-          kitCount: count,
-          originalText: transcript
-        });
-      }
+    // Legacy basic fallbacks
+    if (text.includes('marketplace') || text.includes('market')) {
+      if (this.onCommandCallback) this.onCommandCallback({ action: 'NAVIGATE', tab: 'marketplace', originalText: transcript });
       return;
     }
-
-    // 3. Add rabbit command
-    if (text.includes('add new rabbit') || text.includes('add rabbit') || text.includes('create rabbit')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'ADD_RABBIT', originalText: transcript });
-      }
-      return;
-    }
-
-    // 4. Breed command
-    if (text.includes('breed') || text.includes('schedule breeding') || text.includes('kindle date')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'OPEN_BREEDING', originalText: transcript });
-      }
-      return;
-    }
-
-    // 5. Start 4-H Quiz or Open 4-H Coach
-    if (text.includes('4-h coach') || text.includes('quiz') || text.includes('showmanship') || text.includes('coach')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'OPEN_COACH', originalText: transcript });
-      }
-      return;
-    }
-
-    // 6. Navigation Commands
-    if (text.includes('marketplace') || text.includes('browse sales') || text.includes('market')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'NAVIGATE', tab: 'marketplace', originalText: transcript });
-      }
-      return;
-    }
-
-    if (text.includes('terms') || text.includes('rules') || text.includes('policies')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'OPEN_TERMS', originalText: transcript });
-      }
-      return;
-    }
-
-    if (text.includes('sync') || text.includes('conflict') || text.includes('resolve')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'OPEN_SYNC', originalText: transcript });
-      }
-      return;
-    }
-
     if (text.includes('pedigree') || text.includes('lineage')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'NAVIGATE', tab: 'pedigree', originalText: transcript });
-      }
-      return;
-    }
-
-    if (text.includes('gallery') || text.includes('photos')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'NAVIGATE', tab: 'media', originalText: transcript });
-      }
-      return;
-    }
-
-    if (text.includes('ledger') || text.includes('financial') || text.includes('finances')) {
-      if (this.onCommandCallback) {
-        this.onCommandCallback({ action: 'NAVIGATE', tab: 'ledger', originalText: transcript });
-      }
+      if (this.onCommandCallback) this.onCommandCallback({ action: 'NAVIGATE', tab: 'pedigree', originalText: transcript });
       return;
     }
 

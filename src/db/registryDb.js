@@ -21,7 +21,8 @@ db.version(1).stores({
   medical: 'id, breederId, rabbitId',
   weights: 'id, breederId, rabbitId',
   syncQueue: 'id, breederId',
-  approvals: 'id, breederId'
+  approvals: 'id, breederId',
+  offlineActionQueue: 'id, timestamp'
 });
 
 // Version 2: Advanced Indexing for query optimization & scaling (200-1000+ records)
@@ -213,7 +214,35 @@ db.version(9).stores({
   socialPosts: 'id, breederId, title, status, timestamp, parentApproved, aiFlagged',
   socialComments: 'id, postId, breederId, timestamp, parentApproved, aiFlagged'
 });
-
+// Version 10: Added offlineActionQueue for AI Barn Assistant
+db.version(10).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized, userRestriction, vectorClock',
+  conflicts: 'id, recordId, tbl, fieldName, resolved',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex], vectorClock',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status, vectorClock',
+  litters: 'id, breederId, breedingId, kindleDate, vectorClock',
+  ledger: 'id, breederId, rabbitId, date, vectorClock',
+  shows: 'id, breederId, date, vectorClock',
+  showEntries: 'id, breederId, showId, rabbitId, vectorClock',
+  chores: 'id, breederId, dueDate, vectorClock',
+  transfers: 'id, breederId, rabbitId, date, vectorClock',
+  signatures: 'id, breederId, vectorClock',
+  medical: 'id, breederId, rabbitId, date, vectorClock',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date], vectorClock',
+  syncQueue: '++id, recordId, tbl, timestamp, action',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd, trialEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status',
+  photoThumbnails: 'id, rabbitId, date',
+  offlinePhotos: 'id, rabbitId, status',
+  marketplaceListings: 'id, rabbitId, breederId, category, status',
+  socialPosts: 'id, breederId, title, status, timestamp, parentApproved, aiFlagged',
+  socialComments: 'id, postId, breederId, timestamp, parentApproved, aiFlagged',
+  offlineActionQueue: 'id, timestamp, action'
+});
 let migrationPromise = null;
 
 

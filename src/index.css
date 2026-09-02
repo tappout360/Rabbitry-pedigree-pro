@@ -819,3 +819,19 @@ select option {
 
 
 
+
+
+/* Barn Mode Global Overrides */
+.barn-mode-active {
+  --btn-scale: 1.1;
+  --text-scale: 1.1;
+}
+.barn-mode-active button {
+  padding: 1rem !important;
+  font-size: 1.1rem !important;
+}
+.barn-mode-active input, .barn-mode-active select {
+  padding: 1rem !important;
+  font-size: 1.1rem !important;
+}
+

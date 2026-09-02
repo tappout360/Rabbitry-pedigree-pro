@@ -48,6 +48,9 @@ import PhotoGallery from './components/gallery/PhotoGallery';
 import PedigreeBuilder from './components/pedigree/PedigreeBuilder';
 import SalesAndTransfers from './components/sales/SalesAndTransfers';
 import PrintableBillOfSaleModal from './components/sales/PrintableBillOfSaleModal';
+import MicrophoneFab from './components/voice/MicrophoneFab';
+import CommandConfirmationModal from './components/voice/CommandConfirmationModal';
+import { globalVoiceEngine } from './services/VoiceEngine';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
 import { uuidv7 } from './db/uuid';
@@ -1044,6 +1047,108 @@ export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [dbError, setDbError] = useState(null);
   const { execute: runAsync } = useAsyncAction();
+
+  // Barn Assistant States
+  const [isBarnMode, setIsBarnMode] = useState(false);
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [pendingVoiceCommand, setPendingVoiceCommand] = useState(null);
+
+  const toggleBarnAssistant = () => {
+    if (isVoiceListening) {
+      globalVoiceEngine.stop();
+      setIsVoiceListening(false);
+    } else {
+      setVoiceTranscript('');
+      globalVoiceEngine.start(
+        (text, isFinal) => setVoiceTranscript(text),
+        (command) => {
+          if (command.action !== 'DICTATION') {
+            setPendingVoiceCommand(command);
+            globalVoiceEngine.stop();
+          }
+        },
+        (state) => setIsVoiceListening(state)
+      );
+    }
+  };
+
+  const handleVoiceCommandConfirm = async (command) => {
+    setPendingVoiceCommand(null);
+    if (!command) return;
+    
+    // Check network status
+    const isOffline = !navigator.onLine;
+    
+    if (isOffline) {
+      // Queue offline action
+      await db.offlineActionQueue.add({
+        id: uuidv7(),
+        timestamp: new Date().toISOString(),
+        action: JSON.parse(JSON.stringify(command))
+      });
+      showToast('Action queued for offline sync.', 'info');
+      return;
+    }
+
+    // Direct Execution Online / Local
+    try {
+      switch (command.action) {
+        case 'ADD_RABBIT_INTENT':
+          // We map this to opening the Add Rabbit modal with pre-filled fields if possible, 
+          // or auto-creating it. For simplicity, auto-create a basic profile.
+          const newRb = {
+            id: uuidv7(),
+            breederId: activeBreeder.id,
+            name: 'Voice Created Rabbit',
+            sex: command.sex,
+            breed: command.breed || 'Unknown',
+            variety: command.color || '',
+            status: 'active',
+            dob: new Date().toISOString().split('T')[0]
+          };
+          await db.rabbits.add(newRb);
+          setRabbits(prev => [...prev, newRb]);
+          showToast(`Created ${command.sex} ${command.breed}`, 'success');
+          break;
+        case 'LOG_WEIGHT':
+          if (!activeRabbit && !command.subject) {
+            showToast('Please select a rabbit first.', 'error');
+            break;
+          }
+          // logic to add weight
+          const target = rabbits.find(r => r.name.toLowerCase() === (command.subject || '').toLowerCase()) || activeRabbit;
+          if (target) {
+            const wId = uuidv7();
+            await db.weights.add({ id: wId, breederId: activeBreeder.id, rabbitId: target.id, date: new Date().toISOString().split('T')[0], weightOz: command.value, notes: 'Voice Logged' });
+            showToast(`Logged weight for ${target.name}`, 'success');
+          }
+          break;
+        case 'NAVIGATE':
+          setActiveTab(command.tab);
+          showToast(`Navigated to ${command.tab}`, 'info');
+          break;
+        case 'QUERY_KNOWLEDGE':
+          setCoachPrompt(command.question);
+          setShowCoachModal(true);
+          break;
+        // other actions can be expanded...
+        default:
+          showToast(`Processed: ${command.action}`, 'success');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to process command', 'error');
+    }
+  };
+
+  useEffect(() => {
+    if (isBarnMode) {
+      document.body.classList.add('barn-mode-active');
+    } else {
+      document.body.classList.remove('barn-mode-active');
+    }
+  }, [isBarnMode]);
 
   const matchLocationKey = (locValue, locKey) => {
     if (!locValue || !locKey) return false;
@@ -5973,6 +6078,19 @@ export default function App() {
 
         {/* Global Connection Simulator Indicator & Settings */}
         <div className="flex flex-wrap items-center gap-2">
+          
+          <button
+            onClick={() => setIsBarnMode(prev => !prev)}
+            className={`btn-interactive py-2 px-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all ${
+              isBarnMode 
+                ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30' 
+                : 'bg-indigo-900 border-indigo-500/30 text-indigo-300 hover:text-white hover:bg-indigo-800'
+            }`}
+          >
+            <Mic className="w-4 h-4" />
+            {isBarnMode ? 'Exit Barn Mode' : 'Barn Mode'}
+          </button>
+
           {(isOwnerAuthenticated || (currentUser?.role === 'assistant' && currentUser?.employerStatus === 'active')) && (() => {
             const employer = adminBreeders.find(b => b.email.toLowerCase() === currentUser?.employerEmail?.toLowerCase());
             return (
@@ -12903,6 +13021,21 @@ export default function App() {
           }}
         />
       )}
+
+      {/* Global AI Barn Assistant UI */}
+      <MicrophoneFab 
+        isBarnMode={isBarnMode} 
+        isListening={isVoiceListening} 
+        transcript={voiceTranscript} 
+        onToggle={toggleBarnAssistant} 
+      />
+
+      <CommandConfirmationModal 
+        command={pendingVoiceCommand}
+        isOffline={!navigator.onLine}
+        onConfirm={handleVoiceCommandConfirm}
+        onCancel={() => setPendingVoiceCommand(null)}
+      />
     </div>
   );
 }
