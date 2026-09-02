@@ -163,6 +163,76 @@ function MarketplaceModerationQueue() {
   );
 }
 
+function AdminFeedbackViewer() {
+  const [feedback, setFeedback] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchFeedback = async () => {
+    try {
+      setLoading(true);
+      const API_ROOT = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+      const token = localStorage.getItem('rp_auth_token');
+      const res = await fetch(`${API_ROOT}/feedback`, {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      });
+      const data = await res.json();
+      setFeedback(data || []);
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
+
+  return (
+    <div className="glass-container p-6 flex flex-col gap-4 border-2 border-indigo-500/30 bg-indigo-950/10 text-left">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-black text-white flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-indigo-400" /> User Feedback & Ratings
+        </h3>
+        <button onClick={fetchFeedback} className="text-xs text-indigo-300 hover:text-white cursor-pointer font-bold border-none bg-transparent">Refresh List</button>
+      </div>
+
+      {loading ? (
+        <div className="text-xs text-slate-400 opacity-60">Loading feedback...</div>
+      ) : feedback.length === 0 ? (
+        <div className="p-4 bg-slate-900/60 border border-white/5 rounded-xl text-xs text-slate-400 font-bold flex items-center gap-2">
+          No feedback submitted yet.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-2">
+          {feedback.map(item => (
+            <div key={item._id || item.id} className="p-3 bg-slate-900 border border-indigo-500/20 rounded-xl flex flex-col gap-2 text-left">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30">
+                      {item.category}
+                    </span>
+                    <span className="text-amber-400 text-[10px] tracking-widest font-bold">
+                      {'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-white mt-2">{item.userEmail}</p>
+                  {item.rabbitryName && <p className="text-[10px] text-slate-400">{item.rabbitryName}</p>}
+                </div>
+                <span className="text-[9px] font-mono text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div className="mt-2 text-[11px] text-slate-200 leading-relaxed p-2 bg-white/5 rounded-lg border border-white/5">
+                "{item.message}"
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BreederCard({ b, setAdminBreeders, triggerConfetti }) {
   const [showPass, setShowPass] = useState(false);
   const [editPassVal, setEditPassVal] = useState(b.password);
@@ -9936,6 +10006,9 @@ export default function App() {
                   
                   {/* Marketplace Moderation Queue for App Owner Jason Mounts */}
                   <MarketplaceModerationQueue />
+                  
+                  {/* User Feedback Viewer */}
+                  <AdminFeedbackViewer />
 
                   {/* Breeder Search Bar */}
                   <div className="glass-container p-4 flex items-center justify-between gap-4">

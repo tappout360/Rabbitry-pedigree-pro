@@ -327,7 +327,7 @@ export default function LandingHomePage({
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Hobby & Starter Barns</span>
               <h3 className="text-2xl font-black text-white">Basic Hutch Plan</h3>
               <div className="my-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">$2.59</span>
+                <span className="text-4xl font-black text-white">$4.99</span>
                 <span className="text-xs text-slate-400 font-semibold">/ month</span>
               </div>
               <p className="text-xs text-slate-400 mb-6">Perfect for small rabbitries, 4-H exhibitors, and beginner breeders.</p>
@@ -343,7 +343,7 @@ export default function LandingHomePage({
               onClick={() => onSelectPlan('basic')}
               className="mt-8 btn-interactive w-full py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/10 cursor-pointer"
             >
-              Select Basic Plan ($2.59/mo)
+              Select Basic Plan ($4.99/mo)
             </button>
           </div>
 
@@ -356,13 +356,13 @@ export default function LandingHomePage({
               <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block mb-2">Professional Show Herds</span>
               <h3 className="text-2xl font-black text-white">Pro Herd Plan</h3>
               <div className="my-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">$8.99</span>
+                <span className="text-4xl font-black text-white">$9.99</span>
                 <span className="text-xs text-slate-400 font-semibold">/ month</span>
               </div>
               <p className="text-xs text-slate-350 mb-6">Designed for active show exhibitors, commercial breeders, and multi-user barns.</p>
               
               <ul className="space-y-3 text-xs text-slate-200">
-                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> <strong>300 Active Hutches</strong></li>
+                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> <strong>200 Active Hutches</strong></li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Advanced Genetics & COI Risk Calculator</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Barn Crew & Assistant Roles</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-amber-400 shrink-0" /> Photo Gallery Editor & Lightbox</li>
@@ -373,7 +373,7 @@ export default function LandingHomePage({
               onClick={() => onSelectPlan('pro')}
               className="mt-8 btn-interactive w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl border-none shadow-lg shadow-amber-500/25 cursor-pointer"
             >
-              Get Started with Pro Herd ($8.99/mo)
+              Get Started with Pro Herd ($9.99/mo)
             </button>
           </div>
 
@@ -383,13 +383,13 @@ export default function LandingHomePage({
               <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 block mb-2">Large Commercial & National Herds</span>
               <h3 className="text-2xl font-black text-white">Master Breeder Plan</h3>
               <div className="my-4 flex items-baseline gap-1">
-                <span className="text-4xl font-black text-white">$17.99</span>
+                <span className="text-4xl font-black text-white">$19.99</span>
                 <span className="text-xs text-slate-400 font-semibold">/ month</span>
               </div>
               <p className="text-xs text-slate-400 mb-6">Unlimited power for national champion rabbitries and commercial herds.</p>
               
               <ul className="space-y-3 text-xs text-slate-300">
-                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> <strong>1,000 Active Hutches</strong></li>
+                <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> <strong>750 Active Hutches</strong></li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Free Evans Software Auto-Migrator</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Priority Show & Breeder Support</li>
                 <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-cyan-400 shrink-0" /> Unlimited Cloud Storage & Backups</li>
@@ -399,7 +399,7 @@ export default function LandingHomePage({
               onClick={() => onSelectPlan('master')}
               className="mt-8 btn-interactive w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl border-none cursor-pointer"
             >
-              Select Master Plan ($17.99/mo)
+              Select Master Plan ($19.99/mo)
             </button>
           </div>
         </div>

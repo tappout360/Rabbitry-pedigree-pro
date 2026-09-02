@@ -109,9 +109,19 @@ export default function ShowPlanner({
 
           {/* Quick-Add Templates */}
           <div className="glass-container p-6 flex flex-col gap-4">
-            <div>
-              <h3 className="text-base font-bold text-white">Find Local ARBA Shows</h3>
-              <p className="text-[10px] opacity-75 mt-0.5 text-slate-300">Search sanctioned exhibitions near your rabbitry registry zip code.</p>
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Find Local ARBA Shows</h3>
+                <p className="text-[10px] opacity-75 mt-0.5 text-slate-300">Search sanctioned exhibitions near your rabbitry registry zip code.</p>
+              </div>
+              <a 
+                href="https://arba.net/find-a-show/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded-lg border-none no-underline flex items-center gap-1 shrink-0"
+              >
+                Find on ARBA.net
+              </a>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -316,7 +326,7 @@ export default function ShowPlanner({
                       <div className="flex-1 flex flex-col gap-1.5">
                         <div className="flex flex-wrap items-center gap-2 text-white">
                           <h4 className="text-base font-bold">{s.name}</h4>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${badgeColor}`}>{s.status.replace('_', ' ')}</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${badgeColor}`}>{(s.status || 'unknown').replace('_', ' ')}</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-slate-300">
                           <span>📅 Date: <strong>{s.date}</strong></span>

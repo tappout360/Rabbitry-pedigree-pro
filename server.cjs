@@ -792,7 +792,7 @@ app.get('/api/billing/status', authenticateToken, (req, res) => {
 app.post('/api/billing/create-checkout-session', authenticateToken, billingLimiter, async (req, res) => {
   const { tier, billingCycle } = req.body; 
   
-  if (!['basic', 'pro', 'youth_academy', 'evans_lifetime'].includes(tier)) {
+  if (!['basic', 'pro', 'youth_academy', 'youth_student', 'master', 'enterprise', 'evans_lifetime'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier specified' });
   }
 
@@ -814,8 +814,12 @@ app.post('/api/billing/create-checkout-session', authenticateToken, billingLimit
       priceId = billingCycle === 'annual' ? 'price_basic_annual_seed' : 'price_basic_monthly_seed';
     } else if (tier === 'pro') {
       priceId = billingCycle === 'annual' ? 'price_pro_annual_seed' : 'price_pro_monthly_seed';
-    } else if (tier === 'youth_academy') {
+    } else if (tier === 'youth_academy' || tier === 'youth_student') {
       priceId = 'price_youth_academy_monthly_seed';
+    } else if (tier === 'master') {
+      priceId = billingCycle === 'annual' ? 'price_master_annual_seed' : 'price_master_monthly_seed';
+    } else if (tier === 'enterprise') {
+      priceId = billingCycle === 'annual' ? 'price_enterprise_annual_seed' : 'price_enterprise_monthly_seed';
     } else if (tier === 'evans_lifetime') {
       priceId = 'price_evans_lifetime_one_time_seed';
     }
