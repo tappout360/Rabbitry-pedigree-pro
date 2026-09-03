@@ -872,7 +872,129 @@ export const DEFAULT_YOUTH_PROGRESS = [
       { id: 'b-showmanship', name: 'Showmanship Master', icon: '🏆', unlockedAt: '2026-07-20' },
       { id: 'b-breeds', name: 'ARBA Breed Identifier', icon: '🐇', unlockedAt: '2026-08-02' },
       { id: 'b-genetics', name: 'Locus Genetics Scholar', icon: '🧬', unlockedAt: '2026-08-15' },
-      { id: 'b-chores', name: 'Barn Care Champion', icon: '🌾', unlockedAt: '2026-08-28' }
+      { id: 'b-chores', name: 'Barn Care Champion', icon: '🧹', unlockedAt: '2026-08-28' }
     ]
+  }
+];
+
+export const DEFAULT_SUPPORT_TICKETS = [
+  {
+    id: 'tkt-101',
+    ticketNumber: 'WW-8491',
+    breederId: 'ab-demo-1',
+    breederEmail: 'demo@rabbitrypedigree.pro',
+    rabbitryName: 'Grandview Pedigree Barn',
+    category: 'Pedigree',
+    priority: 'Normal',
+    subject: 'Question on inbreeding coefficient calculation for linebreeding',
+    description: 'Hi WarrenWise Support, I noticed when pairing half-siblings that Wright’s coefficient shows 12.5%. Is there an option to view ancestral path breakdown on the 4-generation certificate?',
+    status: 'In Review',
+    createdAt: '2026-08-28T14:32:00.000Z',
+    updatedAt: '2026-08-29T09:15:00.000Z',
+    deviceInfo: {
+      platform: 'Win32',
+      appVersion: '1.0.0',
+      screen: '1920x1080',
+      online: true
+    },
+    replies: [
+      {
+        id: 'rep-1',
+        senderRole: 'admin',
+        senderName: 'Root Admin (Jason)',
+        message: 'Hello Grandview Barn! Yes, the 4-generation pedigree tree maps common ancestors in gold. We are currently rolling out the full ancestral path matrix in our upcoming update.',
+        timestamp: '2026-08-29T09:15:00.000Z'
+      }
+    ]
+  },
+  {
+    id: 'tkt-102',
+    ticketNumber: 'WW-9102',
+    breederId: 'ab-youth-1',
+    breederEmail: 'alex.rivera@example.com',
+    rabbitryName: 'Rivera 4-H Champions',
+    category: 'Account Recovery',
+    priority: 'Urgent',
+    subject: '2FA Recovery Assistance Request - New Phone Setup',
+    description: 'Hello, I got a new mobile phone for the new school year and lost access to my authenticator app. I do not have my backup codes with me. Please help me temporarily reset my 2FA so I can set up my new authenticator app. My rabbitry tattoo prefix is 4H- and my ARBA youth account is Y-48192.',
+    status: 'Open',
+    createdAt: '2026-09-01T10:11:00.000Z',
+    updatedAt: '2026-09-01T10:11:00.000Z',
+    deviceInfo: {
+      platform: 'Android',
+      appVersion: '1.0.0',
+      screen: '1080x2400',
+      online: true
+    },
+    replies: []
+  }
+];
+
+export const DEFAULT_HELP_ARTICLES = [
+  {
+    id: 'help-rec-1',
+    category: 'Account & Security',
+    title: 'Supreme Account Recovery: How to Regain Access If Locked Out',
+    summary: 'Step-by-step instructions for resetting passwords, using 2FA backup codes, and requesting Root assistance if all credentials are lost.',
+    content: `### Supreme Account Recovery Guide
+If you are unable to access your WarrenWise Pro account, choose the path matching your situation:
+
+#### 1. Forgot Your Password
+- Click **"Forgot Password?"** on the Sign In screen.
+- Enter your registered email address.
+- A secure 6-digit verification code will be generated to allow you to set a new strong password.
+- *Security Rule*: Resetting your password immediately invalidates all active sessions on other devices.
+
+#### 2. Lost Authenticator or 2FA Device
+- On the 2FA verification screen, click **"Use a Backup Code"**.
+- Enter one of the 8 single-use backup recovery codes provided when you turned on 2FA.
+- Once entered, that specific code is retired. Once in your account, visit **Settings > Account & Security** to regenerate a fresh set of backup codes or re-pair your authenticator app.
+
+#### 3. Lost Both Authenticator & Backup Codes
+- Click **"Having trouble signing in? Recover your account"** on the login screen.
+- Select **"Support-Assisted Recovery"** to open a Priority Recovery Ticket.
+- Our Root Support team will verify ownership using signals such as your Rabbitry Name, ARBA Account Number, and recent animal tattoo prefixes before temporarily clearing 2FA.
+- Support will never ask for your password.`
+  },
+  {
+    id: 'help-sec-2',
+    category: 'Account & Security',
+    title: 'Two-Factor Authentication (2FA) & Session Security',
+    summary: 'Protecting your rabbitry purebred lines and financial ledger with TOTP authenticator apps and active session revocation.',
+    content: `### Two-Factor Authentication (2FA) Setup
+WarrenWise Pro supports standard RFC 6238 Time-based One-Time Passwords (TOTP), compatible with Google Authenticator, Microsoft Authenticator, 1Password, and Apple Keychain.
+
+#### How to Enable 2FA:
+1. Navigate to **Settings > Account & Security > Two-Factor Authentication**.
+2. Scan the provided QR code with your authenticator app (or manually enter the Secret Key).
+3. Enter the 6-digit rotating code to confirm setup.
+4. **Download or copy your 8 Backup Codes**. Store them safely offline.
+
+#### Managing Active Sessions
+Under **Settings > Account & Security > Active Sessions**, you can review all logged-in devices and click **"Log out of other devices"** anytime you suspect unauthorized access.`
+  },
+  {
+    id: 'help-ped-3',
+    category: 'Pedigrees & Lineage',
+    title: '4-Generation Pedigree Standardization & Missing Ancestors',
+    summary: 'Understanding official ARBA 4-generation lineages, Wright\'s inbreeding coefficient, and blank ancestor card formatting.',
+    content: `### 4-Generation Pedigrees in WarrenWise Pro
+WarrenWise Pro enforces the ARBA 4-generation standard (Self + 2 Parents + 4 Grandparents + 8 Great-Grandparents = 15 animals total).
+
+- **Incomplete Lines**: If an ancestor line is unrecorded or unregistered, the pedigree builder cleanly displays **— Blank —** with a dashed border rather than displaying error states.
+- **Inbreeding Coefficient (F)**: Calculated automatically using Wright's method across all 4 generations.
+- **Certificate Printing**: Active subscribers can print official archival certificates or high-contrast 4"x3" cage cards with verification QR codes.`
+  },
+  {
+    id: 'help-safe-4',
+    category: 'Animal Welfare & Safety',
+    title: 'WarrenWise Animal Safety & FDA Compliance Policy',
+    summary: 'Our strict welfare controls: Why dosage calculations require veterinary oversight and how community knowledge is vetted.',
+    content: `### WarrenWise Animal Safety Policy
+Animal welfare is our paramount priority.
+
+- **No Unvetted Medical Advice**: Dosage formulas, home diagnoses, or off-label antibiotic recommendations are strictly barred from entering the active AI knowledge base.
+- **FDA Meat & Show Withdrawal Tracking**: Medical records automatically monitor required withdrawal windows before purebred stock can be exhibited or sold.
+- **Community Submissions**: Husbandry tips undergo strict Root verification before being labeled as verified knowledge.`
   }
 ];

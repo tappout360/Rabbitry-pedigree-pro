@@ -4,7 +4,8 @@ import {
   Trash2, ShieldAlert, CheckCircle2, User, HelpCircle, 
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
-  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe, Beef, MessageSquare, Mic
+  LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe, Beef, MessageSquare, Mic,
+  Sliders, LifeBuoy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
@@ -18,6 +19,18 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import UpgradeGate from './components/ui/UpgradeGate';
+import AccountSecurityModal from './views/AccountSecurityModal';
+import AccountRecoveryModal from './components/auth/AccountRecoveryModal';
+import AppSettingsView from './views/AppSettingsView';
+import HelpAndSupportView from './views/HelpAndSupportView';
+import AdminSupportDesk from './views/AdminSupportDesk';
+import { 
+  checkAccountLockout, 
+  recordFailedAttempt, 
+  resetAccountLockout, 
+  verifyTotpCode, 
+  logSecurityEvent 
+} from './services/AccountSecurityService';
 import { GeneticsEngine } from './genetics';
 import Academy from './views/Academy';
 import RegistrarPrep from './views/RegistrarPrep';
@@ -1557,6 +1570,17 @@ export default function App() {
   );
   const [demoGateModal, setDemoGateModal] = useState(null); // { action: 'save' | 'print' | 'copy', title: string }
 
+  // Account Security, 2FA & Support Desk States
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showAccountRecoveryModal, setShowAccountRecoveryModal] = useState(false);
+  const [pending2FAUser, setPending2FAUser] = useState(null); // User awaiting 2FA code verification
+  const [twoFactorInputCode, setTwoFactorInputCode] = useState('');
+  const [twoFactorLoginError, setTwoFactorLoginError] = useState('');
+  const [rememberDevice2FA, setRememberDevice2FA] = useState(true);
+  const [allTickets, setAllTickets] = useState([]);
+  const [securityLogs, setSecurityLogs] = useState([]);
+  const [adminControlSection, setAdminControlSection] = useState('breeders'); // 'breeders', 'support'
+
 
 
   // Auto-dismiss Success Mascot popup after 4 seconds
@@ -1877,6 +1901,8 @@ export default function App() {
         setSyncQueue(data.syncQueue || []);
         setAllApprovals(data.approvals || []);
         setAdminBreeders(data.adminBreeders || []);
+        setAllTickets(data.supportTickets || []);
+        setSecurityLogs(data.securityLogs || []);
         if (!currentUser && data.adminBreeders && data.adminBreeders.length > 0) {
           const defaultUser = data.adminBreeders[0];
           setCurrentUser(defaultUser);
@@ -2766,6 +2792,64 @@ export default function App() {
     }
   };
 
+  const completeUserLogin = (user) => {
+    setCurrentUser(user);
+    localStorage.setItem('rp_current_user', JSON.stringify(user));
+    if (user.id === 'ab-admin') {
+      setSelectedBreederContext('ab-admin');
+      localStorage.setItem('rp_selected_context', 'ab-admin');
+    } else {
+      setSelectedBreederContext(user.id);
+      localStorage.setItem('rp_selected_context', user.id);
+    }
+    setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
+    setRabbitryLogo(user.logo || '🐇');
+    setTheme(user.theme || 'dark');
+    localStorage.setItem('rp_logged_in_email', user.email);
+    localStorage.setItem('rp_rabbitry_name', user.rabbitryName || 'Grandview Rabbitry');
+    localStorage.setItem('rp_logo', user.logo || '🐇');
+    localStorage.setItem('rp_theme', user.theme || 'dark');
+    triggerConfetti();
+    showToast(`Welcome back, ${user.name}!`, "success");
+  };
+
+  const handleVerify2FALogin = async (e) => {
+    e.preventDefault();
+    if (!pending2FAUser) return;
+
+    const cleanCode = twoFactorInputCode.trim();
+    const isTotpValid = await verifyTotpCode(pending2FAUser.twoFactorSecret, cleanCode);
+    const backupCodes = pending2FAUser.twoFactorBackupCodes || [];
+    const isBackupValid = backupCodes.includes(cleanCode.toUpperCase());
+
+    if (!isTotpValid && !isBackupValid) {
+      const attempt = recordFailedAttempt(pending2FAUser.email);
+      if (attempt?.isLocked) {
+        setTwoFactorLoginError(`Account locked for 15 minutes due to too many failed 2FA attempts.`);
+      } else {
+        setTwoFactorLoginError(`Invalid 2FA code or backup code. ${attempt?.attemptsRemaining ?? 4} attempt(s) remaining.`);
+      }
+      return;
+    }
+
+    let updatedUser = { ...pending2FAUser };
+    if (isBackupValid) {
+      const remaining = backupCodes.filter(c => c !== cleanCode.toUpperCase());
+      updatedUser.twoFactorBackupCodes = remaining;
+      await db.adminBreeders.update(pending2FAUser.id, { twoFactorBackupCodes: remaining });
+      await logSecurityEvent(pending2FAUser.id, 'BACKUP_CODE_USED', { remainingCount: remaining.length }, 'warning');
+      showToast(`Signed in with backup code! (${remaining.length} remaining)`, "success");
+    }
+
+    if (rememberDevice2FA) {
+      localStorage.setItem(`rp_remember_2fa_${pending2FAUser.id}`, Date.now().toString());
+    }
+
+    resetAccountLockout(pending2FAUser.email);
+    setPending2FAUser(null);
+    completeUserLogin(updatedUser);
+  };
+
   // Login Form Submit Handler
   const handleLogin = (e) => {
     e.preventDefault();
@@ -2773,6 +2857,12 @@ export default function App() {
 
     if (!loginEmail || !loginPassword) {
       setLoginError('Please enter both username/email and password.');
+      return;
+    }
+
+    const lockout = checkAccountLockout(loginEmail);
+    if (lockout.isLocked) {
+      setLoginError(`Account temporarily locked due to 5 failed attempts. Please wait ${lockout.minutesLeft} minute(s) or use Supreme Account Recovery.`);
       return;
     }
 
@@ -2802,7 +2892,12 @@ export default function App() {
         ));
 
       if (!isPasswordValid) {
-        setLoginError('Incorrect password. Please try again.');
+        const attempt = recordFailedAttempt(loginEmail);
+        if (attempt?.isLocked) {
+          setLoginError(`Account locked for 15 minutes due to 5 consecutive failed attempts. Use Account Recovery if needed.`);
+        } else {
+          setLoginError(`Incorrect password. ${attempt?.attemptsRemaining ?? 4} attempt(s) remaining before temporary lockout.`);
+        }
         return;
       }
 
@@ -2811,25 +2906,21 @@ export default function App() {
         return;
       }
 
-      // Success login!
-      setCurrentUser(user);
-      localStorage.setItem('rp_current_user', JSON.stringify(user));
-      if (user.id === 'ab-admin') {
-        setSelectedBreederContext('ab-admin');
-        localStorage.setItem('rp_selected_context', 'ab-admin');
-      } else {
-        setSelectedBreederContext(user.id);
-        localStorage.setItem('rp_selected_context', user.id);
+      // Check 2FA
+      if (user.twoFactorEnabled) {
+        const remembered = localStorage.getItem(`rp_remember_2fa_${user.id}`);
+        const isStillRemembered = remembered && (Date.now() - Number(remembered)) < 30 * 24 * 60 * 60 * 1000;
+        if (!isStillRemembered) {
+          setPending2FAUser(user);
+          setTwoFactorInputCode('');
+          setTwoFactorLoginError('');
+          return;
+        }
       }
-      setRabbitryName(user.rabbitryName || 'Grandview Rabbitry');
-      setRabbitryLogo(user.logo || '🐇');
-      setTheme(user.theme || 'dark');
-      localStorage.setItem('rp_logged_in_email', user.email);
-      localStorage.setItem('rp_rabbitry_name', user.rabbitryName || 'Grandview Rabbitry');
-      localStorage.setItem('rp_logo', user.logo || '🐇');
-      localStorage.setItem('rp_theme', user.theme || 'dark');
 
-      triggerConfetti();
+      // Success login!
+      resetAccountLockout(loginEmail);
+      completeUserLogin(user);
     };
 
     if (isOffline) {
@@ -5203,107 +5294,187 @@ export default function App() {
                 
                 {/* 1. LOGIN VIEW */}
                 {authView === 'login' && (
-                  <form onSubmit={handleLogin} className="flex flex-col gap-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-2xl font-black text-white tracking-tight">Breeder Sign In</h3>
-                        <p className="text-xs opacity-75 mt-1 text-slate-300">Access your offline-first rabbitry database</p>
+                  pending2FAUser ? (
+                    <form onSubmit={handleVerify2FALogin} className="flex flex-col gap-6 text-left">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                            <Smartphone className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-black text-white">Two-Factor Challenge</h3>
+                            <p className="text-xs text-slate-400">Enter code for {pending2FAUser.email}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setPending2FAUser(null); setTwoFactorLoginError(''); }}
+                          className="text-xs text-slate-400 hover:text-white bg-transparent border-none cursor-pointer"
+                        >
+                          Cancel
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setAuthView('home')}
-                        className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-xl border border-white/10 cursor-pointer flex items-center gap-1 shrink-0"
-                      >
-                        ← Back to Home Page
-                      </button>
-                    </div>
 
-                    {loginError && (
-                      <div className="p-3 bg-red-950/50 border border-red-500/30 text-red-300 text-xs rounded-xl flex items-center gap-2">
-                        <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
-                        <span>{loginError}</span>
-                      </div>
-                    )}
+                      {twoFactorLoginError && (
+                        <div className="p-3 bg-red-950/60 border border-red-500/40 text-red-200 text-xs rounded-xl flex items-center gap-2">
+                          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+                          <span>{twoFactorLoginError}</span>
+                        </div>
+                      )}
 
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold text-indigo-300">Username or Email Address *</label>
-                        <input 
-                          type="text" required placeholder="Username or email"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          className="bg-white/5 border-white/10 w-full"
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-white block">
+                          6-Digit Authenticator Code (or 8-char Backup Code) *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          autoFocus
+                          placeholder="000000 or XXXX-XXXX"
+                          value={twoFactorInputCode}
+                          onChange={(e) => setTwoFactorInputCode(e.target.value)}
+                          className="w-full bg-slate-950 border border-indigo-500/50 rounded-xl py-3 px-4 text-center font-mono text-xl tracking-widest font-black text-white"
                         />
+                        <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+                          <input
+                            type="checkbox"
+                            checked={rememberDevice2FA}
+                            onChange={(e) => setRememberDevice2FA(e.target.checked)}
+                            className="rounded text-indigo-600 bg-slate-800"
+                          />
+                          <span>Remember this device for 30 days</span>
+                        </label>
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex justify-between items-center">
-                          <label className="text-xs font-bold text-indigo-300">Password *</label>
+                      <button
+                        type="submit"
+                        className="btn-interactive w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-bold text-white text-sm rounded-xl border-none cursor-pointer shadow-lg shadow-indigo-600/30"
+                      >
+                        Verify & Sign In
+                      </button>
+
+                      <div className="text-center pt-2 border-t border-white/10 flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowAccountRecoveryModal(true)}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 font-bold bg-transparent border-none cursor-pointer"
+                        >
+                          Having trouble? Supreme Account Recovery &rarr;
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleLogin} className="flex flex-col gap-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-2xl font-black text-white tracking-tight">Breeder Sign In</h3>
+                          <p className="text-xs opacity-75 mt-1 text-slate-300">Access your offline-first rabbitry database</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAuthView('home')}
+                          className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-xl border border-white/10 cursor-pointer flex items-center gap-1 shrink-0"
+                        >
+                          ← Back to Home Page
+                        </button>
+                      </div>
+
+                      {loginError && (
+                        <div className="p-3 bg-red-950/50 border border-red-500/30 text-red-300 text-xs rounded-xl flex items-center gap-2">
+                          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+                          <span>{loginError}</span>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-indigo-300">Username or Email Address *</label>
+                          <input 
+                            type="text" required placeholder="Username or email"
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            className="bg-white/5 border-white/10 w-full"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs font-bold text-indigo-300">Password *</label>
+                            <button 
+                              type="button" 
+                              onClick={() => setShowAccountRecoveryModal(true)}
+                              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold border-none bg-transparent cursor-pointer"
+                            >
+                              Forgot Password?
+                            </button>
+                          </div>
+                          <div className="relative">
+                            <input 
+                              type={showLoginPassword ? "text" : "password"} required placeholder="•••••••••"
+                              value={loginPassword}
+                              onChange={(e) => setLoginPassword(e.target.value)}
+                              className="bg-white/5 border-white/10 w-full pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowLoginPassword(!showLoginPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 opacity-90 hover:opacity-100 z-10 p-1"
+                            >
+                              {showLoginPassword ? <Eye className="w-4 h-4 text-indigo-400" /> : <EyeOff className="w-4 h-4 text-indigo-300" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        type="submit" 
+                        className="btn-interactive w-full py-3 bg-indigo-600 font-bold text-white text-sm"
+                      >
+                        Sign In
+                      </button>
+
+                      <div className="text-center text-xs opacity-75 border-t border-white/5 pt-4 flex flex-col gap-3">
+                        <div>
+                          <span>Don't have an account? </span>
                           <button 
                             type="button" 
-                            onClick={() => setAuthView('forgot-password')}
-                            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                            onClick={() => {
+                              setAuthView('signup');
+                              setLoginError('');
+                            }}
+                            className="text-pink-400 hover:text-pink-300 font-bold border-none bg-transparent cursor-pointer"
                           >
-                            Forgot Password?
+                            Register New Account
                           </button>
                         </div>
-                        <div className="relative">
-                          <input 
-                            type={showLoginPassword ? "text" : "password"} required placeholder="••••••••"
-                            value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                            className="bg-white/5 border-white/10 w-full pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowLoginPassword(!showLoginPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 opacity-90 hover:opacity-100 z-10 p-1"
+                        <div>
+                          <button 
+                            type="button" 
+                            onClick={() => setShowAccountRecoveryModal(true)}
+                            className="text-indigo-400 hover:text-indigo-300 font-bold text-xs border-none bg-transparent cursor-pointer"
                           >
-                            {showLoginPassword ? <Eye className="w-4 h-4 text-indigo-400" /> : <EyeOff className="w-4 h-4 text-indigo-300" />}
+                            Having trouble signing in? Supreme Account Recovery
+                          </button>
+                        </div>
+                        <div>
+                          <button 
+                            type="button" 
+                            onClick={() => setAuthView('marketplace')}
+                            className="text-indigo-450 hover:text-indigo-350 font-black uppercase text-[10px] tracking-wider flex items-center justify-center gap-1.5 mx-auto border border-indigo-500/30 px-4.5 py-2 rounded-xl hover:bg-indigo-500/5 transition-all cursor-pointer"
+                          >
+                            🥕 Browse Public Marketplace
                           </button>
                         </div>
                       </div>
-                    </div>
 
-                    <button 
-                      type="submit" 
-                      className="btn-interactive w-full py-3 bg-indigo-600 font-bold text-white text-sm"
-                    >
-                      Sign In
-                    </button>
-
-                    <div className="text-center text-xs opacity-75 border-t border-white/5 pt-4 flex flex-col gap-3">
-                      <div>
-                        <span>Don't have an account? </span>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            setAuthView('signup');
-                            setLoginError('');
-                          }}
-                          className="text-pink-400 hover:text-pink-300 font-bold"
-                        >
-                          Register New Account
-                        </button>
+                      {/* Quick Demo Login Help */}
+                      <div className="p-3 bg-indigo-950/20 border border-indigo-500/10 rounded-xl">
+                        <span className="text-[10px] font-bold text-indigo-300 block mb-1">Demo Credentials:</span>
+                        <span className="text-[9px] text-indigo-200 block">Breeder: <strong>jason@grandview.com</strong> / password123</span>
+                        <span className="text-[9px] text-indigo-200 block">Registrar: <strong>sarah@arba.org</strong> / arba_pass_2026</span>
                       </div>
-                      <div>
-                        <button 
-                          type="button" 
-                          onClick={() => setAuthView('marketplace')}
-                          className="text-indigo-450 hover:text-indigo-350 font-black uppercase text-[10px] tracking-wider flex items-center justify-center gap-1.5 mx-auto border border-indigo-500/30 px-4.5 py-2 rounded-xl hover:bg-indigo-500/5 transition-all cursor-pointer"
-                        >
-                          🛒 Browse Public Marketplace
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quick Demo Login Help */}
-                    <div className="p-3 bg-indigo-950/20 border border-indigo-500/10 rounded-xl">
-                      <span className="text-[10px] font-bold text-indigo-300 block mb-1">Demo Credentials:</span>
-                      <span className="text-[9px] text-indigo-200 block">Breeder: <strong>jason@grandview.com</strong> / password123</span>
-                      <span className="text-[9px] text-indigo-200 block">Registrar: <strong>sarah@arba.org</strong> / arba_pass_2026</span>
-                    </div>
-                  </form>
+                    </form>
+                  )
                 )}
 
                 {/* 2. SIGN UP VIEW */}
@@ -6734,6 +6905,18 @@ export default function App() {
               className="flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all opacity-85 hover:bg-white/5 text-amber-300 cursor-pointer border-none bg-transparent"
             >
               <MessageSquare className="w-5 h-5 text-amber-400" /> 💬 App Feedback
+            </button>
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'settings' ? 'bg-white/10 text-white shadow-inner border border-indigo-500/40' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <Sliders className="w-5 h-5 text-indigo-400" /> App Settings
+            </button>
+            <button 
+              onClick={() => setActiveTab('help_support')}
+              className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'help_support' ? 'bg-white/10 text-white shadow-inner border border-sky-500/40' : 'opacity-85 hover:bg-white/5'}`}
+            >
+              <LifeBuoy className="w-5 h-5 text-sky-400" /> Help & Support Desk
             </button>
             {isOwnerAuthenticated && (
               <button 
@@ -10379,8 +10562,45 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Stats overview row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Control Center Section Switcher */}
+              <div className="flex border-b border-white/10 bg-slate-950/40 p-1.5 rounded-2xl gap-2 text-xs font-bold w-full sm:w-fit">
+                <button
+                  type="button"
+                  onClick={() => setAdminControlSection('breeders')}
+                  className={`py-2 px-4 rounded-xl cursor-pointer transition-all border-none ${
+                    adminControlSection === 'breeders' ? 'bg-indigo-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Breeder Registries & Accounts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminControlSection('support')}
+                  className={`py-2 px-4 rounded-xl cursor-pointer transition-all border-none flex items-center gap-1.5 ${
+                    adminControlSection === 'support' ? 'bg-indigo-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <LifeBuoy className="w-3.5 h-3.5" /> Support & Recovery Desk ({allTickets.length})
+                </button>
+              </div>
+
+              {adminControlSection === 'support' ? (
+                <AdminSupportDesk
+                  allBreeders={adminBreeders}
+                  setAdminBreeders={setAdminBreeders}
+                  allRabbits={rabbits}
+                  allTickets={allTickets}
+                  setAllTickets={setAllTickets}
+                  securityLogs={securityLogs}
+                  setSecurityLogs={setSecurityLogs}
+                  currentUser={currentUser}
+                  showToast={showToast}
+                  triggerConfetti={triggerConfetti}
+                />
+              ) : (
+                <>
+                  {/* Stats overview row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col">
                   <span className="text-xs opacity-70">Total Breeders</span>
                   <span className="text-2xl font-bold">{adminBreeders.length}</span>
@@ -10545,9 +10765,45 @@ export default function App() {
                 </div>
 
               </div>
+            </>
+          )}
 
             </div>
           ))}
+
+          {/* TAB 7: APP SETTINGS */}
+          {activeTab === 'settings' && (
+            <AppSettingsView
+              currentUser={currentUser}
+              onUpdateUser={(updatedUser) => {
+                setCurrentUser(updatedUser);
+                setAdminBreeders(prev => prev.map(b => b.id === updatedUser.id ? updatedUser : b));
+                localStorage.setItem('rp_current_user', JSON.stringify(updatedUser));
+                if (updatedUser.rabbitryName) setRabbitryName(updatedUser.rabbitryName);
+              }}
+              weightUnit={weightUnit}
+              onToggleWeightUnit={() => {
+                const nextUnit = weightUnit === 'oz' ? 'lbs' : 'oz';
+                setWeightUnit(nextUnit);
+                localStorage.setItem('rp_weight_unit', nextUnit);
+                showToast(`Weight unit switched to ${nextUnit === 'oz' ? 'Ounces (oz)' : 'Pounds (lbs)'}!`, "info");
+              }}
+              onOpenSecurityModal={() => setShowSecurityModal(true)}
+              onOpenHelpSupport={() => setActiveTab('help_support')}
+              showToast={showToast}
+            />
+          )}
+
+          {/* TAB 8: HELP & SUPPORT DESK */}
+          {activeTab === 'help_support' && (
+            <HelpAndSupportView
+              currentUser={currentUser}
+              allTickets={allTickets}
+              setAllTickets={setAllTickets}
+              onOpenTermsModal={() => setShowTermsModal(true)}
+              showToast={showToast}
+            />
+          )}
 
         </>
       )}
@@ -13400,6 +13656,35 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Supreme Account Security Modal */}
+      {showSecurityModal && (
+        <AccountSecurityModal
+          currentUser={currentUser}
+          onUpdateUser={(updatedUser) => {
+            setCurrentUser(updatedUser);
+            setAdminBreeders(prev => prev.map(b => b.id === updatedUser.id ? updatedUser : b));
+            localStorage.setItem('rp_current_user', JSON.stringify(updatedUser));
+            if (updatedUser.rabbitryName) setRabbitryName(updatedUser.rabbitryName);
+          }}
+          onClose={() => setShowSecurityModal(false)}
+          showToast={showToast}
+          triggerConfetti={triggerConfetti}
+        />
+      )}
+
+      {/* Supreme Account Recovery Modal */}
+      {showAccountRecoveryModal && (
+        <AccountRecoveryModal
+          allBreeders={adminBreeders}
+          onLoginSuccess={(user) => {
+            completeUserLogin(user);
+            setShowAccountRecoveryModal(false);
+          }}
+          onClose={() => setShowAccountRecoveryModal(false)}
+          showToast={showToast}
+        />
       )}
 
       {/* Global AI Barn Assistant UI */}

@@ -2,7 +2,8 @@ import Dexie from 'dexie';
 import {
   DEFAULT_BREEDERS, DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS,
   DEFAULT_LEDGER, DEFAULT_SHOWS, DEFAULT_SHOW_ENTRIES, DEFAULT_CHORES, DEFAULT_TRANSFERS,
-  DEFAULT_SIGNATURES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS, DEFAULT_YOUTH_PROGRESS
+  DEFAULT_SIGNATURES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS, DEFAULT_YOUTH_PROGRESS,
+  DEFAULT_SUPPORT_TICKETS
 } from './defaults';
 
 export const db = new Dexie('RabbitryPedigreeProDB');
@@ -275,6 +276,42 @@ db.version(11).stores({
   aiAuditLog: 'id, query, timestamp, knowledgeTiersUsed'
 });
 
+// Version 12: Added Account, Security, 2FA, Sessions & Support Ticket Systems
+db.version(12).stores({
+  adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized, userRestriction, vectorClock',
+  conflicts: 'id, recordId, tbl, fieldName, resolved',
+  rabbits: 'id, breederId, breed, variety, status, sex, dob, tattooNumber, sireId, damId, species, [breederId+status], [breederId+sex], [breederId+status+sex], vectorClock',
+  breedings: 'id, breederId, buckId, doeId, breedDate, status, vectorClock',
+  litters: 'id, breederId, breedingId, kindleDate, vectorClock',
+  ledger: 'id, breederId, rabbitId, date, vectorClock',
+  shows: 'id, breederId, date, vectorClock',
+  showEntries: 'id, breederId, showId, rabbitId, vectorClock',
+  chores: 'id, breederId, dueDate, vectorClock',
+  transfers: 'id, breederId, rabbitId, date, vectorClock',
+  signatures: 'id, breederId, vectorClock',
+  medical: 'id, breederId, rabbitId, date, vectorClock',
+  weights: 'id, breederId, rabbitId, date, [rabbitId+date], vectorClock',
+  syncQueue: '++id, recordId, tbl, timestamp, action',
+  approvals: 'id, breederId, timestamp',
+  youthProgress: 'id, memberName, ageGroup, currentLevel, xp, streak, lastActiveDate, coachId',
+  youthQuizLogs: 'id, progressId, quizType, score, passed, date, coachFeedback',
+  subscriptions: 'id, breederId, tier, status, currentPeriodEnd, trialEnd',
+  invoices: 'id, breederId, stripeInvoiceId, status',
+  evansVerifications: 'id, breederId, status',
+  photoThumbnails: 'id, rabbitId, date',
+  offlinePhotos: 'id, rabbitId, status',
+  marketplaceListings: 'id, rabbitId, breederId, category, status',
+  socialPosts: 'id, breederId, title, status, timestamp, parentApproved, aiFlagged',
+  socialComments: 'id, postId, breederId, timestamp, parentApproved, aiFlagged',
+  offlineActionQueue: 'id, timestamp, action',
+  communityKnowledge: 'id, authorId, category, status, isFlagged, timestamp',
+  aiAuditLog: 'id, query, timestamp, knowledgeTiersUsed',
+  supportTickets: 'id, breederId, category, priority, status, createdAt, updatedAt',
+  securityLogs: 'id, breederId, eventType, timestamp, severity',
+  userSessions: 'id, breederId, sessionToken, deviceName, lastActive, isActive',
+  securityProfiles: 'id, breederId, is2FAEnabled, lastPasswordChange'
+});
+
 let migrationPromise = null;
 
 
@@ -343,6 +380,8 @@ export async function performMigrationAndLoad() {
     const marketplaceListings = await migrateOrLoadTable('rp_marketplace_listings', db.marketplaceListings, []);
     const socialPosts = await migrateOrLoadTable('rp_social_posts', db.socialPosts, []);
     const socialComments = await migrateOrLoadTable('rp_social_comments', db.socialComments, []);
+    const supportTickets = await migrateOrLoadTable('rp_support_tickets', db.supportTickets, DEFAULT_SUPPORT_TICKETS || []);
+    const securityLogs = await migrateOrLoadTable('rp_security_logs', db.securityLogs, []);
 
     // Mark migration as done
     if (!isMigrated) {
@@ -374,7 +413,9 @@ export async function performMigrationAndLoad() {
       offlinePhotos,
       marketplaceListings,
       socialPosts,
-      socialComments
+      socialComments,
+      supportTickets,
+      securityLogs
     };
   })().catch(async (err) => {
     console.warn("Database error detected during load. Executing automatic silent self-healing...", err);
