@@ -29,8 +29,12 @@ import {
   recordFailedAttempt, 
   resetAccountLockout, 
   verifyTotpCode, 
-  logSecurityEvent 
+  logSecurityEvent,
+  touchSessionActivity,
+  isSessionExpired
 } from './services/AccountSecurityService';
+import ReAuthModal from './components/auth/ReAuthModal';
+import { canPerformAction, getDenialReason, ACTIONS, ROLES, getUserRole } from './services/RbacService';
 import { GeneticsEngine } from './genetics';
 import Academy from './views/Academy';
 import RegistrarPrep from './views/RegistrarPrep';
@@ -1580,6 +1584,26 @@ export default function App() {
   const [allTickets, setAllTickets] = useState([]);
   const [securityLogs, setSecurityLogs] = useState([]);
   const [adminControlSection, setAdminControlSection] = useState('breeders'); // 'breeders', 'support'
+  const [pendingReAuth, setPendingReAuth] = useState(null); // { actionName, onAuthorized }
+
+  // Zero Trust Session Lifetime & Sliding Expiration Check (12-hour policy)
+  useEffect(() => {
+    if (currentUser) {
+      if (isSessionExpired()) {
+        showToast("Your session has expired after 12 hours of inactivity (Zero Trust policy). Please sign in again.", "warning");
+        handleLogout();
+        return;
+      }
+      touchSessionActivity();
+      const handleUserActivity = () => touchSessionActivity();
+      window.addEventListener('click', handleUserActivity);
+      window.addEventListener('keydown', handleUserActivity);
+      return () => {
+        window.removeEventListener('click', handleUserActivity);
+        window.removeEventListener('keydown', handleUserActivity);
+      };
+    }
+  }, [currentUser]);
 
 
 
@@ -3297,7 +3321,7 @@ export default function App() {
   };
 
   // Data Platform Import / Export Backup Managers
-  const handleExportData = () => {
+  const executeExportData = () => {
     const backupData = {
       version: "1.0",
       timestamp: new Date().toISOString(),
@@ -3318,10 +3342,37 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `warrenwise_backup_${Date.now()}.json`;
+    link.download = `rabbitrypedigreepro_backup_${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
     showToast("Database backup downloaded successfully!", "success");
+  };
+
+  const handleExportData = () => {
+    if (!canPerformAction(currentUser, ACTIONS.EXPORT_DATA)) {
+      showToast(getDenialReason(currentUser, ACTIONS.EXPORT_DATA), "error");
+      return;
+    }
+    setPendingReAuth({
+      actionName: 'Full Database JSON Backup Export',
+      onAuthorized: () => {
+        executeExportData();
+      }
+    });
+  };
+
+  const handleTriggerDatabaseReset = () => {
+    if (!canPerformAction(currentUser, ACTIONS.RESET_DATABASE)) {
+      showToast(getDenialReason(currentUser, ACTIONS.RESET_DATABASE), "error");
+      return;
+    }
+    setPendingReAuth({
+      actionName: 'Permanent Database Reset',
+      onAuthorized: () => {
+        setResetConfirmOpen(true);
+        setResetConfirmText('');
+      }
+    });
   };
 
   const handleImportData = (e) => {
@@ -3470,6 +3521,10 @@ export default function App() {
 
   // Delete Rabbit Handler
   const handleDeleteRabbit = (id) => {
+    if (!canPerformAction(currentUser, ACTIONS.DELETE_RABBIT)) {
+      showToast(getDenialReason(currentUser, ACTIONS.DELETE_RABBIT), "error");
+      return;
+    }
     if (isAssistantWriteOnly) {
       alert("Permission denied. Barn Assistants cannot delete records.");
       return;
@@ -9312,6 +9367,9 @@ export default function App() {
                   {/* 3. Interactive Pedigree Tree View */}
                   <PedigreeBuilder 
                     rabbits={rabbits} 
+                    allRabbits={allRabbits}
+                    allBreeders={adminBreeders}
+                    showToast={showToast}
                     weightUnit={weightUnit}
                     selectedRabbitId={selectedRabbit.id}
                     onUpdateRabbit={(updatedRabbit) => {
@@ -10051,7 +10109,7 @@ export default function App() {
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
                   <button
-                    onClick={() => { setResetConfirmOpen(true); setResetConfirmText(''); }}
+                    onClick={handleTriggerDatabaseReset}
                     className="btn-interactive py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none shadow-md cursor-pointer"
                   >
                     🧹 Clear Demo Stock
@@ -10437,7 +10495,7 @@ export default function App() {
                     <div className="mt-3 p-4 rounded-xl bg-red-950/40 border-2 border-red-500/30">
                       <p className="text-xs text-red-300 font-bold mb-2">🔒 Before you proceed, we strongly recommend exporting a backup above.</p>
                       <button
-                        onClick={() => { setResetConfirmOpen(true); setResetConfirmText(''); }}
+                        onClick={handleTriggerDatabaseReset}
                         className="btn-interactive text-xs py-2 px-4 bg-red-700 hover:bg-red-600 text-white font-bold border-none flex items-center gap-1.5 cursor-pointer inline-flex"
                       >
                         ⚠️ Begin Database Reset...
@@ -12011,6 +12069,39 @@ export default function App() {
                 </button>
               </div>
 
+              {/* ARBA & Cross-Rabbitry Registered Ear Tag Search */}
+              {!pedigreeEditNode.isOffspring && (
+                <div className="p-3.5 bg-slate-950/80 border border-indigo-500/30 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-white">ARBA Ear Tag Registry Search</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    Search registered ear numbers across all rabbitries. Matching records will auto-fill ancestor details for this rabbit only.
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Search Ear / Tattoo # (e.g. S1, HL-1, CT-101)..."
+                    className="w-full bg-slate-900 border border-indigo-500/40 text-xs text-white rounded-xl py-2 px-3 font-mono focus:border-indigo-400"
+                    onChange={(e) => {
+                      const val = e.target.value.trim().toLowerCase();
+                      if (val.length >= 1) {
+                        const match = allRabbits.find(r => 
+                          r.tattooNumber && r.tattooNumber.toLowerCase() === val && 
+                          r.id !== selectedRabbit.id &&
+                          (!pedigreeEditNode.gender || r.sex === pedigreeEditNode.gender)
+                        );
+                        if (match) {
+                          fillNodeFormFromRabbit(match);
+                          setNodeFormType('new');
+                          showToast(`Auto-filled ${match.name} (${match.tattooNumber}) from registry for this rabbit only!`, "success");
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Form type toggle (Only if NOT offspring) */}
               {!pedigreeEditNode.isOffspring && !pedigreeEditNode.rabbitId && (
                 <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
@@ -12035,18 +12126,33 @@ export default function App() {
                 
                 {/* EXISTING SELECTION */}
                 {nodeFormType === 'existing' && !pedigreeEditNode.isOffspring && !pedigreeEditNode.rabbitId && (
-                  <div className="flex flex-col gap-2 bg-black/25 p-4 rounded-2xl border border-white/5">
-                    <label className="text-xs font-bold text-indigo-300">Choose {pedigreeEditNode.gender === 'buck' ? 'Buck' : 'Doe'} from Barn</label>
+                  <div className="flex flex-col gap-2.5 bg-black/25 p-4 rounded-2xl border border-white/5">
+                    <label className="text-xs font-bold text-indigo-300">Choose {pedigreeEditNode.gender === 'buck' ? 'Buck' : 'Doe'} from Barn History</label>
+                    <input
+                      type="text"
+                      placeholder="Fast filter herd by ear # or name..."
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl py-1.5 px-3 text-xs text-white placeholder:text-slate-500"
+                      onChange={(e) => {
+                        const query = e.target.value.toLowerCase().trim();
+                        if (query) {
+                          const found = genderMatchedRabbits.find(r => 
+                            (r.tattooNumber && r.tattooNumber.toLowerCase().includes(query)) ||
+                            (r.name && r.name.toLowerCase().includes(query))
+                          );
+                          if (found) setSelectedExistingId(found.id);
+                        }
+                      }}
+                    />
                     <select
                       value={selectedExistingId}
                       onChange={(e) => setSelectedExistingId(e.target.value)}
-                      className="w-full bg-slate-800 border-white/10"
+                      className="w-full bg-slate-800 border-white/10 text-xs p-2.5 rounded-xl text-white"
                       required
                     >
-                      <option value="">-- Select Rabbit --</option>
+                      <option value="">-- Select Rabbit from Herd History --</option>
                       {genderMatchedRabbits.map(r => (
                         <option key={r.id} value={r.id}>
-                          {r.name} ({r.tattooNumber}) - {r.breed} {r.variety}
+                          {r.tattooNumber ? `[${r.tattooNumber}] ` : ''}{r.name} - {r.breed} ({r.variety})
                         </option>
                       ))}
                     </select>
@@ -13683,6 +13789,21 @@ export default function App() {
             setShowAccountRecoveryModal(false);
           }}
           onClose={() => setShowAccountRecoveryModal(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Zero Trust Explicit Re-Authentication Modal */}
+      {pendingReAuth && (
+        <ReAuthModal
+          currentUser={currentUser}
+          actionName={pendingReAuth.actionName}
+          onSuccess={() => {
+            const cb = pendingReAuth.onAuthorized;
+            setPendingReAuth(null);
+            if (cb) cb();
+          }}
+          onClose={() => setPendingReAuth(null)}
           showToast={showToast}
         />
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, AlertTriangle, X, Wand2 } from 'lucide-react';
+import { Share2, FileText, Check, RotateCcw, ShieldCheck, User, Plus, Search, AlertTriangle, X, Wand2, Sparkles, Tag, ArrowRight } from 'lucide-react';
 import { uuidv7 } from '../../db/uuid';
 import { BREED_STANDARDS, CAVY_BREED_STANDARDS } from '../../db/breedStandards';
 import { BREED_COLORS } from '../../db/breedColors';
@@ -135,7 +135,18 @@ const renderWinningsBadge = (node, sizeClass = "text-[8px] px-1 py-0.2 rounded")
   );
 };
 
-export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintPedigree, onEditNode, weightUnit = 'oz', onOpenRegistrarPrep, selectedRabbitId: propSelectedRabbitId }) {
+export default function PedigreeBuilder({ 
+  rabbits = [], 
+  allRabbits = [],
+  allBreeders = [],
+  onUpdateRabbit, 
+  onPrintPedigree, 
+  onEditNode, 
+  weightUnit = 'oz', 
+  onOpenRegistrarPrep, 
+  selectedRabbitId: propSelectedRabbitId,
+  showToast
+}) {
   const formatWeight = (oz) => {
     if (!oz) return 'N/A';
     return weightUnit === 'lbs' 
@@ -153,6 +164,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   }, [propSelectedRabbitId]);
   const [activeAssignNode, setActiveAssignNode] = useState(null); // { id: 'sire' | 'dam' | 'sireSire' etc, label: string }
   const [searchQuery, setSearchQuery] = useState('');
+  const [earNumberQuery, setEarNumberQuery] = useState('');
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customForm, setCustomForm] = useState({
     name: '',
@@ -729,6 +741,88 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
     });
   }, [activeAssignNode, rabbits, selectedRabbitId, searchQuery]);
 
+  // ARBA & Cross-Rabbitry Registry Ear Tag Search
+  const arbaRegistryMatches = useMemo(() => {
+    if (!activeAssignNode || !earNumberQuery.trim()) return [];
+    const clean = earNumberQuery.trim().toLowerCase();
+    const isMale = activeAssignNode.id.toLowerCase().endsWith('sire');
+    const sourceList = (allRabbits && allRabbits.length > 0) ? allRabbits : rabbits;
+
+    return sourceList.filter(r => {
+      if (r.id === selectedRabbitId) return false;
+      if (isMale && r.sex !== 'buck') return false;
+      if (!isMale && r.sex !== 'doe') return false;
+      const tat = (r.tattooNumber || '').toLowerCase().trim();
+      return tat === clean || tat.includes(clean);
+    }).slice(0, 5);
+  }, [activeAssignNode, earNumberQuery, allRabbits, rabbits, selectedRabbitId]);
+
+  // Auto-Fill Ancestor from ARBA / Cross-Registry (This Rabbit Only)
+  const handleAutoFillFromRegistry = (matchedRabbit) => {
+    if (!activeAssignNode || !activeRabbit) return;
+
+    const ancestorId = uuidv7();
+    const clonedAncestor = {
+      id: ancestorId,
+      breederId: activeRabbit.breederId,
+      name: matchedRabbit.name,
+      tattooNumber: matchedRabbit.tattooNumber || '',
+      breed: matchedRabbit.breed || activeRabbit.breed,
+      variety: matchedRabbit.variety || 'Standard',
+      sex: matchedRabbit.sex,
+      dob: matchedRabbit.dob || '',
+      weightOz: matchedRabbit.weightOz || 160,
+      registrationNumber: matchedRabbit.registrationNumber || '',
+      gcNumber: matchedRabbit.gcNumber || '',
+      breederName: matchedRabbit.breederName || '',
+      breederPrefix: matchedRabbit.breederPrefix || '',
+      colorCarrier: matchedRabbit.colorCarrier || '',
+      status: 'pedigree_only',
+      isRegistryTransfer: true,
+      originalBreederId: matchedRabbit.breederId,
+      sireId: matchedRabbit.sireId || '',
+      damId: matchedRabbit.damId || '',
+      legs: matchedRabbit.legs || [],
+      winningsBOB: matchedRabbit.winningsBOB || 0,
+      winningsBOV: matchedRabbit.winningsBOV || 0,
+      winningsBOS: matchedRabbit.winningsBOS || 0,
+      winningsBOSV: matchedRabbit.winningsBOSV || 0,
+      winningsBIS: matchedRabbit.winningsBIS || 0,
+      winningsOther: matchedRabbit.winningsOther || 0,
+      showClass: matchedRabbit.showClass || 'Auto'
+    };
+
+    let updatedProband = { ...activeRabbit };
+    const nodeId = activeAssignNode.id;
+
+    if (nodeId === 'sire') {
+      updatedProband.sireId = ancestorId;
+    } else if (nodeId === 'dam') {
+      updatedProband.damId = ancestorId;
+    } else {
+      const parentNodeKey = nodeId.endsWith('Sire') ? nodeId.slice(0, -4) : nodeId.slice(0, -3);
+      const parentRabbit = pedigreeNodes[parentNodeKey];
+      if (parentRabbit) {
+        const updatedParent = { ...parentRabbit };
+        if (nodeId.endsWith('Sire')) {
+          updatedParent.sireId = ancestorId;
+        } else {
+          updatedParent.damId = ancestorId;
+        }
+        onUpdateRabbit([clonedAncestor, updatedParent]);
+        setActiveAssignNode(null);
+        setEarNumberQuery('');
+        if (showToast) showToast(`Auto-filled ${matchedRabbit.name} (${matchedRabbit.tattooNumber}) into pedigree for this rabbit only!`, "success");
+        return;
+      }
+    }
+
+    onUpdateRabbit([clonedAncestor, updatedProband]);
+    setActiveAssignNode(null);
+    setEarNumberQuery('');
+    if (showToast) showToast(`Auto-filled ${matchedRabbit.name} (${matchedRabbit.tattooNumber}) into pedigree for this rabbit only!`, "success");
+  };
+
   // ARBA Standards audit checking
   const arbaAudit = useMemo(() => {
     if (!activeRabbit) return null;
@@ -770,18 +864,20 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   const nameSuggestions = useMemo(() => {
     if (!customForm.name || customForm.name.trim().length < 1) return [];
     const query = customForm.name.toLowerCase();
-    return rabbits.filter(r => 
+    const sourceList = (allRabbits && allRabbits.length > 0) ? allRabbits : rabbits;
+    return sourceList.filter(r => 
       r.name.toLowerCase().includes(query) && r.id !== selectedRabbitId
     ).slice(0, 5);
-  }, [customForm.name, rabbits, selectedRabbitId]);
+  }, [customForm.name, allRabbits, rabbits, selectedRabbitId]);
 
   const tattooSuggestions = useMemo(() => {
     if (!customForm.tattooNumber || customForm.tattooNumber.trim().length < 1) return [];
     const query = customForm.tattooNumber.toLowerCase();
-    return rabbits.filter(r => 
+    const sourceList = (allRabbits && allRabbits.length > 0) ? allRabbits : rabbits;
+    return sourceList.filter(r => 
       r.tattooNumber && r.tattooNumber.toLowerCase().includes(query) && r.id !== selectedRabbitId
     ).slice(0, 5);
-  }, [customForm.tattooNumber, rabbits, selectedRabbitId]);
+  }, [customForm.tattooNumber, allRabbits, rabbits, selectedRabbitId]);
 
   const fillCustomFormFromRabbit = (r) => {
     setCustomForm({
@@ -1378,52 +1474,156 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Context Assignment Drawer */}
             {activeAssignNode ? (
-              <div className="glass-container p-5 border border-indigo-500/30 flex flex-col gap-4">
-                <div>
-                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                    <Search className="w-4 h-4 text-indigo-400" /> Assign {activeAssignNode.label}
-                  </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Select a compatible rabbit from your herd.</p>
+              <div className="glass-container p-5 border border-indigo-500/30 flex flex-col gap-4 text-left">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div>
+                    <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                      <Search className="w-4 h-4 text-indigo-400" /> Assign {activeAssignNode.label}
+                    </h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Fast search ARBA ear tag registry or choose from your barn history.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveAssignNode(null); setEarNumberQuery(''); setSearchQuery(''); setShowCustomForm(false); }}
+                    className="p-1 text-slate-400 hover:text-white rounded-full border-none bg-transparent cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
 
-{!showCustomForm ? (
-                  <>
-                    <input
-                      type="text"
-                      placeholder="Search name, tattoo..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-xl py-2 px-3 focus:border-indigo-500"
-                    />
+                {!showCustomForm ? (
+                  <div className="space-y-4">
+                    {/* SECTION 1: ARBA & CROSS-RABBITRY EAR NUMBER REGISTRY SEARCH */}
+                    <div className="p-3.5 bg-slate-950/80 border border-indigo-500/30 rounded-2xl space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-indigo-400" />
+                        <span className="text-xs font-bold text-white">ARBA Registered Ear Tag Search</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                        Look up any rabbit registered in ARBA or in the system registry by ear number to auto-fill ancestor details for this rabbit only.
+                      </p>
+                      <input
+                        type="text"
+                        placeholder="Type Ear / Tattoo # (e.g. S1, HL-1, CT-101)..."
+                        value={earNumberQuery}
+                        onChange={(e) => setEarNumberQuery(e.target.value)}
+                        className="w-full bg-slate-900 border border-indigo-500/40 text-xs text-white rounded-xl py-2 px-3 focus:border-indigo-400 font-mono"
+                      />
 
-                    <div className="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1">
-                      {availableOptions.length === 0 ? (
-                        <span className="text-[10px] text-slate-500 text-center py-4">No matching rabbits found.</span>
-                      ) : (
-                        availableOptions.map(r => (
-                          <button
-                            key={r.id}
-                            onClick={() => handleAssignRabbit(r)}
-                            className="w-full text-left p-2.5 rounded-xl bg-slate-900 border border-white/5 hover:border-indigo-500 hover:bg-slate-800 transition-all flex items-center justify-between text-[11px]"
-                          >
-                            <div>
-                              <p className="font-bold text-white">{r.name}</p>
-                              <p className="text-[9px] text-slate-400">Tattoo: {r.tattooNumber || 'N/A'} • {r.breed}</p>
+                      {/* Matching Registered Animal Cards */}
+                      {earNumberQuery.trim() && (
+                        <div className="space-y-2 pt-1">
+                          {arbaRegistryMatches.length === 0 ? (
+                            <div className="p-2.5 bg-slate-900/60 rounded-xl text-[11px] text-slate-400 text-center">
+                              No registered animal found with ear #{earNumberQuery}. You can select from your barn history below or add a custom ancestor.
                             </div>
-                            <span className="text-[9px] font-bold text-indigo-400 uppercase">{r.sex}</span>
-                          </button>
-                        ))
+                          ) : (
+                            arbaRegistryMatches.map(match => {
+                              const breederInfo = allBreeders.find(b => b.id === match.breederId);
+                              const rabbitryLabel = match.rabbitryName || match.breederPrefix || breederInfo?.rabbitryName || 'Registered Rabbitry';
+                              return (
+                                <div
+                                  key={match.id}
+                                  className="p-3 bg-indigo-950/50 border border-emerald-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                >
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <ShieldCheck className="w-3 h-3" /> ARBA / Registry Verified
+                                      </span>
+                                      <span className="text-xs font-mono font-black text-white">
+                                        Ear #{match.tattooNumber}
+                                      </span>
+                                    </div>
+                                    <h5 className="text-xs font-bold text-white mt-1">{match.name}</h5>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">
+                                      {match.breed} &bull; {match.variety} &bull; {rabbitryLabel}
+                                      {match.registrationNumber ? ` &bull; Reg #${match.registrationNumber}` : ''}
+                                      {match.gcNumber ? ` &bull; GC #${match.gcNumber}` : ''}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAutoFillFromRegistry(match)}
+                                    className="btn-interactive py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl border-none flex items-center gap-1.5 shrink-0 cursor-pointer shadow-md shadow-emerald-600/30"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5" /> Auto-Fill (This Rabbit Only)
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
                       )}
                     </div>
 
+                    {/* SECTION 2: HERD HISTORY DROPDOWN + FAST SEARCH */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300">
+                          Or Select from Your Barn Rabbit History ({availableOptions.length} available)
+                        </span>
+                      </div>
+
+                      {/* Dropdown Action */}
+                      <select
+                        onChange={(e) => {
+                          const found = availableOptions.find(r => r.id === e.target.value);
+                          if (found) handleAssignRabbit(found);
+                        }}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl p-2.5 text-xs text-white"
+                        defaultValue=""
+                      >
+                        <option value="" disabled>-- Dropdown: Select {activeAssignNode.id.toLowerCase().endsWith('sire') ? 'Buck' : 'Doe'} from History --</option>
+                        {availableOptions.map(r => (
+                          <option key={r.id} value={r.id}>
+                            {r.tattooNumber ? `[${r.tattooNumber}] ` : ''}{r.name} - {r.breed} ({r.variety})
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Fast Filter Input for Herd */}
+                      <input
+                        type="text"
+                        placeholder="Fast filter herd by ear # or name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-slate-950/70 border border-white/10 text-xs text-white rounded-xl py-2 px-3 w-full focus:border-indigo-500"
+                      />
+
+                      {/* Quick options cards */}
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+                        {availableOptions.length === 0 ? (
+                          <span className="text-[10px] text-slate-500 text-center py-2">No matching rabbits found.</span>
+                        ) : (
+                          availableOptions.slice(0, 10).map(r => (
+                            <button
+                              key={r.id}
+                              onClick={() => handleAssignRabbit(r)}
+                              className="w-full text-left p-2 rounded-xl bg-slate-900 border border-white/5 hover:border-indigo-500 hover:bg-slate-800 transition-all flex items-center justify-between text-[11px] cursor-pointer"
+                            >
+                              <div>
+                                <p className="font-bold text-white text-xs">{r.name}</p>
+                                <p className="text-[9px] text-slate-400 font-mono">Tattoo: {r.tattooNumber || 'N/A'} &bull; {r.breed}</p>
+                              </div>
+                              <span className="text-[9px] font-bold text-indigo-400 uppercase">{r.sex}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* SECTION 3: CUSTOM UNREGISTERED ANCESTOR */}
                     <button
                       type="button"
                       onClick={() => { setShowCustomForm(true); }}
-                      className="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 font-bold rounded-xl text-[10px] cursor-pointer"
+                      className="w-full py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold rounded-xl text-xs cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      ➕ Add Custom Pedigree Info (Not in Barn)
+                      <Plus className="w-3.5 h-3.5" /> Add Custom Pedigree Info (Not in Barn)
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <form onSubmit={handleCreatePedigreeOnly} className="flex flex-col gap-3">
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -1461,7 +1661,8 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
                             setCustomForm(prev => ({ ...prev, tattooNumber: val }));
                             
                             if (val && val.trim().length > 0) {
-                              const exactMatch = rabbits.find(r => 
+                              const sourceList = (allRabbits && allRabbits.length > 0) ? allRabbits : rabbits;
+                              const exactMatch = sourceList.find(r => 
                                 r.tattooNumber && r.tattooNumber.toLowerCase() === val.trim().toLowerCase() && r.id !== selectedRabbitId
                               );
                               if (exactMatch) {

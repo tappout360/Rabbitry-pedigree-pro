@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Sliders, Monitor, Bell, Shield, LifeBuoy, Check, Save, 
-  Palette, Sun, Moon, Volume2, HardDrive, Smartphone, Award, Lock, ExternalLink
+  Palette, Sun, Moon, Volume2, HardDrive, Smartphone, Award, Lock, ExternalLink, ShieldCheck
 } from 'lucide-react';
+import { getUserRole } from '../services/RbacService';
 
 export default function AppSettingsView({
   currentUser,
@@ -110,6 +111,34 @@ export default function AppSettingsView({
             <LifeBuoy className="w-4 h-4" /> Help & Support
           </button>
         </div>
+      </div>
+
+      {/* Zero Trust Security Status Banner */}
+      <div className="p-4 bg-slate-950/70 border border-indigo-500/25 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white">Zero Trust Security Architecture</span>
+              <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full uppercase">
+                {getUserRole(currentUser)} Account
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              12-Hour Session Lifetime &bull; Explicit Re-Auth on Sensitive Actions &bull; {currentUser?.twoFactorEnabled ? '2FA Active' : '2FA Recommended'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenSecurityModal}
+          className="text-indigo-400 hover:text-indigo-300 font-bold text-xs flex items-center gap-1 border-none bg-transparent cursor-pointer self-start md:self-auto"
+        >
+          Manage Security Credentials &rarr;
+        </button>
       </div>
 
       {/* Settings Navigation Tabs */}

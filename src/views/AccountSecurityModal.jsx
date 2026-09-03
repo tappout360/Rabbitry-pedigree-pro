@@ -81,7 +81,7 @@ export default function AccountSecurityModal({
         id: 'sess-barn-tablet',
         token: 'sess_barn_ipad_9201',
         isCurrent: false,
-        deviceName: 'iPad · Safari (Barn Mode Tablet)',
+        deviceName: 'iPad - Mobile Safari (Barn Mode Tablet)',
         platform: 'iOS',
         browser: 'Mobile Safari',
         lastActive: '2 hours ago',

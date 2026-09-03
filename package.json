@@ -2,6 +2,7 @@
   "name": "rabbitry-pedigree-pro",
   "private": true,
   "version": "1.0.0",
+  "homepage": "https://rabbitrypedigreepro.com",
   "type": "module",
   "scripts": {
     "dev": "vite",

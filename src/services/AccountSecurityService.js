@@ -1,7 +1,7 @@
 /**
  * AccountSecurityService.js
- * Comprehensive Security, 2FA (TOTP), Session Management, Rate Limiting, & Audit Logging
- * WarrenWise Pro / RabbitryPedigree Pro
+ * Comprehensive Zero Trust Security, 2FA (TOTP), Session Management, Rate Limiting, & Audit Logging
+ * WarrenWise Pro / RabbitryPedigree Pro (rabbitrypedigreepro.com)
  */
 import { db } from '../db/registryDb';
 
@@ -110,7 +110,7 @@ export async function verifyTotpCode(secret, code) {
 }
 
 // Generate OTPAuth URI for QR code scanners
-export function getTotpUri(email, secret, issuer = 'WarrenWise Pro') {
+export function getTotpUri(email, secret, issuer = 'RabbitryPedigreePro.com') {
   const encodedIssuer = encodeURIComponent(issuer);
   const encodedAccount = encodeURIComponent(email || 'breeder');
   return `otpauth://totp/${encodedIssuer}:${encodedAccount}?secret=${secret}&issuer=${encodedIssuer}&algorithm=SHA1&digits=6&period=30`;
@@ -201,7 +201,7 @@ export function getCurrentDeviceProfile() {
   else if (ua.includes('Linux')) os = 'Linux';
 
   return {
-    deviceName: `${os} · ${browser}`,
+    deviceName: `${os} - ${browser}`,
     platform: os,
     browser,
     screenResolution: `${window.screen.width}x${window.screen.height}`,
@@ -209,13 +209,87 @@ export function getCurrentDeviceProfile() {
   };
 }
 
+// Zero Trust Session Lifetime (12-hour sliding window)
+const SESSION_MAX_INACTIVE_MS = 12 * 60 * 60 * 1000; // 12 Hours
+
+export function touchSessionActivity() {
+  localStorage.setItem('rp_last_session_activity', Date.now().toString());
+}
+
+export function isSessionExpired() {
+  const lastActive = localStorage.getItem('rp_last_session_activity');
+  if (!lastActive) return false;
+  const elapsed = Date.now() - Number(lastActive);
+  return elapsed > SESSION_MAX_INACTIVE_MS;
+}
+
+// Invalidate other devices / sessions
+export function invalidateOtherSessions(userId) {
+  const currentToken = getOrCreateSessionToken();
+  const sessionVersion = Date.now().toString();
+  localStorage.setItem('rp_session_version_' + userId, sessionVersion);
+  localStorage.setItem('rp_current_session_version', sessionVersion);
+  return { currentToken, sessionVersion };
+}
+
+// Zero Trust Re-Authentication Tickets (5-minute validity)
+const REAUTH_TICKET_PREFIX = 'rp_reauth_ticket_';
+const REAUTH_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+export function createReAuthTicket(userId, actionName) {
+  const ticketId = 'tk_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+  const ticketData = {
+    ticketId,
+    userId,
+    actionName,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + REAUTH_DURATION_MS
+  };
+  sessionStorage.setItem(REAUTH_TICKET_PREFIX + actionName, JSON.stringify(ticketData));
+  return ticketId;
+}
+
+export function hasValidReAuthTicket(actionName) {
+  try {
+    const raw = sessionStorage.getItem(REAUTH_TICKET_PREFIX + actionName);
+    if (!raw) return false;
+    const ticket = JSON.parse(raw);
+    if (Date.now() > ticket.expiresAt) {
+      sessionStorage.removeItem(REAUTH_TICKET_PREFIX + actionName);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function consumeReAuthTicket(actionName) {
+  sessionStorage.removeItem(REAUTH_TICKET_PREFIX + actionName);
+}
+
+// Detect Unusual Device / Browser Patterns
+export function detectUnusualDevice(currentProfile, knownSessions = []) {
+  if (!knownSessions || knownSessions.length === 0) return { isUnusual: false };
+  const hasSeenPlatform = knownSessions.some(s => s.platform === currentProfile.platform);
+  const hasSeenBrowser = knownSessions.some(s => s.browser === currentProfile.browser);
+
+  if (!hasSeenPlatform || !hasSeenBrowser) {
+    return {
+      isUnusual: true,
+      message: `Login detected from a new environment: ${currentProfile.deviceName}`
+    };
+  }
+  return { isUnusual: false };
+}
+
 // Append-Only Security & Audit Logger
 export async function logSecurityEvent(breederId, eventType, details = {}, severity = 'info') {
   try {
     const logEntry = {
-      id: 'sec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      id: 'sec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8),
       breederId: breederId || 'anonymous',
-      eventType, // LOGIN_SUCCESS, 2FA_ENABLED, PASSWORD_CHANGED, etc.
+      eventType, // LOGIN_SUCCESS, REAUTH_SUCCESS, 2FA_ENABLED, PASSWORD_CHANGED, etc.
       severity,  // 'info', 'warning', 'critical'
       timestamp: new Date().toISOString(),
       details: typeof details === 'string' ? details : JSON.stringify(details),
