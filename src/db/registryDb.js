@@ -240,7 +240,9 @@ db.version(10).stores({
   offlinePhotos: 'id, rabbitId, status',
   marketplaceListings: 'id, rabbitId, breederId, category, status',
   socialPosts: 'id, breederId, title, status, timestamp, parentApproved, aiFlagged',
-  socialComments: 'id, postId, breederId, timestamp, parentApproved, aiFlagged',
+  socialComments: 'id, postId, breederId, timestamp, parentApproved, aiFlagged'
+});
+
 // Version 11: Added Community-Verified AI Knowledge System
 db.version(11).stores({
   adminBreeders: 'id, email, username, role, parentalConsentVerified, consentToken, coachAuthorized, userRestriction, vectorClock',

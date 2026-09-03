@@ -101,7 +101,19 @@ export default function PrintableBillOfSaleModal({
               Print Full Care Packet
             </label>
             <button
-              onClick={() => window.print()}
+              onClick={() => {
+                const savedUser = localStorage.getItem('rp_current_user');
+                let isDemo = false;
+                try {
+                  const u = JSON.parse(savedUser);
+                  if (u?.isDemo || u?.id === 'ab-demo-1' || u?.id === 'ab-youth-1') isDemo = true;
+                } catch(e) {}
+                if (isDemo) {
+                  alert("Demo Mode: Printing Bill of Sale transfer documents requires an active subscription. Please upgrade in the Billing tab.");
+                  return;
+                }
+                window.print();
+              }}
               className="btn-interactive py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer border-none shadow-md shadow-emerald-950/40"
             >
               <Printer className="w-4 h-4" /> Print Document

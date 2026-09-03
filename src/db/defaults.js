@@ -26,10 +26,11 @@ export const DEFAULT_BREEDERS = [
     phone: '555-0122',
     role: 'owner',
     isYouth: true,
+    isDemo: true,
     birthdate: '2014-06-15',
     arbaDivision: 'Intermediate (Ages 12-14)',
     status: 'active',
-    subscriptionTier: 'family',
+    subscriptionTier: 'youth_student',
     arbaMemberNumber: 'YOUTH-4H-88',
     parentalConsentVerified: true,
     state: 'OH',
@@ -611,6 +612,112 @@ export const DEFAULT_RABBITS = [
     photo: '/assets/holland_lop.png',
     photos: ['/assets/holland_lop.png'],
     legs: []
+  },
+
+  // ==========================================
+  // ARBA REGISTERED CAVY (GUINEA PIG) SAMPLES
+  // ==========================================
+  {
+    id: 'c-demo-1',
+    breederId: 'ab-demo-1',
+    tattooNumber: 'CT-101',
+    name: 'Starfire\'s Golden Nugget',
+    breed: 'American',
+    variety: 'Golden Agouti',
+    sex: 'buck', // Boar
+    dob: '2024-01-10',
+    weightOz: 36,
+    status: 'active',
+    species: 'cavy',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-CV-3310',
+    gcNumber: 'GC-CV-991',
+    location: 'Cavy Haven Pen 1',
+    colorCarrier: 'Self Golden Agouti Locus',
+    notes: 'Smooth, glossy Roman nose coat with dense guard ticking. ARBA Best in Show Cavy winner.',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
+    showClass: 'Senior Boar',
+    winningsBOB: 2,
+    winningsBOV: 3,
+    winningsBIS: 1,
+    legs: [
+      { id: 'leg-cv-1', date: '2024-06-15', showName: 'Buckeye State Cavy Classic', judge: 'Dr. John Miller', award: 'Best in Show (BIS)', classSize: 45 }
+    ]
+  },
+  {
+    id: 'c-demo-2',
+    breederId: 'ab-demo-1',
+    tattooNumber: 'CT-102',
+    name: 'Grandview\'s Rosette Queen',
+    breed: 'Abyssinian',
+    variety: 'Brindle',
+    sex: 'doe', // Sow
+    dob: '2024-03-20',
+    weightOz: 34,
+    status: 'active',
+    species: 'cavy',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-CV-3315',
+    gcNumber: '',
+    location: 'Cavy Haven Pen 2',
+    colorCarrier: 'Roan & Brindle Pattern',
+    notes: 'Crisp, well-formed rosettes with sharp ridges across collar and saddle.',
+    photo: '/assets/mini_rex.png',
+    photos: ['/assets/mini_rex.png'],
+    showClass: 'Senior Sow',
+    winningsBOB: 1,
+    winningsBOV: 2,
+    legs: [
+      { id: 'leg-cv-2', date: '2024-07-20', showName: 'Tri-State Specialty', judge: 'Alan Stevens', award: 'Best of Breed (BOB)', classSize: 30 }
+    ]
+  },
+  {
+    id: 'c-youth-1',
+    breederId: 'ab-youth-1',
+    tattooNumber: '4H-PIP',
+    name: 'Sunny Valley\'s Pip',
+    breed: 'Teddy',
+    variety: 'Tortoiseshell & White',
+    sex: 'buck', // Boar
+    dob: '2024-04-05',
+    weightOz: 32,
+    status: 'active',
+    species: 'cavy',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-YOUTH-CV01',
+    gcNumber: '',
+    location: 'Youth Hutch Pen C1',
+    notes: 'Alex\'s 4-H Showmanship Cavy project! Super friendly and docile table handling.',
+    photo: '/assets/holland_lop.png',
+    photos: ['/assets/holland_lop.png'],
+    showClass: 'Senior Boar',
+    winningsBOB: 1,
+    legs: [
+      { id: 'leg-ycv-1', date: '2024-08-01', showName: 'Delaware County 4-H Fair', judge: 'Mary Henderson', award: 'Grand Champion Cavy Showmanship', classSize: 22 }
+    ]
+  },
+  {
+    id: 'c-youth-2',
+    breederId: 'ab-youth-1',
+    tattooNumber: '4H-SQK',
+    name: 'Sunny Valley\'s Squeak',
+    breed: 'American',
+    variety: 'Red',
+    sex: 'doe', // Sow
+    dob: '2024-04-18',
+    weightOz: 30,
+    status: 'active',
+    species: 'cavy',
+    sireId: '', damId: '',
+    registrationNumber: 'REG-YOUTH-CV02',
+    gcNumber: '',
+    location: 'Youth Hutch Pen C2',
+    notes: 'Deep rich mahogany red coat. Active breeding sow prospect.',
+    photo: '/assets/new_zealand_red.png',
+    photos: ['/assets/new_zealand_red.png'],
+    showClass: 'Senior Sow',
+    legs: []
   }
 ];
 
@@ -644,20 +751,33 @@ export const DEFAULT_BREEDINGS = [
     kindleDate: '2024-06-11',
     status: 'kindled',
     notes: '4-H Project breeding. 4 kits born alive.'
+  },
+  {
+    id: 'b-cavy-1',
+    breederId: 'ab-demo-1',
+    buckId: 'c-demo-1',
+    doeId: 'c-demo-2',
+    breedDate: '2024-04-10',
+    kindleDate: '2024-06-15',
+    status: 'kindled',
+    notes: 'Purebred show cavy pairing. 3 pups born vigorous.'
   }
 ];
 
 export const DEFAULT_LITTERS = [
   { id: 'l-01', breederId: 'ab-demo-1', breedingId: 'b-01', kindleDate: '2024-03-15', bornAlive: 5, bornDead: 0, weanedCount: 4, notes: 'Show prospect kits' },
   { id: 'l-02', breederId: 'ab-demo-1', breedingId: 'b-02', kindleDate: '2024-05-01', bornAlive: 4, bornDead: 0, weanedCount: 4, notes: 'Plush coat kits' },
-  { id: 'l-youth-1', breederId: 'ab-youth-1', breedingId: 'b-youth-1', kindleDate: '2024-06-11', bornAlive: 4, bornDead: 0, weanedCount: 4, notes: 'Alex 4-H Record Book Litter #1' }
+  { id: 'l-youth-1', breederId: 'ab-youth-1', breedingId: 'b-youth-1', kindleDate: '2024-06-11', bornAlive: 4, bornDead: 0, weanedCount: 4, notes: 'Alex 4-H Record Book Litter #1' },
+  { id: 'l-cavy-1', breederId: 'ab-demo-1', breedingId: 'b-cavy-1', kindleDate: '2024-06-15', bornAlive: 3, bornDead: 0, weanedCount: 3, notes: 'Champion rosette pups' }
 ];
 
 export const DEFAULT_LEDGER = [
   { id: 'ld-1', breederId: 'ab-demo-1', date: '2024-06-10', type: 'income', category: 'sale', amount: 150.00, notes: 'Sold 2 show junior Holland Lops' },
   { id: 'ld-2', breederId: 'ab-demo-1', date: '2024-06-14', type: 'expense', category: 'feed', amount: 65.00, notes: 'Bulk pellet feed (200 lbs)' },
   { id: 'ld-3', breederId: 'ab-demo-1', date: '2024-06-25', type: 'expense', category: 'vet', amount: 35.00, notes: 'Routine health checkup & deworming' },
-  { id: 'ld-4', breederId: 'ab-demo-1', date: '2024-07-02', type: 'income', category: 'show', amount: 80.00, notes: 'Show premiums & BOB cash prize' }
+  { id: 'ld-4', breederId: 'ab-demo-1', date: '2024-07-02', type: 'income', category: 'show', amount: 80.00, notes: 'Show premiums & BOB cash prize' },
+  { id: 'ld-5', breederId: 'ab-demo-1', date: '2024-07-20', type: 'income', category: 'sale', amount: 75.00, notes: 'Sold 1 registered American Cavy pup' },
+  { id: 'ld-6', breederId: 'ab-demo-1', date: '2024-08-05', type: 'expense', category: 'equipment', amount: 45.00, notes: 'Heavy duty ceramic feed crocks & hay racks' }
 ];
 
 export const DEFAULT_SHOWS = [
@@ -669,14 +789,16 @@ export const DEFAULT_SHOWS = [
 export const DEFAULT_SHOW_ENTRIES = [
   { id: 'se-1', breederId: 'ab-demo-1', showId: 'sh-1', rabbitId: 'r-hl-1', entryClass: 'Senior Buck', tattoo: 'HL-F1-01', entryFee: 9.00, status: 'entered', remarks: 'Best of Variety contender' },
   { id: 'se-2', breederId: 'ab-demo-1', showId: 'sh-1', rabbitId: 'r-mr-1', entryClass: 'Senior Buck', tattoo: 'MR-F1-01', entryFee: 9.00, status: 'entered', remarks: 'Grand Champion Castor' },
-  { id: 'se-3', breederId: 'ab-youth-1', showId: 'sh-3', rabbitId: 'r-youth-1', entryClass: 'Junior Showmanship', tattoo: '4H-CLOVER', entryFee: 5.00, status: 'entered', remarks: 'County Fair Showmanship Ring' }
+  { id: 'se-3', breederId: 'ab-youth-1', showId: 'sh-3', rabbitId: 'r-youth-1', entryClass: 'Junior Showmanship', tattoo: '4H-CLOVER', entryFee: 5.00, status: 'entered', remarks: 'County Fair Showmanship Ring' },
+  { id: 'se-4', breederId: 'ab-demo-1', showId: 'sh-2', rabbitId: 'c-demo-1', entryClass: 'Senior Boar', tattoo: 'CT-101', entryFee: 8.00, status: 'entered', remarks: 'Best in Show Cavy Ring Contender' }
 ];
 
 export const DEFAULT_CHORES = [
   { id: 'c-1', breederId: 'ab-demo-1', title: 'Morning Feed & Timothy Hay Replenish', dueDate: '2026-09-01', status: 'completed', notes: 'Fresh pellets & unlimited orchard grass hay in all racks' },
   { id: 'c-2', breederId: 'ab-demo-1', title: 'Nesting Box Check — Dutch & Holland Doe Pens', dueDate: '2026-09-01', status: 'pending', notes: 'Verify nest fur & warmth for day 28 check' },
   { id: 'c-3', breederId: 'ab-demo-1', title: 'Clean Drop Pans & Sanitize A-Block', dueDate: '2026-09-03', status: 'pending', notes: 'Replace pine pellets in drop trays' },
-  { id: 'c-4', breederId: 'ab-youth-1', title: 'Daily 4-H Showmanship Handling Practice', dueDate: '2026-09-01', status: 'completed', notes: '15 min table pose & ear/teeth check with Lucky Clover' }
+  { id: 'c-4', breederId: 'ab-youth-1', title: 'Daily 4-H Showmanship Handling Practice', dueDate: '2026-09-01', status: 'completed', notes: '15 min table pose & ear/teeth check with Lucky Clover' },
+  { id: 'c-5', breederId: 'ab-demo-1', title: 'Vitamin C & Fresh Bell Pepper Distribution (Cavies)', dueDate: '2026-09-02', status: 'pending', notes: 'Daily stabilized vitamin C supplement for guinea pig pens' }
 ];
 
 export const DEFAULT_TRANSFERS = [
@@ -693,8 +815,8 @@ export const DEFAULT_TRANSFERS = [
     rabbitWeightOz: 60,
     rabbitReg: 'REG-HL-1001',
     rabbitGc: 'GC-10088',
-    buyerName: 'Emily Clark',
-    buyerEmail: 'emily.clark@homestead.org',
+    buyerName: 'Emily Clark (Demo Buyer)',
+    buyerEmail: 'emily.demo@example.com',
     buyerPhone: '555-0188',
     price: 150.00,
     type: 'sale',
@@ -708,7 +830,7 @@ export const DEFAULT_SIGNATURES = [
   {
     id: 'sig-1001',
     transferId: 'tx-1001',
-    sellerSignature: 'Jason Mounts',
+    sellerSignature: 'Grandview Pedigree Barn',
     buyerSignature: 'Emily Clark',
     signedAt: '2026-08-20T14:30:00Z',
     sellerSignatureType: 'typed',
@@ -719,7 +841,8 @@ export const DEFAULT_SIGNATURES = [
 export const DEFAULT_MEDICAL = [
   { id: 'm-1', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', date: '2026-08-01', treatment: 'Annual Preventative Health & Nail Trim', cost: 15.00, notes: 'Clear eyes, clean ears, healthy weight' },
   { id: 'm-2', breederId: 'ab-demo-1', rabbitId: 'r-mr-1', date: '2026-07-15', treatment: 'Probiotic Gut Health Booster', cost: 8.00, notes: 'Post-show digestive support' },
-  { id: 'm-3', breederId: 'ab-youth-1', rabbitId: 'r-youth-1', date: '2026-08-10', treatment: 'Pre-Fair Showmanship Vet Check', cost: 10.00, notes: 'Perfect 4-H health certificate clearance' }
+  { id: 'm-3', breederId: 'ab-youth-1', rabbitId: 'r-youth-1', date: '2026-08-10', treatment: 'Pre-Fair Showmanship Vet Check', cost: 10.00, notes: 'Perfect 4-H health certificate clearance' },
+  { id: 'm-4', breederId: 'ab-demo-1', rabbitId: 'c-demo-1', date: '2026-08-18', treatment: 'Routine Vitamin C Assessment & Nail Clip', cost: 12.00, notes: 'Glossy coat and clear bright eyes' }
 ];
 
 export const DEFAULT_WEIGHTS = [
@@ -729,7 +852,9 @@ export const DEFAULT_WEIGHTS = [
   { id: 'w-4', breederId: 'ab-demo-1', rabbitId: 'r-hl-1', weightOz: 60, date: '2024-07-15', notes: 'Senior standard weight' },
   { id: 'w-5', breederId: 'ab-demo-1', rabbitId: 'r-mr-1', weightOz: 20, date: '2024-05-01', notes: '4 week kit check' },
   { id: 'w-6', breederId: 'ab-demo-1', rabbitId: 'r-mr-1', weightOz: 52, date: '2024-07-01', notes: 'Junior prime weight' },
-  { id: 'w-7', breederId: 'ab-youth-1', rabbitId: 'r-youth-1', weightOz: 34, date: '2026-08-01', notes: 'Pre-fair official weigh-in' }
+  { id: 'w-7', breederId: 'ab-youth-1', rabbitId: 'r-youth-1', weightOz: 34, date: '2026-08-01', notes: 'Pre-fair official weigh-in' },
+  { id: 'w-8', breederId: 'ab-demo-1', rabbitId: 'c-demo-1', weightOz: 24, date: '2024-03-01', notes: 'Junior cavy weigh-in' },
+  { id: 'w-9', breederId: 'ab-demo-1', rabbitId: 'c-demo-1', weightOz: 36, date: '2024-06-01', notes: 'Senior boar standard weight' }
 ];
 
 export const DEFAULT_YOUTH_PROGRESS = [

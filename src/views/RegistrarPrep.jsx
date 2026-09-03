@@ -98,6 +98,17 @@ export default function RegistrarPrep({ rabbits, allRabbits, selectedRabbitId: p
   const handlePrintPacket = () => {
     if (!activeRabbit) return;
 
+    const savedUser = localStorage.getItem('rp_current_user');
+    let isDemo = false;
+    try {
+      const u = JSON.parse(savedUser);
+      if (u?.isDemo || u?.id === 'ab-demo-1' || u?.id === 'ab-youth-1') isDemo = true;
+    } catch(e) {}
+    if (isDemo) {
+      alert("Demo Mode: Generating and printing official registrar inspection packets requires an active subscription. Please upgrade in the Billing tab.");
+      return;
+    }
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert("Please allow popups to print the packet!");

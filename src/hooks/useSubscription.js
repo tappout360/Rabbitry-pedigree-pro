@@ -193,8 +193,8 @@ export const useSubscription = create((set, get) => ({
     const totalStorageGb = baseGb + (additionalStorageGb || 0);
 
     return {
-      animalLimit: limits.animalLimit + (additionalHutches || 0),
-      photoLimit: limits.photoLimit + ((additionalStorageGb || 0) * 500),
+      animalLimit: (limits.animalLimit || limits.maxRabbits || 50) + (additionalHutches || 0),
+      photoLimit: (limits.photoLimit || limits.maxPhotos || 1000) + ((additionalStorageGb || 0) * 500),
       storageGb: totalStorageGb,
       isTrial: isTrial
     };

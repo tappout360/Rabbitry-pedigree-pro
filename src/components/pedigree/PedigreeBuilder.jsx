@@ -185,7 +185,7 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState('');
-  const [generations, setGenerations] = useState(3);
+  const generations = 4; // Standardized on 4-Generation Pedigree
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [dragOverNodeId, setDragOverNodeId] = useState(null);
 
@@ -874,26 +874,11 @@ export default function PedigreeBuilder({ rabbits = [], onUpdateRabbit, onPrintP
       {/* Header and selector */}
       <div className="glass-container p-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white mb-1">📜 {generations}-Generation Interactive Pedigree</h2>
-          <p className="text-xs text-slate-300">Design lineages, verify ARBA weight limits, and append authorization signatures.</p>
+          <h2 className="text-xl font-bold tracking-tight text-white mb-1">📜 4-Generation Interactive Pedigree</h2>
+          <p className="text-xs text-slate-300">Official 4-generation lineage builder. Unassigned ancestors remain cleanly blank.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-slate-950/80 p-0.5 rounded-xl border border-white/10 shrink-0">
-            <button
-              onClick={() => setGenerations(3)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${generations === 3 ? 'bg-indigo-650 text-white shadow' : 'text-slate-400 bg-transparent'}`}
-            >
-              3 Gen
-            </button>
-            <button
-              onClick={() => setGenerations(4)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${generations === 4 ? 'bg-indigo-650 text-white shadow' : 'text-slate-400 bg-transparent'}`}
-            >
-              4 Gen
-            </button>
-          </div>
-
           <button
             onClick={() => setShowImportWizard(true)}
             className="py-2 px-3 bg-indigo-650/40 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"

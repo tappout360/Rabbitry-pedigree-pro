@@ -52,6 +52,11 @@ import MicrophoneFab from './components/voice/MicrophoneFab';
 import CommandConfirmationModal from './components/voice/CommandConfirmationModal';
 import { globalVoiceEngine } from './services/VoiceEngine';
 import { db, performMigrationAndLoad } from './db/registryDb';
+import { 
+  DEFAULT_BREEDERS, DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS, 
+  DEFAULT_LEDGER, DEFAULT_SHOWS, DEFAULT_SHOW_ENTRIES, DEFAULT_CHORES, 
+  DEFAULT_TRANSFERS, DEFAULT_SIGNATURES, DEFAULT_MEDICAL, DEFAULT_WEIGHTS, DEFAULT_YOUTH_PROGRESS 
+} from './db/defaults';
 import { deriveSessionKey, encryptRecord, decryptRecord, recordAuditLog, maskYouthField } from './db/security';
 import { uuidv7 } from './db/uuid';
 import { BREED_COLORS, BREED_VARIETY_GROUPS } from './db/breedColors';
@@ -1189,6 +1194,11 @@ export default function App() {
     try {
       switch (command.action) {
         case 'ADD_RABBIT_INTENT':
+          if (isDemoMode) {
+            setDemoGateModal({ action: 'save', title: 'Voice Rabbit Creation' });
+            showToast("Demo Mode: Saving new animals requires an active subscription.", "info");
+            break;
+          }
           // We map this to opening the Add Rabbit modal with pre-filled fields if possible, 
           // or auto-creating it. For simplicity, auto-create a basic profile.
           const newRb = {
@@ -1397,9 +1407,16 @@ export default function App() {
         return { ...rest, isSuperAdmin: false };
       });
       const u = cleaned.find(b => (b.email.toLowerCase() === email.toLowerCase() || (b.username && b.username.toLowerCase() === email.toLowerCase())) && b.status === 'active');
-      return u ? u.id : 'ab-1';
+      return u ? u.id : 'ab-demo-1';
     }
-    return 'ab-1';
+    const savedUser = localStorage.getItem('rp_current_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        if (u && u.id) return u.id;
+      } catch {}
+    }
+    return 'ab-demo-1';
   });
 
   // Onboarding profile status derived from currentUser
@@ -1529,6 +1546,16 @@ export default function App() {
   const [newAncestorLeg, setNewAncestorLeg] = useState({
     showName: '', judge: '', date: new Date().toISOString().split('T')[0], award: '1st Class', classSize: ''
   });
+
+  // Interactive Demo Guard State (Saving, Copying, Printing requires subscription)
+  const isDemoMode = Boolean(
+    currentUser?.isDemo ||
+    selectedBreederContext === 'ab-demo-1' ||
+    selectedBreederContext === 'ab-youth-1' ||
+    currentUser?.id === 'ab-demo-1' ||
+    currentUser?.id === 'ab-youth-1'
+  );
+  const [demoGateModal, setDemoGateModal] = useState(null); // { action: 'save' | 'print' | 'copy', title: string }
 
 
 
@@ -1850,6 +1877,11 @@ export default function App() {
         setSyncQueue(data.syncQueue || []);
         setAllApprovals(data.approvals || []);
         setAdminBreeders(data.adminBreeders || []);
+        if (!currentUser && data.adminBreeders && data.adminBreeders.length > 0) {
+          const defaultUser = data.adminBreeders[0];
+          setCurrentUser(defaultUser);
+          setSelectedBreederContext(defaultUser.id);
+        }
         setDbLoaded(true);
         checkPendingAlerts();
 
@@ -2208,19 +2240,30 @@ export default function App() {
       try { return JSON.parse(draft); } catch(e) {}
     }
     return {
-      tattooNumber: '', name: '', breed: 'Holland Lop', variety: 'Blue',
-      sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: 40,
-      sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
+      tattooNumber: 'HL-DEMO1',
+      name: 'Grandview Starlight',
+      breed: 'Holland Lop',
+      variety: 'Broken Blue',
+      sex: 'doe',
+      dob: '2024-04-12',
+      weightOz: 48,
+      sireId: 'r-hl-1',
+      damId: 'r-hl-2',
+      location: 'Main Barn - Hutch A-04',
+      notes: 'Dense flyback coat, wide open eye, excellent crown depth. Prime ARBA show prospect.',
+      registrationNumber: 'REG-HL-7701',
+      gcNumber: 'GC-HL-102',
       isCharlie: false,
-      colorCarrier: '',
-      winningsBOB: 0,
-      winningsBOV: 0,
+      colorCarrier: 'Carries dilute (d), non-extension (e)',
+      winningsBOB: 1,
+      winningsBOV: 2,
       winningsBOS: 0,
-      winningsBOSV: 0,
+      winningsBOSV: 1,
       winningsBIS: 0,
-      winningsOther: 0,
-      showClass: 'Auto',
-      status: 'active'
+      winningsOther: 3,
+      showClass: 'Senior Doe',
+      status: 'active',
+      species: 'rabbit'
     };
   });
 
@@ -3247,6 +3290,14 @@ export default function App() {
   // Add Rabbit Handler
   const handleAddRabbit = (e) => {
     e.preventDefault();
+
+    // Guard: Demo mode does not permit saving new animals to permanent database
+    if (isDemoMode) {
+      setDemoGateModal({ action: 'save', title: 'Save & Register Animal' });
+      showToast("Demo Mode: With an active subscription you can save, copy, and print.", "info");
+      return;
+    }
+
     const targetBreederId = selectedBreederContext === 'all' ? (currentUser?.id || 'ab-1') : selectedBreederContext;
     if (isSubscriptionLimitReached(targetBreederId)) {
       const subLimits = useSubscription.getState().getLimits();
@@ -6348,14 +6399,20 @@ export default function App() {
                 const adultUser = { ...DEFAULT_BREEDERS[0], isDemo: true };
                 setCurrentUser(adultUser);
                 localStorage.setItem('rp_current_user', JSON.stringify(adultUser));
-                setSelectedBreederContext('all');
+                setSelectedBreederContext('ab-demo-1');
 
-                await db.rabbits.clear();
                 await db.adminBreeders.clear();
+                await db.rabbits.clear();
                 await db.breedings.clear();
                 await db.litters.clear();
                 await db.weights.clear();
                 await db.medical.clear();
+                await db.ledger.clear();
+                await db.shows.clear();
+                await db.showEntries.clear();
+                await db.chores.clear();
+                await db.transfers.clear();
+                await db.signatures.clear();
 
                 await db.adminBreeders.bulkAdd(DEFAULT_BREEDERS);
                 await db.rabbits.bulkAdd(DEFAULT_RABBITS);
@@ -6363,16 +6420,28 @@ export default function App() {
                 await db.litters.bulkAdd(DEFAULT_LITTERS);
                 await db.weights.bulkAdd(DEFAULT_WEIGHTS);
                 await db.medical.bulkAdd(DEFAULT_MEDICAL);
+                await db.ledger.bulkAdd(DEFAULT_LEDGER);
+                await db.shows.bulkAdd(DEFAULT_SHOWS);
+                await db.showEntries.bulkAdd(DEFAULT_SHOW_ENTRIES);
+                await db.chores.bulkAdd(DEFAULT_CHORES);
+                await db.transfers.bulkAdd(DEFAULT_TRANSFERS);
+                await db.signatures.bulkAdd(DEFAULT_SIGNATURES);
 
-                setAllRabbits(DEFAULT_RABBITS);
                 setAdminBreeders(DEFAULT_BREEDERS);
+                setAllRabbits(DEFAULT_RABBITS);
                 setAllBreedings(DEFAULT_BREEDINGS);
                 setAllLitters(DEFAULT_LITTERS);
                 setAllWeights(DEFAULT_WEIGHTS);
                 setAllMedical(DEFAULT_MEDICAL);
+                setAllLedger(DEFAULT_LEDGER);
+                setAllShows(DEFAULT_SHOWS);
+                setAllShowEntries(DEFAULT_SHOW_ENTRIES);
+                setAllChores(DEFAULT_CHORES);
+                setAllTransfers(DEFAULT_TRANSFERS);
+                setAllSignatures(DEFAULT_SIGNATURES);
 
-                setActiveTab('rabbits');
-                showToast("🎉 Loaded complete 4-Generation Holland Lop Pedigree & Purebred Herd!", "success");
+                setActiveTab('dashboard');
+                showToast("✨ Loaded complete 4-Generation Demo Barn with full pedigrees, shows, & finances!", "success");
                 triggerConfetti();
               } catch (err) {
                 console.error("Demo hydration error:", err);
@@ -6381,7 +6450,7 @@ export default function App() {
             className="btn-interactive text-xs py-2 px-3 border border-amber-500/40 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="Hydrate 4-Generation Pedigree & Purebred Demo Data"
           >
-            <span>✨ Load 4-Gen Demo</span>
+            <span>📜 Load 4-Gen Demo</span>
           </button>
 
           {/* Quick 4-H Youth Demo Hydrator */}
@@ -6394,12 +6463,18 @@ export default function App() {
                 localStorage.setItem('rp_current_user', JSON.stringify(youthUser));
                 setSelectedBreederContext('ab-youth-1');
 
-                await db.rabbits.clear();
                 await db.adminBreeders.clear();
+                await db.rabbits.clear();
                 await db.breedings.clear();
                 await db.litters.clear();
                 await db.weights.clear();
                 await db.medical.clear();
+                await db.ledger.clear();
+                await db.shows.clear();
+                await db.showEntries.clear();
+                await db.chores.clear();
+                await db.transfers.clear();
+                await db.signatures.clear();
 
                 await db.adminBreeders.bulkAdd(DEFAULT_BREEDERS);
                 await db.rabbits.bulkAdd(DEFAULT_RABBITS);
@@ -6407,17 +6482,29 @@ export default function App() {
                 await db.litters.bulkAdd(DEFAULT_LITTERS);
                 await db.weights.bulkAdd(DEFAULT_WEIGHTS);
                 await db.medical.bulkAdd(DEFAULT_MEDICAL);
+                await db.ledger.bulkAdd(DEFAULT_LEDGER);
+                await db.shows.bulkAdd(DEFAULT_SHOWS);
+                await db.showEntries.bulkAdd(DEFAULT_SHOW_ENTRIES);
+                await db.chores.bulkAdd(DEFAULT_CHORES);
+                await db.transfers.bulkAdd(DEFAULT_TRANSFERS);
+                await db.signatures.bulkAdd(DEFAULT_SIGNATURES);
 
-                setAllRabbits(DEFAULT_RABBITS);
                 setAdminBreeders(DEFAULT_BREEDERS);
+                setAllRabbits(DEFAULT_RABBITS);
                 setAllBreedings(DEFAULT_BREEDINGS);
                 setAllLitters(DEFAULT_LITTERS);
                 setAllWeights(DEFAULT_WEIGHTS);
                 setAllMedical(DEFAULT_MEDICAL);
+                setAllLedger(DEFAULT_LEDGER);
+                setAllShows(DEFAULT_SHOWS);
+                setAllShowEntries(DEFAULT_SHOW_ENTRIES);
+                setAllChores(DEFAULT_CHORES);
+                setAllTransfers(DEFAULT_TRANSFERS);
+                setAllSignatures(DEFAULT_SIGNATURES);
 
                 setActiveTab('academy');
                 setShowCoachModal(true);
-                showToast("🎓 Switched to Alex Rivera 4-H Youth Demo (Intermediate Showman, Age 12)!", "success");
+                showToast("🏆 Switched to Alex Rivera 4-H Youth Demo (Intermediate Showman, Age 12)!", "success");
                 triggerConfetti();
               } catch (err) {
                 console.error("4-H Youth Demo hydration error:", err);
@@ -7150,6 +7237,33 @@ export default function App() {
                   </div>
                 );
               })()}
+
+              {/* Interactive Demo Barn Indicator Banner */}
+              {isDemoMode && (
+                <div className="glass-container p-4 bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-left shadow-lg shadow-indigo-950/40">
+                  <div className="flex items-center gap-3">
+                    <span className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-2xl border border-indigo-500/30 text-xl shadow-md shadow-indigo-500/10">🧪</span>
+                    <div>
+                      <h4 className="text-sm font-black text-white flex items-center gap-2">
+                        Interactive Live Demo Barn
+                        <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+                          Full Experience
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        Pre-seeded with 4-generation lineages, shows, and finances. <strong>With an active subscription you can save, copy, and print your records.</strong>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('billing')}
+                    className="btn-interactive text-xs py-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl border-none shrink-0 cursor-pointer shadow-md shadow-indigo-600/20"
+                  >
+                    Upgrade to Save / Print
+                  </button>
+                </div>
+              )}
 
               {/* PWA Install Banner */}
               {deferredPrompt && showInstallBanner && (
@@ -8014,20 +8128,32 @@ export default function App() {
                   <button 
                     onClick={() => {
                       const initialSpecies = selectedSpecies === 'all' ? 'rabbit' : selectedSpecies;
-                      const initialBreed = initialSpecies === 'cavy' ? 'Abyssinian' : 'Holland Lop';
+                      const isCavy = initialSpecies === 'cavy';
                       setNewRabbit({
-                        tattooNumber: '', name: '', breed: initialBreed, variety: 'Blue',
-                        sex: 'doe', dob: new Date().toISOString().split('T')[0], weightOz: weightUnit === 'lbs' ? 2.5 : 40,
-                        sireId: '', damId: '', location: '', notes: '', registrationNumber: '', gcNumber: '',
+                        tattooNumber: isCavy ? 'CT-DEMO1' : 'HL-DEMO1',
+                        name: isCavy ? "Starfire's Rosette Spark" : "Grandview's Starfire",
+                        breed: isCavy ? 'Abyssinian' : 'Holland Lop',
+                        variety: isCavy ? 'Brindle' : 'Broken Blue',
+                        sex: 'doe',
+                        dob: '2024-04-12',
+                        weightOz: isCavy ? 34 : 48,
+                        sireId: isCavy ? 'c-demo-1' : 'r-hl-1',
+                        damId: isCavy ? 'c-demo-2' : 'r-hl-2',
+                        location: isCavy ? 'Cavy Haven - Pen 3' : 'Main Barn - Hutch A-04',
+                        notes: isCavy 
+                          ? 'Sharp rosettes, bold ridge alignment, gentle temperament.'
+                          : 'Dense flyback coat, wide open eye, excellent crown depth. Prime ARBA show prospect.',
+                        registrationNumber: isCavy ? 'REG-CV-8802' : 'REG-HL-7701',
+                        gcNumber: isCavy ? 'GC-CV-110' : 'GC-HL-102',
                         isCharlie: false,
-                        colorCarrier: '',
-                        winningsBOB: 0,
-                        winningsBOV: 0,
+                        colorCarrier: isCavy ? 'Roan & Brindle Pattern' : 'Carries dilute (d), non-extension (e)',
+                        winningsBOB: 1,
+                        winningsBOV: 2,
                         winningsBOS: 0,
-                        winningsBOSV: 0,
+                        winningsBOSV: 1,
                         winningsBIS: 0,
-                        winningsOther: 0,
-                        showClass: 'Auto',
+                        winningsOther: 3,
+                        showClass: isCavy ? 'Senior Sow' : 'Senior Doe',
                         species: initialSpecies,
                         status: 'active'
                       });
@@ -8043,7 +8169,7 @@ export default function App() {
                     className="btn-interactive w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white flex items-center justify-center gap-2 font-black shadow-lg cursor-pointer"
                     title="Hands-free Root AI voice assistant for smart form auto-fill"
                   >
-                    <span>🥕 Talk to Root AI</span>
+                    <span>🎙️  Talk to Root AI</span>
                   </button>
                   <button
                     type="button"
@@ -8061,6 +8187,69 @@ export default function App() {
                     <h3 className="text-lg font-bold">New {newRabbit.species === 'cavy' ? 'Cavy' : 'Rabbit'} Registration</h3>
                     <button onClick={() => setShowAddRabbit(false)} className="opacity-70 hover:opacity-100"><X className="w-6 h-6" /></button>
                   </div>
+
+                  {isDemoMode && (
+                    <div className="p-3 bg-indigo-950/70 border border-indigo-500/30 rounded-xl text-xs text-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                        <span><strong>Interactive Demo:</strong> All fields are pre-filled so you can experience registration. With an active subscription you can save, copy, and print records.</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isCavy = (newRabbit.species || 'rabbit') === 'cavy';
+                            setNewRabbit({
+                              tattooNumber: isCavy ? 'CT-DEMO1' : 'HL-DEMO1',
+                              name: isCavy ? "Starfire's Rosette Spark" : "Grandview's Starfire",
+                              breed: isCavy ? 'Abyssinian' : 'Holland Lop',
+                              variety: isCavy ? 'Brindle' : 'Broken Blue',
+                              sex: 'doe',
+                              dob: '2024-04-12',
+                              weightOz: isCavy ? 34 : 48,
+                              sireId: isCavy ? 'c-demo-1' : 'r-hl-1',
+                              damId: isCavy ? 'c-demo-2' : 'r-hl-2',
+                              location: isCavy ? 'Cavy Haven - Pen 3' : 'Main Barn - Hutch A-04',
+                              notes: isCavy 
+                                ? 'Sharp rosettes, bold ridge alignment, gentle temperament.'
+                                : 'Dense flyback coat, wide open eye, excellent crown depth. Prime ARBA show prospect.',
+                              registrationNumber: isCavy ? 'REG-CV-8802' : 'REG-HL-7701',
+                              gcNumber: isCavy ? 'GC-CV-110' : 'GC-HL-102',
+                              isCharlie: false,
+                              colorCarrier: isCavy ? 'Roan & Brindle Pattern' : 'Carries dilute (d), non-extension (e)',
+                              winningsBOB: 1,
+                              winningsBOV: 2,
+                              winningsBOS: 0,
+                              winningsBOSV: 1,
+                              winningsBIS: 0,
+                              winningsOther: 3,
+                              showClass: isCavy ? 'Senior Sow' : 'Senior Doe',
+                              species: newRabbit.species || 'rabbit',
+                              status: 'active'
+                            });
+                          }}
+                          className="text-[10px] bg-white/10 hover:bg-white/20 text-white font-bold px-2 py-1 rounded-lg border border-white/10 cursor-pointer"
+                        >
+                          ⚡ Re-fill Sample Data
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewRabbit({
+                              tattooNumber: '', name: '', breed: newRabbit.breed, variety: '',
+                              sex: 'doe', dob: '', weightOz: 40, sireId: '', damId: '', location: '', notes: '',
+                              registrationNumber: '', gcNumber: '', isCharlie: false, colorCarrier: '',
+                              winningsBOB: 0, winningsBOV: 0, winningsBOS: 0, winningsBOSV: 0, winningsBIS: 0, winningsOther: 0,
+                              showClass: 'Auto', species: newRabbit.species || 'rabbit', status: 'active'
+                            });
+                          }}
+                          className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2 py-1 rounded-lg border border-white/10 cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <form onSubmit={handleAddRabbit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1">
@@ -12017,11 +12206,11 @@ export default function App() {
         const renderPrintBox = (ancestor, roleLabel, gender, isGen3 = false) => {
           if (!ancestor) {
             return (
-              <div className={`p-2 border border-slate-400 bg-slate-50/80 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[44px] py-1.5' : 'min-h-[60px] py-2.5'} print:p-1.5`}>
-                <span className={`${isGen3 ? 'text-[8px] print:text-[9.5px]' : 'text-[9px] print:text-[11px]'} uppercase font-black text-slate-600 block leading-none`}>
+              <div className={`p-2 border border-dashed border-slate-300 bg-slate-50/50 rounded-lg flex flex-col justify-center text-center h-full ${isGen3 ? 'min-h-[44px] py-1.5' : 'min-h-[60px] py-2.5'} print:p-1.5`}>
+                <span className={`${isGen3 ? 'text-[8px] print:text-[9.5px]' : 'text-[9px] print:text-[11px]'} uppercase font-black text-slate-400 block leading-none`}>
                   {isGen3 ? roleLabel.replace('Paternal', 'Pat.').replace('Maternal', 'Mat.').replace('Grand-Sire', 'G-Sire').replace('Grand-Dam', 'G-Dam') : roleLabel}
                 </span>
-                <span className={`${isGen3 ? 'text-[9px] print:text-[10px]' : 'text-[11px] print:text-[12px]'} italic text-slate-500 font-bold mt-0.5`}>Unknown Ancestor</span>
+                <span className={`${isGen3 ? 'text-[8px] print:text-[9.5px]' : 'text-[10px] print:text-[11.5px]'} text-slate-400 font-mono mt-0.5`}>— Blank —</span>
               </div>
             );
           }
@@ -12112,18 +12301,45 @@ export default function App() {
               {/* Close & Print buttons (Hidden on Print) */}
               <div className="no-print absolute top-4 right-4 flex gap-2">
                 <button
-                  onClick={() => window.print()}
-                  className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5"
+                  onClick={() => {
+                    if (isDemoMode) {
+                      setDemoGateModal({ action: 'print', title: 'Print Pedigree Certificate' });
+                      showToast("Demo Mode: With an active subscription you can save, copy, and print.", "info");
+                      return;
+                    }
+                    window.print();
+                  }}
+                  className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5 cursor-pointer"
                 >
                   🖨️ Print Certificate
                 </button>
                 <button 
                   onClick={() => setShowPrintPedigreeModal(null)}
-                  className="p-2 text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100"
+                  className="p-2 text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100 cursor-pointer border-none bg-transparent"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* Demo Mode Notice Banner inside Certificate Modal */}
+              {isDemoMode && (
+                <div className="no-print w-full p-3 bg-amber-500/15 border border-amber-500/40 rounded-2xl text-center text-xs font-bold text-amber-900 flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span><strong>Demo Mode Active:</strong> Certificate printing is disabled in demo mode. With an active subscription you can save, copy, and print official 4-generation pedigree certificates.</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPrintPedigreeModal(null);
+                      setActiveTab('billing');
+                    }}
+                    className="text-[10px] bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1 rounded-lg border-none cursor-pointer shrink-0"
+                  >
+                    Upgrade to Print
+                  </button>
+                </div>
+              )}
 
               {/* Certificate layout */}
               <div className="flex flex-col gap-5 print:gap-1.5 w-full mt-2">
@@ -12137,7 +12353,7 @@ export default function App() {
                       Pedigree Certificate
                     </h2>
                     <span className="text-[8.5px] print:text-[8px] font-cinzel font-bold uppercase tracking-wider text-slate-500 mb-2 block leading-none">
-                      Official 3-Generation Ancestor Lineage
+                      Official 4-Generation Lineage
                     </span>
                     <span className="text-[8px] font-bold text-slate-400 block uppercase font-cinzel tracking-wider leading-none">Generated by</span>
                     <strong className="text-sm print:text-[11.5px] font-bold text-slate-900 font-cinzel">{activeBreeder.rabbitryName || 'Grandview Rabbitry'}</strong>
@@ -12153,7 +12369,7 @@ export default function App() {
                       Pedigree Certificate
                     </h2>
                     <span className="text-[8.5px] font-cinzel font-bold uppercase tracking-widest text-slate-500">
-                      Official 3-Generation Ancestor Lineage
+                      Official 4-Generation Lineage
                     </span>
                   </div>
 
@@ -12303,7 +12519,14 @@ export default function App() {
               {/* Close & Print buttons (Hidden on Print) */}
               <div className="no-print absolute top-4 right-4 flex gap-2">
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    if (isDemoMode) {
+                      setDemoGateModal({ action: 'print', title: 'Print Cage Card' });
+                      showToast("Demo Mode: With an active subscription you can save, copy, and print.", "info");
+                      return;
+                    }
+                    window.print();
+                  }}
                   className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5 cursor-pointer"
                 >
                   🖨️ Print Cage Card
@@ -13117,6 +13340,66 @@ export default function App() {
             activeUndo.commitAction();
           }}
         />
+      )}
+
+      {/* Interactive Demo Subscription Gate Modal */}
+      {demoGateModal && (
+        <div className="fixed inset-0 z-[10000] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-scale-up">
+          <div className="glass-container max-w-lg w-full p-6 sm:p-8 bg-slate-900 border-2 border-indigo-500/40 rounded-3xl shadow-2xl text-left flex flex-col gap-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-2xl text-white shadow-lg shadow-indigo-500/30">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-white">Subscription Required</h3>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-400 font-mono">
+                    Interactive Demo Mode Active
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDemoGateModal(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 bg-indigo-950/40 border border-indigo-500/20 rounded-2xl text-xs text-slate-200 leading-relaxed space-y-2">
+              <p className="font-bold text-white text-sm">
+                With an active subscription you can save, copy, and print your rabbitry records & certificates:
+              </p>
+              <ul className="space-y-1.5 pt-1 text-slate-300">
+                <li className="flex items-center gap-2">💾 <strong>Save & Copy:</strong> Register and duplicate purebred rabbits & cavies with full genetics.</li>
+                <li className="flex items-center gap-2">📜 <strong>Print Pedigrees:</strong> Official 4-generation ARBA-compliant certificate printing.</li>
+                <li className="flex items-center gap-2">🏷️ <strong>Cage Cards & Coop Tags:</strong> High-contrast 4"x3" cage cards with verification QR codes.</li>
+                <li className="flex items-center gap-2">📄 <strong>Bill of Sale Transfers:</strong> Digital transfer contracts & signed health guarantees.</li>
+                <li className="flex items-center gap-2">☁️ <strong>Permanent Cloud Backup:</strong> Instant cloud backup with zero data loss.</li>
+              </ul>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDemoGateModal(null);
+                  setActiveTab('billing');
+                }}
+                className="btn-interactive flex-1 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-sm rounded-xl border-none shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Award className="w-4 h-4" /> View Subscription Plans
+              </button>
+              <button
+                type="button"
+                onClick={() => setDemoGateModal(null)}
+                className="py-3 px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-white/10 cursor-pointer"
+              >
+                Keep Exploring Demo
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Global AI Barn Assistant UI */}

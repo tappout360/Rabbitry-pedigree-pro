@@ -124,6 +124,7 @@ export function canAccessFeature(tier, featureKey) {
 export function getTierLimits(tier = 'basic') {
   const t = SUBSCRIPTION_TIERS[tier] || SUBSCRIPTION_TIERS.basic;
   return {
+    animalLimit: t.limit,
     maxRabbits: t.limit,
     cloudStorageGb: t.cloudStorageGb,
     maxPhotos: t.maxPhotos,
