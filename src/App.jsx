@@ -5,7 +5,7 @@ import {
   Camera, BarChart3, AlertCircle, ShoppingBag, Eye, EyeOff, Award, FileText,
   Settings, Grid, Trash, Download, Image as ImageIcon, Sparkles, X,
   LogOut, HeartPulse, ShieldCheck, Check, Lock, Share2, Map, Globe, Beef, MessageSquare, Mic,
-  Sliders, LifeBuoy
+  Sliders, LifeBuoy, Filter
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import CryptoJS from 'crypto-js';
@@ -70,6 +70,10 @@ import PrintableBillOfSaleModal from './components/sales/PrintableBillOfSaleModa
 import MicrophoneFab from './components/voice/MicrophoneFab';
 import CommandConfirmationModal from './components/voice/CommandConfirmationModal';
 import { globalVoiceEngine } from './services/VoiceEngine';
+import MobileBottomNav from './components/mobile/MobileBottomNav';
+import MobileQuickActionDock from './components/mobile/MobileQuickActionDock';
+import MobileRapidWeightModal from './components/mobile/MobileRapidWeightModal';
+import MobileQuickCameraModal from './components/mobile/MobileQuickCameraModal';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { 
   DEFAULT_BREEDERS, DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS, 
@@ -1550,6 +1554,11 @@ export default function App() {
   const [securityLogs, setSecurityLogs] = useState([]);
   const [adminControlSection, setAdminControlSection] = useState('breeders'); // 'breeders', 'support'
   const [pendingReAuth, setPendingReAuth] = useState(null); // { actionName, onAuthorized }
+
+  // Mobile Barn-First Quick Action States
+  const [showMobileRapidWeight, setShowMobileRapidWeight] = useState(false);
+  const [showMobileQuickCamera, setShowMobileQuickCamera] = useState(false);
+  const [mobileHerdFilter, setMobileHerdFilter] = useState('all'); // 'all', 'buck', 'doe', 'junior', 'senior'
 
   // Zero Trust Session Lifetime & Sliding Expiration Check (12-hour policy)
   useEffect(() => {
@@ -5126,6 +5135,23 @@ export default function App() {
     return rabbits.filter(r => {
       if (!r || r.status === 'pedigree_only') return false;
       if (!showArchived && r.status === 'sold') return false;
+
+      // Mobile barn quick filters
+      if (mobileHerdFilter === 'buck' && (r.sex || '').toLowerCase() !== 'buck') return false;
+      if (mobileHerdFilter === 'doe' && (r.sex || '').toLowerCase() !== 'doe') return false;
+      if (mobileHerdFilter === 'junior') {
+        const isJunior = (r.showClass || '').toLowerCase().includes('junior') || 
+          (r.ageClass || '').toLowerCase().includes('junior') || 
+          (r.dob && (Date.now() - new Date(r.dob).getTime()) < (6 * 30.44 * 24 * 60 * 60 * 1000));
+        if (!isJunior) return false;
+      }
+      if (mobileHerdFilter === 'senior') {
+        const isSenior = (r.showClass || '').toLowerCase().includes('senior') || 
+          (r.ageClass || '').toLowerCase().includes('senior') || 
+          (r.dob && (Date.now() - new Date(r.dob).getTime()) >= (6 * 30.44 * 24 * 60 * 60 * 1000));
+        if (!isSenior) return false;
+      }
+
       if (!q) return true;
       const name = (r.name || '').toLowerCase();
       const tat = (r.tattooNumber || '').toLowerCase();
@@ -5133,7 +5159,7 @@ export default function App() {
       const variety = (r.variety || '').toLowerCase();
       return name.includes(q) || tat.includes(q) || breed.includes(q) || variety.includes(q);
     });
-  }, [rabbits, showArchived, searchQuery]);
+  }, [rabbits, showArchived, searchQuery, mobileHerdFilter]);
 
   const filteredPhotos = React.useMemo(() => {
     return rabbits
@@ -6313,7 +6339,7 @@ export default function App() {
   // MAIN WORKSPACE DASHBOARD VIEW (ONLINE / PROFILE CREATED)
   // ----------------------------------------------------
   return (
-    <div className={`theme-${theme} min-h-screen relative ${designMode === 'fun' ? 'fun-mode-active bunny-watermark' : 'pro-mode-active'} ${barnMode && activeTab === 'cages' ? 'barn-mode-active' : ''}`} style={{ '--custom-accent-color': customAccent }}>
+    <div className={`theme-${theme} min-h-screen relative pb-24 md:pb-6 ${designMode === 'fun' ? 'fun-mode-active bunny-watermark' : 'pro-mode-active'} ${barnMode && activeTab === 'cages' ? 'barn-mode-active' : ''}`} style={{ '--custom-accent-color': customAccent }}>
       
       {/* Network Status Banner (sticky top, auto-dismiss) */}
       <NetworkStatusBanner />
@@ -8333,87 +8359,133 @@ export default function App() {
               <div className="flex flex-col gap-6">
                 
                 {/* Search and Add Header */}
-                <div className="glass-container p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <input 
-                      type="text" 
-                      placeholder="Search rabbits by name, tattoo, breed..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      spellCheck={true}
-                      className="w-full sm:w-80"
-                    />
-                    <VoiceInputButton
-                      onTranscript={(text) => setSearchQuery(text)}
-                      onExecuteCommand={handleExecuteVoiceCommand}
-                      size="md"
-                    />
-                    </div>
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
+                <div className="glass-container p-4 flex flex-col gap-4">
+                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 w-full">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                       <input 
-                        type="checkbox"
-                        checked={showArchived}
-                        onChange={(e) => setShowArchived(e.target.checked)}
-                        className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                        type="text" 
+                        placeholder="Search rabbits by name, tattoo, breed..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        spellCheck={true}
+                        className="w-full sm:w-80"
                       />
-                      📁 Show Sold / Archived
-                    </label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setSearchQuery(text)}
+                        onExecuteCommand={handleExecuteVoiceCommand}
+                        size="md"
+                      />
+                      </div>
+                      <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={showArchived}
+                          onChange={(e) => setShowArchived(e.target.checked)}
+                          className="rounded bg-slate-900 border-white/10 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                        />
+                        📁 Show Sold / Archived
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button 
+                        onClick={() => {
+                          const initialSpecies = selectedSpecies === 'all' ? 'rabbit' : selectedSpecies;
+                          const isCavy = initialSpecies === 'cavy';
+                          setNewRabbit({
+                            tattooNumber: isCavy ? 'CT-DEMO1' : 'HL-DEMO1',
+                            name: isCavy ? "Starfire's Rosette Spark" : "Grandview's Starfire",
+                            breed: isCavy ? 'Abyssinian' : 'Holland Lop',
+                            variety: isCavy ? 'Brindle' : 'Broken Blue',
+                            sex: 'doe',
+                            dob: '2024-04-12',
+                            weightOz: isCavy ? 34 : 48,
+                            sireId: isCavy ? 'c-demo-1' : 'r-hl-1',
+                            damId: isCavy ? 'c-demo-2' : 'r-hl-2',
+                            location: isCavy ? 'Cavy Haven - Pen 3' : 'Main Barn - Hutch A-04',
+                            notes: isCavy 
+                              ? 'Sharp rosettes, bold ridge alignment, gentle temperament.'
+                              : 'Dense flyback coat, wide open eye, excellent crown depth. Prime ARBA show prospect.',
+                            registrationNumber: isCavy ? 'REG-CV-8802' : 'REG-HL-7701',
+                            gcNumber: isCavy ? 'GC-CV-110' : 'GC-HL-102',
+                            isCharlie: false,
+                            colorCarrier: isCavy ? 'Roan & Brindle Pattern' : 'Carries dilute (d), non-extension (e)',
+                            winningsBOB: 1,
+                            winningsBOV: 2,
+                            winningsBOS: 0,
+                            winningsBOSV: 1,
+                            winningsBIS: 0,
+                            winningsOther: 3,
+                            showClass: isCavy ? 'Senior Sow' : 'Senior Doe',
+                            species: initialSpecies,
+                            status: 'active'
+                          });
+                          setShowAddRabbit(true);
+                        }}
+                        className="btn-interactive w-full sm:w-auto"
+                      >
+                        <Plus className="w-5 h-5" /> Add New {selectedSpecies === 'cavy' ? 'Cavy' : 'Rabbit'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRootAiModal(true)}
+                        className="btn-interactive w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white flex items-center justify-center gap-2 font-black shadow-lg cursor-pointer"
+                        title="Hands-free Root AI voice assistant for smart form auto-fill"
+                      >
+                        <span>🎙️  Talk to Root AI</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowEmailImportModal(true)}
+                        className="btn-interactive w-full sm:w-auto bg-indigo-600 hover:bg-indigo-750 text-white flex items-center justify-center gap-2"
+                      >
+                        <FileText className="w-5 h-5" /> Import Certificate/Leg
+                      </button>
+                    </div>
                   </div>
 
-                  <button 
-                    onClick={() => {
-                      const initialSpecies = selectedSpecies === 'all' ? 'rabbit' : selectedSpecies;
-                      const isCavy = initialSpecies === 'cavy';
-                      setNewRabbit({
-                        tattooNumber: isCavy ? 'CT-DEMO1' : 'HL-DEMO1',
-                        name: isCavy ? "Starfire's Rosette Spark" : "Grandview's Starfire",
-                        breed: isCavy ? 'Abyssinian' : 'Holland Lop',
-                        variety: isCavy ? 'Brindle' : 'Broken Blue',
-                        sex: 'doe',
-                        dob: '2024-04-12',
-                        weightOz: isCavy ? 34 : 48,
-                        sireId: isCavy ? 'c-demo-1' : 'r-hl-1',
-                        damId: isCavy ? 'c-demo-2' : 'r-hl-2',
-                        location: isCavy ? 'Cavy Haven - Pen 3' : 'Main Barn - Hutch A-04',
-                        notes: isCavy 
-                          ? 'Sharp rosettes, bold ridge alignment, gentle temperament.'
-                          : 'Dense flyback coat, wide open eye, excellent crown depth. Prime ARBA show prospect.',
-                        registrationNumber: isCavy ? 'REG-CV-8802' : 'REG-HL-7701',
-                        gcNumber: isCavy ? 'GC-CV-110' : 'GC-HL-102',
-                        isCharlie: false,
-                        colorCarrier: isCavy ? 'Roan & Brindle Pattern' : 'Carries dilute (d), non-extension (e)',
-                        winningsBOB: 1,
-                        winningsBOV: 2,
-                        winningsBOS: 0,
-                        winningsBOSV: 1,
-                        winningsBIS: 0,
-                        winningsOther: 3,
-                        showClass: isCavy ? 'Senior Sow' : 'Senior Doe',
-                        species: initialSpecies,
-                        status: 'active'
-                      });
-                      setShowAddRabbit(true);
-                    }}
-                    className="btn-interactive w-full sm:w-auto"
-                  >
-                    <Plus className="w-5 h-5" /> Add New {selectedSpecies === 'cavy' ? 'Cavy' : 'Rabbit'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowRootAiModal(true)}
-                    className="btn-interactive w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white flex items-center justify-center gap-2 font-black shadow-lg cursor-pointer"
-                    title="Hands-free Root AI voice assistant for smart form auto-fill"
-                  >
-                    <span>🎙️  Talk to Root AI</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowEmailImportModal(true)}
-                    className="btn-interactive w-full sm:w-auto bg-indigo-600 hover:bg-indigo-750 text-white flex items-center justify-center gap-2"
-                  >
-                    <FileText className="w-5 h-5" /> Import Certificate/Leg
-                  </button>
+                  {/* Barn One-Thumb Quick Filter Chips */}
+                  <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-white/10 no-scrollbar">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1 flex items-center gap-1">
+                      <Filter className="w-3.5 h-3.5" /> Filter:
+                    </span>
+                    {[
+                      { id: 'all', label: 'All Stock' },
+                      { id: 'buck', label: '♂ Bucks' },
+                      { id: 'doe', label: '♀ Does' },
+                      { id: 'junior', label: '🌱 Juniors (<6m)' },
+                      { id: 'senior', label: '👑 Seniors (6m+)' }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setMobileHerdFilter(tab.id);
+                          setRabbitPage(1);
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all touch-target ${
+                          mobileHerdFilter === tab.id
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400'
+                            : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                    {mobileHerdFilter !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileHerdFilter('all');
+                          setRabbitPage(1);
+                        }}
+                        className="text-xs text-rose-400 hover:text-rose-300 underline underline-offset-2 ml-1 shrink-0 font-semibold cursor-pointer"
+                      >
+                        Clear Filter
+                      </button>
+                    )}
+                  </div>
                 </div>
 
               {/* Add Rabbit Form overlay */}
@@ -12704,6 +12776,22 @@ export default function App() {
                 >
                   🖨️ Print Certificate
                 </button>
+                {typeof navigator !== 'undefined' && navigator.share && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.share({
+                        title: `${rabbit.name} Official Pedigree`,
+                        text: `Official ARBA 4-Generation Pedigree Certificate for ${rabbit.name} (Tattoo: ${rabbit.tattooNumber})`,
+                        url: `https://rabbitrypedigreepro.com/pedigree/${rabbit.id}?tat=${encodeURIComponent(rabbit.tattooNumber || '')}&name=${encodeURIComponent(rabbit.name || '')}`
+                      }).catch(() => {});
+                    }}
+                    className="btn-interactive text-xs bg-pink-600 hover:bg-pink-500 font-bold py-2 px-3 border-none text-white flex items-center gap-1.5 cursor-pointer rounded-xl shadow"
+                    title="Share pedigree with buyer via SMS, WhatsApp, or AirDrop"
+                  >
+                    <Share2 className="w-3.5 h-3.5" /> Share
+                  </button>
+                )}
                 <button 
                   type="button"
                   onClick={() => setShowPrintPedigreeModal(null)}
@@ -13852,6 +13940,87 @@ export default function App() {
         onConfirm={handleVoiceCommandConfirm}
         onCancel={() => setPendingVoiceCommand(null)}
       />
+
+      {/* Mobile Barn Bottom Navigation Bar */}
+      {currentUser && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          barnMode={barnMode}
+          setBarnMode={setBarnMode}
+          theme={theme}
+          setTheme={setTheme}
+          currentUser={currentUser}
+          onOpenSettings={() => setActiveTab('settings')}
+          onOpenHelp={() => setActiveTab('help')}
+          onOpenSecurity={() => setShowSecurityModal(true)}
+          unresolvedSyncCount={unresolvedSyncCount}
+        />
+      )}
+
+      {/* Mobile Barn Quick Action Dock (Floating Speed-Dial) */}
+      {currentUser && (
+        <MobileQuickActionDock
+          onAddRabbit={() => {
+            resetForm();
+            setShowAddRabbitModal(true);
+          }}
+          onOpenQuickWeight={() => setShowMobileRapidWeight(true)}
+          onOpenHealthNote={() => setActiveTab('health')}
+          onOpenQuickCamera={() => setShowMobileQuickCamera(true)}
+          onToggleVoiceAssistant={toggleBarnAssistant}
+          isVoiceListening={isVoiceListening}
+        />
+      )}
+
+      {/* Mobile Sequential Rapid Weight Modal */}
+      {showMobileRapidWeight && (
+        <MobileRapidWeightModal
+          rabbits={rabbits}
+          weightUnit={weightUnit}
+          onSaveWeight={(weightRecord, rabbitId, finalWeightOz) => {
+            setAllWeights(prev => [weightRecord, ...prev]);
+            setAllRabbits(prev => prev.map(item => item.id === rabbitId ? { ...item, weightOz: finalWeightOz } : item));
+            if (isOffline) {
+              addSyncAction('INSERT', 'weights', weightRecord);
+              const updatedRabbit = allRabbits.find(r => r.id === rabbitId);
+              if (updatedRabbit) {
+                addSyncAction('UPDATE', 'rabbits', { ...updatedRabbit, weightOz: finalWeightOz });
+              }
+            } else {
+              db.weights.put(weightRecord).catch(err => console.error(err));
+              db.rabbits.update(rabbitId, { weightOz: finalWeightOz }).catch(err => console.error(err));
+            }
+          }}
+          onClose={() => setShowMobileRapidWeight(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Mobile Quick Camera Snap & Compress Modal */}
+      {showMobileQuickCamera && (
+        <MobileQuickCameraModal
+          rabbits={rabbits}
+          onAttachPhoto={(rabbitId, photoObj) => {
+            setAllRabbits(prev => prev.map(r => {
+              if (r.id === rabbitId) {
+                const existingPhotos = r.photos || [];
+                const updatedPhotos = [photoObj, ...existingPhotos];
+                const updatedRabbit = { ...r, photos: updatedPhotos };
+                if (isOffline) {
+                  addSyncAction('UPDATE', 'rabbits', updatedRabbit);
+                } else {
+                  db.rabbits.update(rabbitId, { photos: updatedPhotos }).catch(err => console.error(err));
+                }
+                return updatedRabbit;
+              }
+              return r;
+            }));
+          }}
+          onClose={() => setShowMobileQuickCamera(false)}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

@@ -5,18 +5,46 @@
     {
       "src": "/assets/mascot.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/assets/mascot.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "background_color": "#020617",
   "theme_color": "#4f46e5",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
   "orientation": "any",
-  "description": "Premier ARBA & Cavy Herd Management, Offline-First Pedigree Registry, and 100% Legal Marketplace."
+  "description": "Premier ARBA & Cavy Herd Management, Offline-First Pedigree Registry, and Commercial Meat Compliance.",
+  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Add Rabbit / Cavy",
+      "short_name": "Add Animal",
+      "description": "Quickly register a new rabbit or cavy in the barn",
+      "url": "/?action=add_rabbit",
+      "icons": [{ "src": "/assets/mascot.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Rapid Weight Log",
+      "short_name": "Log Weight",
+      "description": "Log routine weights and monitor grow-out litters",
+      "url": "/?action=log_weight",
+      "icons": [{ "src": "/assets/mascot.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Barn AI Assistant",
+      "short_name": "Voice Assistant",
+      "description": "Hands-free voice assistant for logging barn chores",
+      "url": "/?action=voice",
+      "icons": [{ "src": "/assets/mascot.png", "sizes": "192x192" }]
+    }
+  ]
 }

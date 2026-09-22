@@ -835,3 +835,65 @@ select option {
   font-size: 1.1rem !important;
 }
 
+/* ==========================================
+   High-Contrast Outdoor Sunlight Mode (Sun Mode)
+   Anti-Glare, Ultra-High Contrast for Outdoor Barn Use
+   ========================================== */
+[data-theme="sunlight"],
+.theme-sunlight {
+  --bg-gradient: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  --glass-bg: #ffffff !important;
+  --glass-border: #000000 !important;
+  --text-primary: #000000 !important;
+  --text-secondary: #0f172a !important;
+  --accent-primary: #0284c7 !important;
+  --accent-glow: rgba(2, 132, 199, 0.4);
+  --card-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.25);
+  background: #f8fafc !important;
+  color: #000000 !important;
+}
+
+[data-theme="sunlight"] .glass-container,
+[data-theme="sunlight"] .bg-slate-900,
+[data-theme="sunlight"] .bg-slate-950,
+[data-theme="sunlight"] .bg-black\/40,
+[data-theme="sunlight"] .bg-black\/60,
+[data-theme="sunlight"] .bg-slate-900\/80 {
+  background-color: #ffffff !important;
+  border-color: #0f172a !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+}
+
+[data-theme="sunlight"] h1,
+[data-theme="sunlight"] h2,
+[data-theme="sunlight"] h3,
+[data-theme="sunlight"] h4,
+[data-theme="sunlight"] h5,
+[data-theme="sunlight"] strong,
+[data-theme="sunlight"] .text-white {
+  color: #000000 !important;
+  font-weight: 900 !important;
+}
+
+[data-theme="sunlight"] .text-slate-300,
+[data-theme="sunlight"] .text-slate-400,
+[data-theme="sunlight"] .text-slate-500 {
+  color: #1e293b !important;
+  font-weight: 700 !important;
+}
+
+/* Glove-friendly mobile touch helpers */
+@media (max-width: 768px) {
+  .touch-target-large {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+  }
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top, 0px), 16px);
+  }
+}
+
