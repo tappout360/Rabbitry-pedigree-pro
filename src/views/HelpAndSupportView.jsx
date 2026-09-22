@@ -7,6 +7,8 @@ import {
 import { db } from '../db/registryDb';
 import { DEFAULT_HELP_ARTICLES } from '../db/defaults';
 import { logSecurityEvent } from '../services/AccountSecurityService';
+import { SubmitSupportTicketService } from '../application/SubmitSupportTicketService';
+import { FDA_WITHDRAWAL_PERIODS, VETERINARY_DISCLAIMER, evaluateBarnTemperature } from '../domain/animalSafety';
 
 export default function HelpAndSupportView({
   currentUser,
@@ -81,54 +83,35 @@ export default function HelpAndSupportView({
     reader.readAsDataURL(file);
   };
 
-  // Submit Ticket
+  // Submit Ticket using Hexagonal Application Service
   const handleSubmitTicket = async (e) => {
     e.preventDefault();
-    if (!ticketSubject.trim() || !ticketDescription.trim()) {
-      alert("Please fill in both Subject and Description.");
-      return;
-    }
-
     setIsSubmitting(true);
-    const ticketNumber = 'WW-' + Math.floor(1000 + Math.random() * 9000);
-    const newTicket = {
-      id: 'tkt_' + Date.now(),
-      ticketNumber,
-      breederId: currentUser?.id || 'guest',
-      breederEmail: currentUser?.email || 'guest@example.com',
-      rabbitryName: currentUser?.rabbitryName || 'WarrenWise Breeder',
-      category: ticketCategory,
-      priority: ticketPriority,
-      subject: ticketSubject.trim(),
-      description: ticketDescription.trim(),
-      screenshot: ticketScreenshot || null,
-      status: 'Open',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      deviceInfo: {
-        platform: navigator.platform,
-        userAgent: navigator.userAgent,
-        screen: `${window.screen.width}x${window.screen.height}`,
-        online: navigator.onLine,
-        appVersion: '1.0.0'
-      },
-      replies: []
-    };
+    try {
+      const service = new SubmitSupportTicketService();
+      const result = await service.execute({
+        currentUser,
+        ticketData: {
+          subject: ticketSubject,
+          category: ticketCategory,
+          priority: ticketPriority,
+          description: ticketDescription,
+          screenshot: ticketScreenshot
+        }
+      });
 
-    if (db && db.supportTickets) {
-      await db.supportTickets.add(newTicket);
+      setAllTickets(prev => [result.ticket, ...prev]);
+      setIsSubmitting(false);
+      setTicketSubject('');
+      setTicketDescription('');
+      setTicketScreenshot(null);
+      setActiveTab('my_tickets');
+      setSelectedTicket(result.ticket);
+      showToast(`Support Ticket ${result.ticket.id} created successfully!`, "success");
+    } catch (err) {
+      setIsSubmitting(false);
+      showToast(err.message, "error");
     }
-    setAllTickets(prev => [newTicket, ...prev]);
-
-    await logSecurityEvent(currentUser?.id, 'SUPPORT_TICKET_SUBMITTED', { ticketNumber, category: ticketCategory }, 'info');
-
-    setIsSubmitting(false);
-    setTicketSubject('');
-    setTicketDescription('');
-    setTicketScreenshot(null);
-    setActiveTab('my_tickets');
-    setSelectedTicket(newTicket);
-    showToast(`Support Ticket #${ticketNumber} created!`, "success");
   };
 
   // Send Reply to existing ticket
@@ -308,6 +291,41 @@ export default function HelpAndSupportView({
                 </p>
               </div>
               <span className="text-xs font-bold text-emerald-400 mt-3 flex items-center gap-1">View Safety Rules &rarr;</span>
+            </div>
+          </div>
+
+          {/* OFFICIAL FDA DRUG WITHDRAWAL & ANIMAL SAFETY REFERENCE TABLE */}
+          <div className="glass-container p-5 border border-emerald-500/30 rounded-2xl space-y-3 text-left">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Official FDA Drug Withdrawal & Animal Welfare Standards</h4>
+                <p className="text-[11px] text-slate-400">Purebred rabbitry medication withdrawal guidelines for exhibition and meat production.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+              {Object.entries(FDA_WITHDRAWAL_PERIODS).map(([key, item]) => (
+                <div key={key} className="p-3 bg-slate-900/90 border border-white/5 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white truncate max-w-[170px]">{item.name.split('(')[0]}</span>
+                    <span className="text-[10px] font-black font-mono bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">
+                      {item.withdrawalDays} Days
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">{item.notes}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-amber-950/40 border border-amber-500/25 rounded-xl text-xs text-amber-200/90 leading-relaxed flex items-start gap-2 mt-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white block mb-0.5">Mandatory Veterinary Notice:</strong>
+                <span>{VETERINARY_DISCLAIMER}</span>
+              </div>
             </div>
           </div>
 

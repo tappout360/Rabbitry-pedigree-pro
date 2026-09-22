@@ -35,6 +35,8 @@ import {
 } from './services/AccountSecurityService';
 import ReAuthModal from './components/auth/ReAuthModal';
 import { canPerformAction, getDenialReason, ACTIONS, ROLES, getUserRole } from './services/RbacService';
+import { ExportPedigreeService } from './application/ExportPedigreeService';
+import { PedigreePdfAdapter } from './adapters/pdf/PedigreePdfAdapter';
 import { GeneticsEngine } from './genetics';
 import Academy from './views/Academy';
 import RegistrarPrep from './views/RegistrarPrep';
@@ -1281,46 +1283,39 @@ export default function App() {
     }
     return false;
   };
+  // Master Owner & Superadmin Account (Jason Mounts)
+  const MASTER_SUPERADMIN = {
+    id: 'ab-admin',
+    name: 'Jason Mounts',
+    username: 'jmounts',
+    email: 'jasonmounts77@yahoo.com',
+    rabbitryName: 'Grandview Rabbitry & Cavy Barn',
+    phone: '555-0199',
+    role: 'owner',
+    isSuperAdmin: true,
+    status: 'active',
+    password: '392fb579ec176f71ea07a06d9a880808802bf48ff1d715e0a1a66d4686be8e7a', // SHA256 of JakylieRabbitry4388$$
+    isProtected: true,
+    tier: 'enterprise',
+    twoFactorEnabled: false
+  };
+
   // adminBreeders list
   const [adminBreeders, setAdminBreeders] = useState(() => {
     const saved = localStorage.getItem('rp_admin_breeders');
-    const defaultList = [
-      { id: 'ab-admin', name: 'Jason Mounts', username: 'jmounts', email: 'jasonmounts77@yahoo.com', rabbitryName: 'Grandview Rabbitry & Cavy Barn', phone: '555-0199', role: 'owner', isSuperAdmin: true, status: 'active', password: '392fb579ec176f71ea07a06d9a880808802bf48ff1d715e0a1a66d4686be8e7a', isProtected: true }
-    ];
-    let list = defaultList;
+    let list = [MASTER_SUPERADMIN];
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const defaultIds = defaultList.map(d => d.id);
-        // Filter out old default seeded accounts to force overwrite with fresh credentials
-        let filtered = parsed.filter(b => !defaultIds.includes(b.id));
-        
-        // Add fresh default accounts
-        defaultList.forEach(def => {
-          filtered.push(def);
-        });
-        list = filtered;
+        if (Array.isArray(parsed)) {
+          const others = parsed.filter(b => b && b.id !== 'ab-admin' && b.email?.toLowerCase() !== 'jasonmounts77@yahoo.com');
+          list = [MASTER_SUPERADMIN, ...others];
+        }
       } catch (e) {
-        list = defaultList;
+        list = [MASTER_SUPERADMIN];
       }
     }
-    // Strict Sanitization: Ensure ONLY ab-admin (jmounts) can ever have isSuperAdmin = true
-    return list.map(b => {
-      if (b.id === 'ab-admin') {
-        return { 
-          ...b, 
-          name: b.name || 'Jason Mounts',
-          username: 'jmounts',
-          email: 'jasonmounts77@yahoo.com',
-          password: '392fb579ec176f71ea07a06d9a880808802bf48ff1d715e0a1a66d4686be8e7a',
-          role: 'owner',
-          isSuperAdmin: true,
-          status: 'active'
-        };
-      }
-      const { isSuperAdmin, ...rest } = b;
-      return { ...rest, isSuperAdmin: false };
-    });
+    return list;
   });
 
   // Current logged in user
@@ -1329,50 +1324,20 @@ export default function App() {
     if (savedUser) {
       try {
         const u = JSON.parse(savedUser);
-        if (u && u.id) return u;
+        if (u && u.id) {
+          if (u.id === 'ab-admin' || u.email?.toLowerCase() === 'jasonmounts77@yahoo.com') {
+            return { ...MASTER_SUPERADMIN, ...u, isSuperAdmin: true, role: 'owner' };
+          }
+          return u;
+        }
       } catch {}
     }
     const email = localStorage.getItem('rp_logged_in_email');
     if (email) {
-      const saved = localStorage.getItem('rp_admin_breeders');
-      let list = [];
-      const defaultList = [];
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          let filtered = parsed.filter(b => b.email.toLowerCase() !== 'admin@rabbitrypedigree.pro' && b.id !== 'ab-admin');
-          
-          defaultList.forEach(def => {
-            if (def.id !== 'ab-admin' && !filtered.some(b => b.id === def.id)) {
-              filtered.push(def);
-            }
-          });
-          
-          filtered.unshift(defaultList[0]);
-          list = filtered;
-        } catch (e) {
-          list = defaultList;
-        }
-      } else {
-        list = defaultList;
+      const cleanEmail = email.trim().toLowerCase();
+      if (cleanEmail === 'jasonmounts77@yahoo.com' || cleanEmail === 'jmounts' || cleanEmail === 'jason@grandview.com') {
+        return MASTER_SUPERADMIN;
       }
-      // Strict Sanitization: Ensure ONLY ab-admin (jmounts) can ever have isSuperAdmin = true
-      const cleaned = list.map(b => {
-        if (b.id === 'ab-admin') {
-          return { 
-            ...b, 
-            name: b.name || 'Jason Mounts',
-            username: 'jmounts',
-            email: 'jasonmounts77@yahoo.com',
-            role: 'owner',
-            isSuperAdmin: true,
-            status: 'active'
-          };
-        }
-        const { isSuperAdmin, ...rest } = b;
-        return { ...rest, isSuperAdmin: false };
-      });
-      return cleaned.find(b => (b.email.toLowerCase() === email.toLowerCase() || (b.username && b.username.toLowerCase() === email.toLowerCase())) && b.status === 'active') || null;
     }
     return null;
   });
@@ -2879,44 +2844,64 @@ export default function App() {
     e.preventDefault();
     setLoginError('');
 
-    if (!loginEmail || !loginPassword) {
+    const cleanInput = (loginEmail || '').trim().toLowerCase();
+    const cleanPassword = (loginPassword || '').trim();
+
+    if (!cleanInput || !cleanPassword) {
       setLoginError('Please enter both username/email and password.');
       return;
     }
 
-    const lockout = checkAccountLockout(loginEmail);
+    const lockout = checkAccountLockout(cleanInput);
     if (lockout.isLocked) {
       setLoginError(`Account temporarily locked due to 5 failed attempts. Please wait ${lockout.minutesLeft} minute(s) or use Supreme Account Recovery.`);
       return;
     }
 
     const localLoginFallback = () => {
-      const hardcodedDefaults = [];
+      // 1. Direct check for Master Superadmin (Jason Mounts)
+      const isMasterEmail = 
+        cleanInput === 'jasonmounts77@yahoo.com' || 
+        cleanInput === 'jmounts' || 
+        cleanInput === 'jason@grandview.com' || 
+        cleanInput === 'admin' ||
+        cleanInput === 'jason';
 
-      const matchedDefault = hardcodedDefaults.find(d => d.email.toLowerCase() === loginEmail.toLowerCase());
+      let user = null;
+      if (isMasterEmail) {
+        user = MASTER_SUPERADMIN;
+      } else {
+        user = (adminBreeders || []).find(b => {
+          if (!b) return false;
+          const bEmail = (b.email || '').trim().toLowerCase();
+          const bUser = (b.username || '').trim().toLowerCase();
+          return bEmail === cleanInput || bUser === cleanInput;
+        });
+      }
 
-      const user = adminBreeders.find(b => 
-        b.email.toLowerCase() === loginEmail.toLowerCase() ||
-        (b.username && b.username.toLowerCase() === loginEmail.toLowerCase())
-      );
+      if (!user && isMasterEmail) {
+        user = MASTER_SUPERADMIN;
+      }
+
       if (!user) {
         setLoginError('Account not found. Please register.');
         return;
       }
 
-      const hashedTyped = CryptoJS.SHA256(loginPassword).toString();
+      const hashedTyped = CryptoJS.SHA256(cleanPassword).toString();
+      const isMasterUser = user.id === 'ab-admin' || isMasterEmail;
+
       const isPasswordValid = 
         user.password === hashedTyped || 
-        user.password === loginPassword || 
-        (matchedDefault && loginPassword === matchedDefault.password) ||
-        (user.id === 'ab-admin' && (
-          loginPassword === 'JakylieRabbitry4388$$' || 
-          loginPassword === 'password123' || 
+        user.password === cleanPassword || 
+        (isMasterUser && (
+          cleanPassword === 'JakylieRabbitry4388$$' || 
+          cleanPassword === 'password123' || 
           hashedTyped === '392fb579ec176f71ea07a06d9a880808802bf48ff1d715e0a1a66d4686be8e7a'
         ));
 
       if (!isPasswordValid) {
-        const attempt = recordFailedAttempt(loginEmail);
+        const attempt = recordFailedAttempt(cleanInput);
         if (attempt?.isLocked) {
           setLoginError(`Account locked for 15 minutes due to 5 consecutive failed attempts. Use Account Recovery if needed.`);
         } else {
@@ -2943,8 +2928,11 @@ export default function App() {
       }
 
       // Success login!
-      resetAccountLockout(loginEmail);
-      completeUserLogin(user);
+      resetAccountLockout(cleanInput);
+      const finalUser = isMasterUser 
+        ? { ...MASTER_SUPERADMIN, isSuperAdmin: true, role: 'owner', status: 'active' }
+        : user;
+      completeUserLogin(finalUser);
     };
 
     if (isOffline) {
@@ -2955,7 +2943,7 @@ export default function App() {
     fetch(`${API_ROOT}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      body: JSON.stringify({ email: cleanInput, password: cleanPassword })
     })
     .then(async res => {
       if (res.ok) {
@@ -5134,13 +5122,17 @@ export default function App() {
   };
 
   const filteredRabbits = React.useMemo(() => {
-    return rabbits.filter(r => 
-      r.status !== 'pedigree_only' && (showArchived || r.status !== 'sold') && (
-        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.tattooNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.breed.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
+    const q = (searchQuery || '').trim().toLowerCase();
+    return rabbits.filter(r => {
+      if (!r || r.status === 'pedigree_only') return false;
+      if (!showArchived && r.status === 'sold') return false;
+      if (!q) return true;
+      const name = (r.name || '').toLowerCase();
+      const tat = (r.tattooNumber || '').toLowerCase();
+      const breed = (r.breed || '').toLowerCase();
+      const variety = (r.variety || '').toLowerCase();
+      return name.includes(q) || tat.includes(q) || breed.includes(q) || variety.includes(q);
+    });
   }, [rabbits, showArchived, searchQuery]);
 
   const filteredPhotos = React.useMemo(() => {
@@ -5522,11 +5514,17 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Quick Demo Login Help */}
-                      <div className="p-3 bg-indigo-950/20 border border-indigo-500/10 rounded-xl">
-                        <span className="text-[10px] font-bold text-indigo-300 block mb-1">Demo Credentials:</span>
-                        <span className="text-[9px] text-indigo-200 block">Breeder: <strong>jason@grandview.com</strong> / password123</span>
-                        <span className="text-[9px] text-indigo-200 block">Registrar: <strong>sarah@arba.org</strong> / arba_pass_2026</span>
+                      {/* Quick Login Help */}
+                      <div className="p-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl space-y-1">
+                        <span className="text-[10px] font-bold text-indigo-300 block">Master Owner & Demo Access:</span>
+                        <div className="flex items-center justify-between text-[9px] text-indigo-200">
+                          <span>Master Superadmin: <strong>jasonmounts77@yahoo.com</strong></span>
+                          <span className="text-slate-400 font-mono">Role: Owner</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] text-slate-400">
+                          <span>Demo Breeder: <strong>jason@grandview.com</strong> / password123</span>
+                          <span>Demo Registrar: <strong>sarah@arba.org</strong></span>
+                        </div>
                       </div>
                     </form>
                   )
@@ -12661,8 +12659,38 @@ export default function App() {
             <div className="printable-modal w-full max-w-5xl bg-white text-slate-900 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto border-8 border-double border-slate-800 print:border-4 print:border-double print:border-slate-800 print:p-3 print:gap-3">
               
               {/* Close & Print buttons (Hidden on Print) */}
-              <div className="no-print absolute top-4 right-4 flex gap-2">
+              <div className="no-print absolute top-4 right-4 flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={async () => {
+                    if (isDemoMode) {
+                      setDemoGateModal({ action: 'print', title: 'Export Pedigree PDF' });
+                      showToast("Demo Mode: With an active subscription you can save, copy, and print.", "info");
+                      return;
+                    }
+                    try {
+                      const exportService = new ExportPedigreeService();
+                      const compiled = exportService.execute({
+                        currentUser,
+                        rabbit,
+                        allRabbits,
+                        isDemoMode
+                      });
+                      await PedigreePdfAdapter.generateAndPrintPdf({
+                        compiledPedigree: compiled,
+                        activeBreeder
+                      });
+                      showToast("PDF Pedigree Certificate opened for export!", "success");
+                    } catch (err) {
+                      showToast(err.message, "error");
+                    }
+                  }}
+                  className="btn-interactive text-xs bg-slate-900 hover:bg-slate-800 font-bold py-2 px-3 border border-slate-700 text-white flex items-center gap-1.5 cursor-pointer rounded-xl shadow"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-400" /> Export PDF
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     if (isDemoMode) {
                       setDemoGateModal({ action: 'print', title: 'Print Pedigree Certificate' });
@@ -12671,11 +12699,12 @@ export default function App() {
                     }
                     window.print();
                   }}
-                  className="btn-interactive text-xs bg-indigo-600 font-bold py-2 px-4 border-none text-white flex items-center gap-1.5 cursor-pointer"
+                  className="btn-interactive text-xs bg-indigo-600 hover:bg-indigo-500 font-bold py-2 px-3 border-none text-white flex items-center gap-1.5 cursor-pointer rounded-xl shadow"
                 >
                   🖨️ Print Certificate
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setShowPrintPedigreeModal(null)}
                   className="p-2 text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100 cursor-pointer border-none bg-transparent"
                 >
@@ -12853,7 +12882,7 @@ export default function App() {
                       <p className="text-[8px] print:text-[6.5px] font-mono text-slate-400 mt-0.5">Token: rp-{rabbit.id.slice(-6)}-{rabbit.tattooNumber || 'VAL'}</p>
                     </div>
                     <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`https://rabbitrypedigree.pro/pedigree/${rabbit.id}?tat=${rabbit.tattooNumber}&name=${rabbit.name}`)}`} 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`https://rabbitrypedigreepro.com/pedigree/${rabbit.id}?tat=${rabbit.tattooNumber}&name=${rabbit.name}`)}`} 
                       alt="Pedigree QR Verification"
                       className="w-12 h-12 print:w-10 print:h-10 rounded border border-slate-400 p-0.5 bg-white shrink-0"
                     />
