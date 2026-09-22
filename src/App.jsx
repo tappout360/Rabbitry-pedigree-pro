@@ -74,6 +74,9 @@ import MobileBottomNav from './components/mobile/MobileBottomNav';
 import MobileQuickActionDock from './components/mobile/MobileQuickActionDock';
 import MobileRapidWeightModal from './components/mobile/MobileRapidWeightModal';
 import MobileQuickCameraModal from './components/mobile/MobileQuickCameraModal';
+import BarnLaunchpadChecklist from './components/onboarding/BarnLaunchpadChecklist';
+import DailyBarnAgenda from './components/barn/DailyBarnAgenda';
+import VaultBackupModal from './components/auth/VaultBackupModal';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { 
   DEFAULT_BREEDERS, DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS, 
@@ -1559,6 +1562,7 @@ export default function App() {
   const [showMobileRapidWeight, setShowMobileRapidWeight] = useState(false);
   const [showMobileQuickCamera, setShowMobileQuickCamera] = useState(false);
   const [mobileHerdFilter, setMobileHerdFilter] = useState('all'); // 'all', 'buck', 'doe', 'junior', 'senior'
+  const [showVaultBackupModal, setShowVaultBackupModal] = useState(false);
 
   // Zero Trust Session Lifetime & Sliding Expiration Check (12-hour policy)
   useEffect(() => {
@@ -7500,6 +7504,36 @@ export default function App() {
                 );
               })()}
 
+              {/* Barn Launchpad Checklist (First 30 Days Onboarding) */}
+              <BarnLaunchpadChecklist
+                currentUser={currentUser}
+                rabbits={rabbits}
+                breedings={breedings}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenAddRabbit={() => {
+                  setActiveTab('rabbits');
+                  setShowAddRabbit(true);
+                }}
+                onOpenVaultBackup={() => setShowVaultBackupModal(true)}
+                onOpenSettings={() => setActiveTab('settings')}
+              />
+
+              {/* Daily Barn Agenda & Lifecycle Milestones Engine */}
+              <DailyBarnAgenda
+                rabbits={rabbits}
+                breedings={breedings}
+                litters={litters}
+                onPalpate={(breedingId, result) => {
+                  logPalpation(breedingId, result);
+                  showToast(`Logged palpation result as ${result ? 'Positive' : 'Negative'}!`, "success");
+                }}
+                onOpenKindleModal={() => {
+                  setActiveTab('scheduler');
+                }}
+                onOpenVaultBackup={() => setShowVaultBackupModal(true)}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+              />
+
               {/* Interactive Demo Barn Indicator Banner */}
               {isDemoMode && (
                 <div className="glass-container p-4 bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-left shadow-lg shadow-indigo-950/40">
@@ -10919,6 +10953,8 @@ export default function App() {
               }}
               onOpenSecurityModal={() => setShowSecurityModal(true)}
               onOpenHelpSupport={() => setActiveTab('help_support')}
+              onOpenVaultBackup={() => setShowVaultBackupModal(true)}
+              rabbits={rabbits}
               showToast={showToast}
             />
           )}
@@ -14018,6 +14054,32 @@ export default function App() {
             }));
           }}
           onClose={() => setShowMobileQuickCamera(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Vault Backup & Disaster Recovery Modal */}
+      {showVaultBackupModal && (
+        <VaultBackupModal
+          isOpen={showVaultBackupModal}
+          onClose={() => setShowVaultBackupModal(false)}
+          currentUser={currentUser}
+          rabbits={rabbits}
+          onRestoreSuccess={async () => {
+            try {
+              const [freshRabbits, freshBreedings, freshLitters] = await Promise.all([
+                db.rabbits.toArray(),
+                db.breedings.toArray(),
+                db.litters.toArray()
+              ]);
+              setAllRabbits(freshRabbits);
+              setAllBreedings(freshBreedings);
+              setAllLitters(freshLitters);
+              showToast("Local workspace reloaded with restored vault data!", "success");
+            } catch (rErr) {
+              console.error("Error refreshing workspace after restore:", rErr);
+            }
+          }}
           showToast={showToast}
         />
       )}

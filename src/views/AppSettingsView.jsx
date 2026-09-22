@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Sliders, Monitor, Bell, Shield, LifeBuoy, Check, Save, 
-  Palette, Sun, Moon, Volume2, HardDrive, Smartphone, Award, Lock, ExternalLink, ShieldCheck
+  Palette, Sun, Moon, Volume2, HardDrive, Smartphone, Award, Lock, ExternalLink, ShieldCheck,
+  Activity, Download, Upload, FileText, CheckCircle2, AlertTriangle, Database, RefreshCw, Copy
 } from 'lucide-react';
 import { getUserRole } from '../services/RbacService';
+import { DiagnosticService } from '../services/DiagnosticService';
+import { VaultBackupService } from '../services/VaultBackupService';
 
 export default function AppSettingsView({
   currentUser,
@@ -12,9 +15,13 @@ export default function AppSettingsView({
   onToggleWeightUnit,
   onOpenSecurityModal,
   onOpenHelpSupport,
+  onOpenVaultBackup,
+  rabbits = [],
   showToast
 }) {
-  const [activeSection, setActiveSection] = useState('profile'); // 'profile', 'preferences', 'behavior'
+  const [activeSection, setActiveSection] = useState('profile'); // 'profile', 'preferences', 'behavior', 'vault'
+  const [diagnosticsData, setDiagnosticsData] = useState(null);
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
 
   // Profile Form
   const [name, setName] = useState(currentUser?.name || '');
@@ -142,36 +149,46 @@ export default function AppSettingsView({
       </div>
 
       {/* Settings Navigation Tabs */}
-      <div className="flex border-b border-white/10 bg-slate-950/30 rounded-2xl p-1 gap-1 text-xs font-bold">
+      <div className="grid grid-cols-2 md:grid-cols-4 border-b border-white/10 bg-slate-950/30 rounded-2xl p-1 gap-1 text-xs font-bold">
         <button
           onClick={() => setActiveSection('profile')}
-          className={`flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
             activeSection === 'profile' 
               ? 'bg-indigo-600 text-white shadow-md' 
               : 'text-slate-400 hover:text-white bg-transparent'
           }`}
         >
-          <User className="w-4 h-4" /> Breeder & Rabbitry Profile
+          <User className="w-4 h-4" /> Profile
         </button>
         <button
           onClick={() => setActiveSection('preferences')}
-          className={`flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
             activeSection === 'preferences' 
               ? 'bg-indigo-600 text-white shadow-md' 
               : 'text-slate-400 hover:text-white bg-transparent'
           }`}
         >
-          <Palette className="w-4 h-4" /> Preferences & Notifications
+          <Palette className="w-4 h-4" /> Preferences
         </button>
         <button
           onClick={() => setActiveSection('behavior')}
-          className={`flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+          className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
             activeSection === 'behavior' 
               ? 'bg-indigo-600 text-white shadow-md' 
               : 'text-slate-400 hover:text-white bg-transparent'
           }`}
         >
-          <HardDrive className="w-4 h-4" /> App Behavior & Offline Sync
+          <HardDrive className="w-4 h-4" /> Offline & Voice
+        </button>
+        <button
+          onClick={() => setActiveSection('vault')}
+          className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeSection === 'vault' 
+              ? 'bg-indigo-600 text-white shadow-md' 
+              : 'text-slate-400 hover:text-white bg-transparent'
+          }`}
+        >
+          <Activity className="w-4 h-4" /> Data Vault & Diagnostics
         </button>
       </div>
 
@@ -487,6 +504,207 @@ export default function AppSettingsView({
                 <span>Auto-activate microphone when opening Barn Mode</span>
               </label>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 4: DATA VAULT & BARN DIAGNOSTICS */}
+      {activeSection === 'vault' && (
+        <div className="glass-container p-6 border border-white/10 space-y-6">
+          <div>
+            <h3 className="font-bold text-white text-base">Local Data Vault & Disaster Recovery</h3>
+            <p className="text-xs text-slate-400">Export complete offline encrypted snapshots, restore previous backups, and verify barn device health.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Card 1: Vault Backup */}
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-indigo-400">
+                  <Download className="w-5 h-5" />
+                  <h4 className="font-bold text-white text-xs">Export Encrypted Vault</h4>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Download all {rabbits.length} herd records, 4-gen pedigrees, and breeding logs in a single encrypted JSON bundle with SHA-256 integrity verification.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenVaultBackup}
+                className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/30"
+              >
+                <HardDrive className="w-4 h-4" /> Open Vault Manager
+              </button>
+            </div>
+
+            {/* Card 2: Restore Vault */}
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <Upload className="w-5 h-5" />
+                  <h4 className="font-bold text-white text-xs">Restore Backup</h4>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Safely merge or rehydrate records from a previous vault snapshot. Validates schema before applying changes.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenVaultBackup}
+                className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Upload className="w-4 h-4" /> Upload Vault File
+              </button>
+            </div>
+
+            {/* Card 3: CSV Stock */}
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl flex flex-col justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-purple-400">
+                  <FileText className="w-5 h-5" />
+                  <h4 className="font-bold text-white text-xs">Spreadsheet CSV Export</h4>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Export an Evans-compatible and Excel-friendly CSV spreadsheet of your herd stock, weights, and cage locations.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  VaultBackupService.exportStockCsv(rabbits);
+                  showToast(`Exported ${rabbits.length} rabbits to CSV!`, 'success');
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-purple-600/30"
+              >
+                <Download className="w-4 h-4" /> Download Stock CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Barn Diagnostics Panel */}
+          <div className="p-5 bg-slate-950/70 border border-indigo-500/30 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Activity className="w-5 h-5 text-indigo-400" />
+                <div>
+                  <h4 className="font-bold text-white text-xs">Barn Self-Diagnostics & System Integrity</h4>
+                  <p className="text-[10px] text-slate-400">Verify IndexedDB persistence, Service Worker offline cache, and hardware APIs.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsRunningDiagnostics(true);
+                    try {
+                      const data = await DiagnosticService.runFullDiagnostics();
+                      setDiagnosticsData(data);
+                      showToast('Barn self-diagnostics completed!', 'success');
+                    } catch (err) {
+                      showToast(`Diagnostics failed: ${err.message}`, 'error');
+                    } finally {
+                      setIsRunningDiagnostics(false);
+                    }
+                  }}
+                  disabled={isRunningDiagnostics}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/20"
+                >
+                  {isRunningDiagnostics ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5" />}
+                  <span>Run Diagnostics</span>
+                </button>
+
+                {diagnosticsData && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const md = DiagnosticService.formatReportMarkdown(diagnosticsData);
+                      navigator.clipboard.writeText(md);
+                      showToast('Diagnostic report copied to clipboard!', 'success');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy Report
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Diagnostic Results Grid */}
+            {diagnosticsData ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {/* 1. Database */}
+                <div className="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-bold text-[10px] uppercase">Database</span>
+                    {diagnosticsData.checks.database?.status === 'pass' ? (
+                      <span className="text-emerald-400 text-[10px] font-bold">HEALTHY</span>
+                    ) : (
+                      <span className="text-rose-400 text-[10px] font-bold">ERROR</span>
+                    )}
+                  </div>
+                  <div className="font-mono text-white text-[11px]">
+                    Rabbits: {diagnosticsData.checks.database?.counts?.rabbits || 0}
+                  </div>
+                  <div className="font-mono text-slate-400 text-[10px]">
+                    Breedings: {diagnosticsData.checks.database?.counts?.breedings || 0} | Litters: {diagnosticsData.checks.database?.counts?.litters || 0}
+                  </div>
+                </div>
+
+                {/* 2. Storage */}
+                <div className="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-bold text-[10px] uppercase">Persistent Storage</span>
+                    {diagnosticsData.checks.storage?.persisted ? (
+                      <span className="text-emerald-400 text-[10px] font-bold">PERSISTED</span>
+                    ) : (
+                      <span className="text-amber-400 text-[10px] font-bold">STANDARD</span>
+                    )}
+                  </div>
+                  <div className="font-mono text-white text-[11px]">
+                    {diagnosticsData.checks.storage?.estimate ? `${diagnosticsData.checks.storage.estimate.usageMb} MB used (${diagnosticsData.checks.storage.estimate.percentUsed}%)` : 'Unknown'}
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    {diagnosticsData.checks.storage?.persisted ? 'Protected from OS eviction' : 'Requesting persistence'}
+                  </div>
+                </div>
+
+                {/* 3. Service Worker */}
+                <div className="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-bold text-[10px] uppercase">Service Worker</span>
+                    {diagnosticsData.checks.serviceWorker?.registered ? (
+                      <span className="text-emerald-400 text-[10px] font-bold">ACTIVE v7.0</span>
+                    ) : (
+                      <span className="text-amber-400 text-[10px] font-bold">INACTIVE</span>
+                    )}
+                  </div>
+                  <div className="font-mono text-white text-[11px]">
+                    {diagnosticsData.checks.serviceWorker?.registered ? 'Offline Barn Mode Ready' : 'Dev Mode Active'}
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    Caches: {(diagnosticsData.checks.serviceWorker?.caches || []).length} active
+                  </div>
+                </div>
+
+                {/* 4. Hardware APIs */}
+                <div className="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-bold text-[10px] uppercase">Hardware APIs</span>
+                    <span className="text-indigo-400 text-[10px] font-bold">CAPABLE</span>
+                  </div>
+                  <div className="text-[10px] text-slate-300 space-y-0.5">
+                    <div>Camera: {diagnosticsData.checks.capabilities?.camera ? '✅ Available' : '❌ None'}</div>
+                    <div>Native Share: {diagnosticsData.checks.capabilities?.webShare ? '✅ Available' : 'ℹ️ PDF Fallback'}</div>
+                    <div>Voice Engine: {diagnosticsData.checks.capabilities?.voiceRecognition ? '✅ Ready' : '❌ Unavailable'}</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-dashed border-white/10 text-center text-xs text-slate-400">
+                Click "Run Diagnostics" to inspect your local storage quotas, offline cache status, and hardware APIs.
+              </div>
+            )}
           </div>
         </div>
       )}

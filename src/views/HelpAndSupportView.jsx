@@ -9,6 +9,7 @@ import { DEFAULT_HELP_ARTICLES } from '../db/defaults';
 import { logSecurityEvent } from '../services/AccountSecurityService';
 import { SubmitSupportTicketService } from '../application/SubmitSupportTicketService';
 import { FDA_WITHDRAWAL_PERIODS, VETERINARY_DISCLAIMER, evaluateBarnTemperature } from '../domain/animalSafety';
+import { DiagnosticService } from '../services/DiagnosticService';
 
 export default function HelpAndSupportView({
   currentUser,
@@ -88,6 +89,16 @@ export default function HelpAndSupportView({
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Auto-attach system diagnostics for instant developer resolution
+      let fullDescription = ticketDescription;
+      try {
+        const diag = await DiagnosticService.runFullDiagnostics();
+        const diagMarkdown = DiagnosticService.formatReportMarkdown(diag);
+        fullDescription = `${ticketDescription}\n\n---\n**Automated Barn Diagnostics:**\n${diagMarkdown}`;
+      } catch (dErr) {
+        console.warn('Diagnostics collection failed:', dErr);
+      }
+
       const service = new SubmitSupportTicketService();
       const result = await service.execute({
         currentUser,
@@ -95,7 +106,7 @@ export default function HelpAndSupportView({
           subject: ticketSubject,
           category: ticketCategory,
           priority: ticketPriority,
-          description: ticketDescription,
+          description: fullDescription,
           screenshot: ticketScreenshot
         }
       });
