@@ -10185,6 +10185,7 @@ export default function App() {
                 rabbits={rabbits} 
                 currentUser={currentUser} 
                 onUpgrade={() => setActiveTab('billing')} 
+                showToast={showToast}
               />
             </ErrorBoundary>
           )}
