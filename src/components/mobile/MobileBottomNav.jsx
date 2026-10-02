@@ -16,6 +16,7 @@ export default function MobileBottomNav({
   onOpenSettings,
   onOpenHelp,
   onOpenSecurity,
+  onOpenBetaChecklist,
   unresolvedSyncCount = 0
 }) {
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
@@ -169,6 +170,17 @@ export default function MobileBottomNav({
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <span>4-H Academy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { if (onOpenBetaChecklist) onOpenBetaChecklist(); setShowMoreDrawer(false); }}
+                className="p-3 bg-slate-950/60 border border-pink-500/30 rounded-2xl flex items-center gap-2.5 text-pink-200 hover:text-white hover:border-pink-500/60 transition-all cursor-pointer text-left"
+              >
+                <div className="p-2 bg-pink-500/20 text-pink-400 rounded-xl">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <span>Beta Checklist</span>
               </button>
 
               <button

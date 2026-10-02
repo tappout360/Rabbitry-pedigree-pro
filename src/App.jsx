@@ -80,6 +80,8 @@ import MobileQuickCameraModal from './components/mobile/MobileQuickCameraModal';
 import BarnLaunchpadChecklist from './components/onboarding/BarnLaunchpadChecklist';
 import DailyBarnAgenda from './components/barn/DailyBarnAgenda';
 import VaultBackupModal from './components/auth/VaultBackupModal';
+import BetaTaskChecklistModal from './components/beta/BetaTaskChecklistModal';
+import AnimalPhotoManager from './components/photos/AnimalPhotoManager';
 import { db, performMigrationAndLoad } from './db/registryDb';
 import { 
   DEFAULT_BREEDERS, DEFAULT_RABBITS, DEFAULT_BREEDINGS, DEFAULT_LITTERS, 
@@ -1593,6 +1595,8 @@ export default function App() {
   const [showMobileQuickCamera, setShowMobileQuickCamera] = useState(false);
   const [mobileHerdFilter, setMobileHerdFilter] = useState('all'); // 'all', 'buck', 'doe', 'junior', 'senior'
   const [showVaultBackupModal, setShowVaultBackupModal] = useState(false);
+  const [showBetaChecklistModal, setShowBetaChecklistModal] = useState(false);
+  const [showAnimalPhotoManager, setShowAnimalPhotoManager] = useState(false);
 
   // Zero Trust Session Lifetime & Sliding Expiration Check (12-hour policy)
   useEffect(() => {
@@ -7028,6 +7032,12 @@ export default function App() {
               <MessageSquare className="w-5 h-5 text-amber-400" /> 💬 App Feedback
             </button>
             <button 
+              onClick={() => setShowBetaChecklistModal(true)}
+              className="flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all opacity-95 hover:bg-white/5 text-pink-300 cursor-pointer border-none bg-transparent"
+            >
+              <Sparkles className="w-5 h-5 text-pink-400" /> 🧪 Beta Checklist
+            </button>
+            <button 
               onClick={() => setActiveTab('settings')}
               className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'settings' ? 'bg-white/10 text-white shadow-inner border border-indigo-500/40' : 'opacity-85 hover:bg-white/5'}`}
             >
@@ -9358,7 +9368,14 @@ export default function App() {
                         <h3 className="text-base font-bold flex items-center gap-2">
                           <ImageIcon className="w-5 h-5" /> Photo Gallery ({selectedRabbit.photos?.length || 0})
                         </h3>
-                        <span className="text-xs opacity-75">All Angles</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAnimalPhotoManager(true)}
+                          className="px-2.5 py-1 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer border-none shadow-sm"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Barn Photo Studio</span>
+                        </button>
                       </div>
 
                       {/* Photo grid display */}
@@ -13727,6 +13744,7 @@ export default function App() {
           onOpenSettings={() => setActiveTab('settings')}
           onOpenHelp={() => setActiveTab('help')}
           onOpenSecurity={() => setShowSecurityModal(true)}
+          onOpenBetaChecklist={() => setShowBetaChecklistModal(true)}
           unresolvedSyncCount={unresolvedSyncCount}
         />
       )}
@@ -13779,11 +13797,17 @@ export default function App() {
               if (r.id === rabbitId) {
                 const existingPhotos = r.photos || [];
                 const updatedPhotos = [photoObj, ...existingPhotos];
-                const updatedRabbit = { ...r, photos: updatedPhotos };
+                const updatedRabbit = { 
+                  ...r, 
+                  photos: updatedPhotos,
+                  photo: photoObj.url || r.photo,
+                  imageUrl: photoObj.url || r.imageUrl,
+                  updatedAt: new Date().toISOString()
+                };
+                // Local-first: always persist immediately to Dexie so device is source of truth
+                db.rabbits.put(updatedRabbit).catch(err => console.error(err));
                 if (isOffline) {
                   addSyncAction('UPDATE', 'rabbits', updatedRabbit);
-                } else {
-                  db.rabbits.update(rabbitId, { photos: updatedPhotos }).catch(err => console.error(err));
                 }
                 return updatedRabbit;
               }
@@ -13819,6 +13843,48 @@ export default function App() {
           }}
           showToast={showToast}
         />
+      )}
+
+      {/* Closed Beta 8-Day Validation & Triage Modal */}
+      {showBetaChecklistModal && (
+        <BetaTaskChecklistModal
+          isOpen={showBetaChecklistModal}
+          onClose={() => setShowBetaChecklistModal(false)}
+          currentUser={currentUser}
+          showToast={showToast}
+          onNavigateAction={(actionKey) => {
+            if (actionKey === 'rabbits') setActiveTab('rabbits');
+            else if (actionKey === 'settings') setActiveTab('settings');
+            else if (actionKey === 'media') setActiveTab('media');
+            else if (actionKey === 'barn') setBarnMode(true);
+            else if (actionKey === 'rapid_weight') setShowMobileRapidWeight(true);
+            else if (actionKey === 'health') setActiveTab('health');
+            else if (actionKey === 'breedings') setActiveTab('scheduler');
+            else if (actionKey === 'pedigree') setActiveTab('pedigree');
+            else if (actionKey === 'backup') setShowVaultBackupModal(true);
+            else if (actionKey === 'feedback') setShowFeedbackModal(true);
+            else if (actionKey === 'sync') globalSyncAdapter.processQueue();
+          }}
+        />
+      )}
+
+      {/* Dedicated Animal Photo Studio Modal */}
+      {showAnimalPhotoManager && selectedRabbit && (
+        <div className="fixed inset-0 z-[115] flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in text-left">
+          <div className="w-full max-w-3xl bg-slate-900 border-2 border-pink-500/40 rounded-3xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
+            <AnimalPhotoManager
+              rabbit={selectedRabbit}
+              onPhotoUpdated={(updatedRabbit) => {
+                setSelectedRabbit(updatedRabbit);
+                setAllRabbits(prev => prev.map(r => r.id === updatedRabbit.id ? updatedRabbit : r));
+              }}
+              currentUser={currentUser}
+              showToast={showToast}
+              onClose={() => setShowAnimalPhotoManager(false)}
+              isBarnMode={barnMode}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

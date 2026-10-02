@@ -19,6 +19,7 @@ import SystemOpsTab from './tabs/SystemOpsTab';
 import AnalyticsBiTab from './tabs/AnalyticsBiTab';
 import SecurityCenterTab from './tabs/SecurityCenterTab';
 import TeamControlTab from './tabs/TeamControlTab';
+import BetaFeedbackTab from './tabs/BetaFeedbackTab';
 
 import ImpersonationBanner from './components/ImpersonationBanner';
 
@@ -323,6 +324,7 @@ export default function OwnerControlCenter({
       <div className="flex border-b border-white/10 bg-slate-950/60 p-1.5 rounded-2xl gap-1.5 text-xs font-bold overflow-x-auto">
         {[
           { id: 'command_home', label: 'Command Home', icon: ShieldCheck },
+          { id: 'beta', label: 'Beta Validation', icon: CheckCircle },
           { id: 'users', label: 'Users & Accounts', icon: Users },
           { id: 'subscriptions', label: 'Subscriptions & MRR', icon: CreditCard },
           { id: 'support', label: `Support Desk`, badge: openTicketsCount > 0 ? openTicketsCount : null, icon: LifeBuoy },
@@ -440,6 +442,13 @@ export default function OwnerControlCenter({
           allBreeders={allBreeders}
           allRabbits={allRabbits}
           allTickets={allTickets}
+          showToast={showToast}
+        />
+      )}
+
+      {activeTab === 'beta' && (
+        <BetaFeedbackTab
+          currentUser={currentUser}
           showToast={showToast}
         />
       )}
