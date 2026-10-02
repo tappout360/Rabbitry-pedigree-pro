@@ -25,6 +25,8 @@ import AccountRecoveryModal from './components/auth/AccountRecoveryModal';
 import AppSettingsView from './views/AppSettingsView';
 import HelpAndSupportView from './views/HelpAndSupportView';
 import AdminSupportDesk from './views/AdminSupportDesk';
+import OwnerControlCenter from './views/controlCenter/OwnerControlCenter';
+import ImpersonationBanner from './views/controlCenter/components/ImpersonationBanner';
 import { 
   checkAccountLockout, 
   recordFailedAttempt, 
@@ -1415,8 +1417,35 @@ export default function App() {
   // Strict check: Control Center & App Owner features ONLY accessible when logged into Jason Mounts' account
   const isOwnerAuthenticated = Boolean(
     currentUser &&
-    (currentUser.id === 'ab-admin' || currentUser.email?.toLowerCase() === 'jasonmounts77@yahoo.com' || currentUser.username?.toLowerCase() === 'jmounts')
+    (currentUser.id === 'ab-admin' || currentUser.email?.toLowerCase() === 'jasonmounts77@yahoo.com' || currentUser.username?.toLowerCase() === 'jmounts' || currentUser.role === 'owner' || currentUser.role === 'superadmin')
   );
+
+  const isStaffAuthenticated = Boolean(
+    currentUser &&
+    (isOwnerAuthenticated || currentUser.role?.startsWith('staff_') || currentUser.staffRole)
+  );
+
+  // Impersonation state
+  const [impersonatedUser, setImpersonatedUser] = useState(null);
+  const [impersonationMeta, setImpersonationMeta] = useState(null);
+
+  const handleStartImpersonation = (targetUser, reason) => {
+    setImpersonatedUser(targetUser);
+    setImpersonationMeta({
+      reason,
+      startedAt: Date.now(),
+      expiresAt: Date.now() + 15 * 60 * 1000 // 15 mins
+    });
+    setSelectedBreederContext(targetUser.id);
+    showToast(`Support Impersonation active: viewing as ${targetUser.name || targetUser.email}`, 'warning');
+  };
+
+  const handleExitImpersonation = (reason = 'Manual exit') => {
+    setImpersonatedUser(null);
+    setImpersonationMeta(null);
+    setSelectedBreederContext(currentUser?.id || 'ab-admin');
+    showToast(`Exited impersonation mode: ${reason}`, 'info');
+  };
 
   // Authentication Views: 'home', 'login', 'signup', 'forgot-password', 'reset-password', 'pending-approval'
   const [authView, setAuthView] = useState('home');
@@ -2197,8 +2226,8 @@ export default function App() {
   }, [breederState]);
 
   useEffect(() => {
-    // Prevent non-owner or demo users from accessing ab-admin context or the admin control center tab
-    if (!isOwnerAuthenticated) {
+    // Prevent non-owner or unauthenticated users from accessing ab-admin context or the admin control center tab
+    if (!isStaffAuthenticated) {
       if (activeTab === 'admin') {
         setActiveTab('dashboard');
       }
@@ -2210,7 +2239,7 @@ export default function App() {
       setAdminPasswordInput('');
       setAdminPasswordError('');
     }
-  }, [isOwnerAuthenticated, activeTab, selectedBreederContext]);
+  }, [isStaffAuthenticated, activeTab, selectedBreederContext]);
 
   // Sync breeder profile edits back to currentUser and adminBreeders dynamically
   useEffect(() => {
@@ -6349,6 +6378,13 @@ export default function App() {
       {/* Network Status Banner (sticky top, auto-dismiss) */}
       <NetworkStatusBanner />
       <UpdateBanner />
+      {impersonatedUser && (
+        <ImpersonationBanner
+          impersonatedUser={impersonatedUser}
+          impersonationMeta={impersonationMeta}
+          onExitImpersonation={handleExitImpersonation}
+        />
+      )}
 
       {/* Anime Reward Popups Overlay */}
       {successMascot && (
@@ -7003,7 +7039,7 @@ export default function App() {
             >
               <LifeBuoy className="w-5 h-5 text-sky-400" /> Help & Support Desk
             </button>
-            {isOwnerAuthenticated && (
+            {isStaffAuthenticated && (
               <button 
                 onClick={() => setActiveTab('admin')}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left font-semibold transition-all ${activeTab === 'admin' ? 'bg-white/10 text-white shadow-inner' : 'opacity-85 hover:bg-white/5'}`}
@@ -10616,325 +10652,24 @@ export default function App() {
           )}
 
           {/* TAB 6: ADMIN CONTROL CENTER */}
-          {activeTab === 'admin' && isOwnerAuthenticated && (
-            !controlCenterUnlocked ? (
-              <div className="glass-container p-8 flex flex-col items-center justify-center text-center gap-6 max-w-md mx-auto my-12 border-2 border-red-500/20 shadow-xl shadow-red-950/20 relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-indigo-600"></div>
-                <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/35 flex items-center justify-center text-red-400">
-                  <Lock className="w-8 h-8 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight text-white mb-2">Secondary Authentication Required</h3>
-                  <p className="text-xs opacity-75 leading-relaxed text-slate-300">
-                    Access to the App Owner Control Center requires the secondary administrative password. This is required for secure tenant management and data protection.
-                  </p>
-                </div>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (adminPasswordInput === 'TechJakylie9699$$') {
-                      setControlCenterUnlocked(true);
-                      setAdminPasswordError('');
-                      setAdminPasswordInput('');
-                      triggerConfetti();
-                      showToast("Control Center unlocked successfully!", "success");
-                    } else {
-                      setAdminPasswordError('Invalid administrative password.');
-                      showToast("Access Denied: Invalid credentials.", "error");
-                    }
-                  }}
-                  className="w-full flex flex-col gap-4 text-xs mt-2"
-                >
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="font-bold text-slate-400">Administrative Password</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••••••••••"
-                      value={adminPasswordInput}
-                      onChange={(e) => setAdminPasswordInput(e.target.value)}
-                      className="py-2.5 px-4 bg-slate-950/50 border border-white/10 text-white rounded-xl text-center text-sm tracking-widest font-mono focus:border-red-500"
-                    />
-                    {adminPasswordError && (
-                      <span className="text-red-400 font-semibold mt-1 text-[10px] block text-center">
-                        ⚠️ {adminPasswordError}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn-interactive w-full py-3 bg-red-650 hover:bg-red-700 text-white font-bold rounded-xl border-none shadow-md"
-                  >
-                    Unlock Control Center
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                
-                {/* Header card with summary & stats */}
-                <div className="glass-container p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <ShieldCheck className="w-6 h-6 text-indigo-400" /> App Owner Control Center
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setControlCenterUnlocked(false);
-                          showToast("Control Center locked.", "info");
-                        }}
-                        className="p-1 px-2.5 bg-slate-855 hover:bg-slate-800 text-[10px] text-slate-400 hover:text-slate-200 border border-white/10 rounded-lg font-mono ml-4"
-                        title="Lock access"
-                      >
-                        🔒 Lock Tab
-                      </button>
-                    </h3>
-                  <p className="text-xs opacity-75">
-                    Manage breeder registries, membership approvals, role assignments, and breeder credential recovery.
-                  </p>
-                </div>
-                
-                {/* CSV download button */}
-                <button
-                  onClick={() => {
-                    const csvRows = [
-                      ["ID", "Name", "Email", "Rabbitry", "Phone", "Role", "Status", "Password"],
-                      ...adminBreeders.map(b => [
-                        b.id,
-                        b.name,
-                        b.email,
-                        b.rabbitryName,
-                        b.phone,
-                        b.role,
-                        b.status,
-                        b.password
-                      ])
-                    ];
-                    const csvContent = "data:text/csv;charset=utf-8," 
-                      + csvRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",")).join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", `breeder_directory_${Date.now()}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    triggerConfetti();
-                  }}
-                  className="btn-interactive text-xs bg-indigo-600 w-full sm:w-auto"
-                >
-                  <Download className="w-4 h-4" /> Export Directory (CSV)
-                </button>
-              </div>
-
-              {/* Control Center Section Switcher */}
-              <div className="flex border-b border-white/10 bg-slate-950/40 p-1.5 rounded-2xl gap-2 text-xs font-bold w-full sm:w-fit">
-                <button
-                  type="button"
-                  onClick={() => setAdminControlSection('breeders')}
-                  className={`py-2 px-4 rounded-xl cursor-pointer transition-all border-none ${
-                    adminControlSection === 'breeders' ? 'bg-indigo-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Breeder Registries & Accounts
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminControlSection('support')}
-                  className={`py-2 px-4 rounded-xl cursor-pointer transition-all border-none flex items-center gap-1.5 ${
-                    adminControlSection === 'support' ? 'bg-indigo-600 text-white shadow' : 'bg-transparent text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <LifeBuoy className="w-3.5 h-3.5" /> Support & Recovery Desk ({allTickets.length})
-                </button>
-              </div>
-
-              {adminControlSection === 'support' ? (
-                <AdminSupportDesk
-                  allBreeders={adminBreeders}
-                  setAdminBreeders={setAdminBreeders}
-                  allRabbits={rabbits}
-                  allTickets={allTickets}
-                  setAllTickets={setAllTickets}
-                  securityLogs={securityLogs}
-                  setSecurityLogs={setSecurityLogs}
-                  currentUser={currentUser}
-                  showToast={showToast}
-                  triggerConfetti={triggerConfetti}
-                />
-              ) : (
-                <>
-                  {/* Stats overview row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col">
-                  <span className="text-xs opacity-70">Total Breeders</span>
-                  <span className="text-2xl font-bold">{adminBreeders.length}</span>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col">
-                  <span className="text-xs opacity-70">Pending Approval</span>
-                  <span className="text-2xl font-bold text-amber-400">
-                    {adminBreeders.filter(b => b.status === 'pending').length}
-                  </span>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col">
-                  <span className="text-xs opacity-70">Active Registry Roles</span>
-                  <span className="text-2xl font-bold text-green-400">
-                    {adminBreeders.filter(b => b.status === 'active').length}
-                  </span>
-                </div>
-              </div>
-
-              {/* Core layout: Search/List & Add Breeder form */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* List and Actions (Left side) */}
-                <div className="lg:col-span-8 flex flex-col gap-6">
-                  
-                  {/* Marketplace Moderation Queue for App Owner Jason Mounts */}
-                  <MarketplaceModerationQueue />
-                  
-                  {/* Root Knowledge Queue */}
-                  <CommunityKnowledgeModerationQueue />
-                  
-                  {/* User Feedback Viewer */}
-                  <AdminFeedbackViewer />
-
-                  {/* Breeder Search Bar */}
-                  <div className="glass-container p-4 flex items-center justify-between gap-4">
-                    <input
-                      type="text"
-                      placeholder="Search breeder profiles by name, email, or prefix..."
-                      className="w-full text-xs"
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-
-                  {/* List Container */}
-                  <div className="glass-container p-6 flex flex-col gap-4">
-                    <h3 className="text-lg font-bold">Registered Breeder Accounts</h3>
-                    
-                    <div className="flex flex-col gap-4">
-                      {adminBreeders
-                        .filter(b => 
-                          b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          b.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          b.rabbitryName.toLowerCase().includes(searchQuery.toLowerCase())
-                        )
-                        .map(b => (
-                          <BreederCard 
-                            key={b.id} 
-                            b={b} 
-                            setAdminBreeders={setAdminBreeders} 
-                            triggerConfetti={triggerConfetti} 
-                          />
-                        ))}
-                      {adminBreeders.length === 0 && (
-                        <p className="text-center text-xs opacity-60 py-6">No breeder accounts recorded.</p>
-                      )}
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Add Breeder Form (Right side) */}
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                  
-                  <div className="glass-container p-6 flex flex-col gap-4">
-                    <h3 className="text-base font-bold flex items-center gap-2">
-                      <Plus className="w-5 h-5 text-indigo-400" /> Register Breeder
-                    </h3>
-
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const form = e.target;
-                        const breederName = form.elements.breederName.value;
-                        const breederEmail = form.elements.breederEmail.value;
-                        const breederPrefix = form.elements.breederPrefix.value;
-                        const breederPhone = form.elements.breederPhone.value;
-                        const breederRole = form.elements.breederRole.value;
-                        const breederPassword = form.elements.breederPassword.value;
-                        const breederStatus = form.elements.breederStatus.value;
-
-                        if (!breederName || !breederEmail || !breederPassword) {
-                          alert("Name, Email, and Password are required!");
-                          return;
-                        }
-
-                        const newBreederObj = {
-                          id: uuidv7(),
-                          name: breederName,
-                          email: breederEmail,
-                          rabbitryName: breederPrefix || "Independent",
-                          phone: breederPhone || "",
-                          role: breederRole,
-                          status: breederStatus,
-                          password: breederPassword
-                        };
-
-                        setAdminBreeders(prev => [...prev, newBreederObj]);
-                        form.reset();
-                        triggerConfetti();
-                        alert(`Breeder profile for ${breederName} registered successfully!`);
-                      }}
-                      className="flex flex-col gap-4 text-xs"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Full Name *</label>
-                        <input name="breederName" type="text" required placeholder="E.g. David Banner" className="py-1.5 px-3" />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Email Address *</label>
-                        <input name="breederEmail" type="email" required placeholder="david@hulk.com" className="py-1.5 px-3" />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Rabbitry Prefix Name</label>
-                        <input name="breederPrefix" type="text" placeholder="E.g. Emerald Acres" className="py-1.5 px-3" />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Contact Phone</label>
-                        <input name="breederPhone" type="text" placeholder="555-0199" className="py-1.5 px-3" />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Assign Role</label>
-                        <select name="breederRole" className="py-1.5 px-3">
-                          <option value="owner">Breeder / Owner 👑</option>
-                          <option value="assistant">Barn Assistant 🌾</option>
-                          <option value="registrar">ARBA Registrar 📜</option>
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Account Registration Status</label>
-                        <select name="breederStatus" className="py-1.5 px-3">
-                          <option value="active">Active (Instant Access)</option>
-                          <option value="pending">Pending Review</option>
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-bold">Initial Password *</label>
-                        <input name="breederPassword" type="text" required placeholder="Min 6 characters" className="py-1.5 px-3" />
-                      </div>
-
-                      <button type="submit" className="btn-interactive w-full py-2.5 mt-2 bg-gradient-to-r from-indigo-500 to-pink-500 font-bold text-white border-none">
-                        Register Breeder Profile
-                      </button>
-                    </form>
-                  </div>
-
-                </div>
-
-              </div>
-            </>
+          {activeTab === 'admin' && isStaffAuthenticated && (
+            <OwnerControlCenter
+              allBreeders={adminBreeders}
+              setAdminBreeders={setAdminBreeders}
+              allRabbits={rabbits}
+              allTickets={allTickets}
+              setAllTickets={setAllTickets}
+              securityLogs={securityLogs}
+              setSecurityLogs={setSecurityLogs}
+              currentUser={currentUser}
+              showToast={showToast}
+              triggerConfetti={triggerConfetti}
+              onStartImpersonation={handleStartImpersonation}
+              impersonatedUser={impersonatedUser}
+              impersonationMeta={impersonationMeta}
+              onExitImpersonation={handleExitImpersonation}
+            />
           )}
-
-            </div>
-          ))}
 
           {/* TAB 7: APP SETTINGS */}
           {activeTab === 'settings' && (

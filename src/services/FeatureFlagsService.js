@@ -57,8 +57,23 @@ export class FeatureFlagsService {
     this.saveFlags();
   }
 
+  setOverride(flagName, value) {
+    this.setFlag(flagName, value);
+    return this.getAllFlags();
+  }
+
   getAllFlags() {
-    return { ...this.flags };
+    const res = {};
+    for (const [k, v] of Object.entries(this.flags)) {
+      res[k] = {
+        name: k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+        enabled: Boolean(v),
+        description: `Controls ${k} capability across user sessions`,
+        tier: k === 'advancedLineageGraph' ? 'pro' : null,
+        betaOnly: k === 'betaChannel'
+      };
+    }
+    return res;
   }
 
   resetToDefaults() {
@@ -99,3 +114,4 @@ export class FeatureFlagsService {
 }
 
 export const featureFlags = new FeatureFlagsService();
+export const featureFlagsService = featureFlags;
