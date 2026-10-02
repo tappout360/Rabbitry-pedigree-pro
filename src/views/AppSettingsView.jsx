@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Sliders, Monitor, Bell, Shield, LifeBuoy, Check, Save, 
   Palette, Sun, Moon, Volume2, HardDrive, Smartphone, Award, Lock, ExternalLink, ShieldCheck,
-  Activity, Download, Upload, FileText, CheckCircle2, AlertTriangle, Database, RefreshCw, Copy
+  Activity, Download, Upload, FileText, CheckCircle2, AlertTriangle, Database, RefreshCw, Copy,
+  Pin, Trash2, Sparkles, Clock, Cloud, Layers
 } from 'lucide-react';
 import { getUserRole } from '../services/RbacService';
 import { DiagnosticService } from '../services/DiagnosticService';
 import { VaultBackupService } from '../services/VaultBackupService';
+import { DynamicBackupService } from '../services/DynamicBackupService';
+import { updateManager } from '../services/UpdateManagerService';
+import GuidedRestoreModal from '../components/backup/GuidedRestoreModal';
+import WhatsNewModal from '../components/update/WhatsNewModal';
 
 export default function AppSettingsView({
   currentUser,
@@ -22,6 +27,20 @@ export default function AppSettingsView({
   const [activeSection, setActiveSection] = useState('profile'); // 'profile', 'preferences', 'behavior', 'vault'
   const [diagnosticsData, setDiagnosticsData] = useState(null);
   const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+
+  // Dynamic Backups State
+  const [snapshotsList, setSnapshotsList] = useState([]);
+  const [snapshotFilter, setSnapshotFilter] = useState('all'); // 'all', 'manual', 'automatic', 'pre_action', 'pre_update'
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [backupNote, setBackupNote] = useState('');
+  const [autoSchedule, setAutoSchedule] = useState(() => localStorage.getItem('rp_auto_backup_schedule') || 'daily');
+  const [selectedRestoreSnapshot, setSelectedRestoreSnapshot] = useState(null);
+  const [showGuidedRestore, setShowGuidedRestore] = useState(false);
+
+  // Dynamic Updates State
+  const [updateState, setUpdateState] = useState(updateManager.state);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
   // Profile Form
   const [name, setName] = useState(currentUser?.name || '');
@@ -83,6 +102,75 @@ export default function AppSettingsView({
     setDefaultBarnMode(val);
     localStorage.setItem('rp_default_barn_mode', val ? 'true' : 'false');
     showToast(`Default Barn Mode on startup: ${val ? 'Enabled' : 'Disabled'}`, "info");
+  };
+
+  useEffect(() => {
+    loadSnapshots();
+    const unsub = updateManager.subscribe(st => setUpdateState(st));
+    return unsub;
+  }, [currentUser]);
+
+  const loadSnapshots = async () => {
+    try {
+      const list = await DynamicBackupService.listSnapshots(currentUser?.id);
+      setSnapshotsList(list);
+    } catch {}
+  };
+
+  const handleCreateManualBackup = async () => {
+    setIsCreatingBackup(true);
+    try {
+      const res = await DynamicBackupService.createBackup({
+        type: 'manual',
+        label: backupNote.trim() || `Manual Vault Backup - ${new Date().toLocaleDateString()}`,
+        breederId: currentUser?.id,
+        breederName: currentUser?.rabbitryName || currentUser?.name || 'Rabbitry'
+      });
+      showToast(`Backup created successfully (${res.recordCounts.rabbits} rabbits saved)!`, 'success');
+      setBackupNote('');
+      await loadSnapshots();
+    } catch (err) {
+      showToast(`Backup error: ${err.message}`, 'error');
+    } finally {
+      setIsCreatingBackup(false);
+    }
+  };
+
+  const handleTogglePin = async (snapshotId, currentPinned) => {
+    try {
+      await DynamicBackupService.togglePinSnapshot(snapshotId, !currentPinned);
+      await loadSnapshots();
+      showToast(!currentPinned ? 'Snapshot pinned! It will not be auto-pruned.' : 'Snapshot unpinned.', 'info');
+    } catch (e) {
+      showToast(`Error: ${e.message}`, 'error');
+    }
+  };
+
+  const handleDeleteSnapshot = async (snapshotId) => {
+    if (!window.confirm('Delete this backup snapshot? This cannot be undone.')) return;
+    try {
+      await DynamicBackupService.deleteSnapshot(snapshotId, currentUser?.id);
+      await loadSnapshots();
+      showToast('Backup snapshot deleted.', 'info');
+    } catch (e) {
+      showToast(`Error: ${e.message}`, 'error');
+    }
+  };
+
+  const handleScheduleChange = (newSched) => {
+    setAutoSchedule(newSched);
+    localStorage.setItem('rp_auto_backup_schedule', newSched);
+    showToast(`Automatic backup schedule set to ${newSched}.`, 'info');
+  };
+
+  const handleCheckUpdate = async () => {
+    setIsCheckingUpdate(true);
+    try {
+      await updateManager.checkForUpdates();
+      showToast('Update check complete.', 'info');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
   };
 
   return (
@@ -508,56 +596,134 @@ export default function AppSettingsView({
         </div>
       )}
 
-      {/* SECTION 4: DATA VAULT & BARN DIAGNOSTICS */}
+      {/* SECTION 4: DATA VAULT, BACKUPS & UPDATES */}
       {activeSection === 'vault' && (
         <div className="glass-container p-6 border border-white/10 space-y-6">
           <div>
-            <h3 className="font-bold text-white text-base">Local Data Vault & Disaster Recovery</h3>
-            <p className="text-xs text-slate-400">Export complete offline encrypted snapshots, restore previous backups, and verify barn device health.</p>
+            <h3 className="font-bold text-white text-base flex items-center gap-2">
+              <Database className="w-5 h-5 text-indigo-400" />
+              Dynamic Backup, Restore & Release Control
+            </h3>
+            <p className="text-xs text-slate-400">
+              Enterprise-grade disaster recovery, versioned snapshots with SHA-256 integrity, safe diff restore, and PWA updates.
+            </p>
           </div>
 
+          {/* Top Status & Schedule Overview */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Backup Snapshots</span>
+                <HardDrive className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="text-2xl font-black text-white">
+                {snapshotsList.length}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {snapshotsList.filter(s => s.pinned).length} pinned snapshots protected
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Last Snapshot</span>
+                <Clock className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="text-sm font-bold text-white truncate">
+                {snapshotsList.length > 0
+                  ? new Date(snapshotsList[0].createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  : 'No backups yet'}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {snapshotsList.length > 0 ? `${snapshotsList[0].type.toUpperCase()} • ${snapshotsList[0].recordCounts?.rabbits || 0} rabbits` : 'Create your first snapshot below'}
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Auto-Backup Schedule</span>
+                <Cloud className="w-4 h-4 text-purple-400" />
+              </div>
+              <select
+                value={autoSchedule}
+                onChange={(e) => handleScheduleChange(e.target.value)}
+                className="w-full mt-1 bg-slate-950 border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
+              >
+                <option value="daily">Daily Automatic (Rolling 5)</option>
+                <option value="weekly">Weekly Automatic</option>
+                <option value="off">Manual Only (No Auto)</option>
+              </select>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Rolling auto-backups prune unpinned snapshots
+              </p>
+            </div>
+          </div>
+
+          {/* Action Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Card 1: Vault Backup */}
+            {/* Card 1: Create Backup */}
             <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl flex flex-col justify-between gap-3">
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 text-indigo-400">
                   <Download className="w-5 h-5" />
-                  <h4 className="font-bold text-white text-xs">Export Encrypted Vault</h4>
+                  <h4 className="font-bold text-white text-xs">Create Instant Snapshot</h4>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Download all {rabbits.length} herd records, 4-gen pedigrees, and breeding logs in a single encrypted JSON bundle with SHA-256 integrity verification.
+                  Extracts complete schema v3.0 snapshot across all 15+ tables with SHA-256 integrity check and cloud sync.
                 </p>
+                <input
+                  type="text"
+                  placeholder="Optional snapshot note (e.g. Pre-Show)"
+                  value={backupNote}
+                  onChange={(e) => setBackupNote(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
               </div>
               <button
                 type="button"
-                onClick={onOpenVaultBackup}
-                className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/30"
+                onClick={handleCreateManualBackup}
+                disabled={isCreatingBackup}
+                className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900/50 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-600/30 transition-all"
               >
-                <HardDrive className="w-4 h-4" /> Open Vault Manager
+                {isCreatingBackup ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Backing Up...</span>
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4" />
+                    <span>Backup Now</span>
+                  </>
+                )}
               </button>
             </div>
 
-            {/* Card 2: Restore Vault */}
+            {/* Card 2: Guided Restore */}
             <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl flex flex-col justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-emerald-400">
                   <Upload className="w-5 h-5" />
-                  <h4 className="font-bold text-white text-xs">Restore Backup</h4>
+                  <h4 className="font-bold text-white text-xs">Guided Restore Wizard</h4>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Safely merge or rehydrate records from a previous vault snapshot. Validates schema before applying changes.
+                  Restore from local snapshot or uploaded backup file with visual diff previews, selective table merging, and Zero Trust re-authentication.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={onOpenVaultBackup}
-                className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                onClick={() => {
+                  setSelectedRestoreSnapshot(null);
+                  setShowGuidedRestore(true);
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/20 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
-                <Upload className="w-4 h-4" /> Upload Vault File
+                <Layers className="w-4 h-4" />
+                <span>Launch Restore Wizard</span>
               </button>
             </div>
 
-            {/* Card 3: CSV Stock */}
+            {/* Card 3: CSV Stock Export */}
             <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl flex flex-col justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-purple-400">
@@ -565,7 +731,7 @@ export default function AppSettingsView({
                   <h4 className="font-bold text-white text-xs">Spreadsheet CSV Export</h4>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Export an Evans-compatible and Excel-friendly CSV spreadsheet of your herd stock, weights, and cage locations.
+                  Export Evans-compatible and Excel-friendly CSV spreadsheet of your herd stock, weights, and cage locations for offline inspection.
                 </p>
               </div>
               <button
@@ -574,10 +740,242 @@ export default function AppSettingsView({
                   VaultBackupService.exportStockCsv(rabbits);
                   showToast(`Exported ${rabbits.length} rabbits to CSV!`, 'success');
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-purple-600/30"
+                className="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-purple-600/30 transition-all"
               >
-                <Download className="w-4 h-4" /> Download Stock CSV
+                <Download className="w-4 h-4" />
+                <span>Download Stock CSV</span>
               </button>
+            </div>
+          </div>
+
+          {/* Local Snapshot History Table */}
+          <div className="p-5 bg-slate-950/70 border border-white/10 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-indigo-400" />
+                <div>
+                  <h4 className="font-bold text-white text-xs">Snapshot History & Portable Recovery</h4>
+                  <p className="text-[10px] text-slate-400">Pin snapshots to prevent auto-pruning, export portable JSON archives, or restore state.</p>
+                </div>
+              </div>
+
+              {/* Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {['all', 'manual', 'automatic', 'pre_action', 'pre_update'].map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setSnapshotFilter(f)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                      snapshotFilter === f
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    {f.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Table */}
+            {snapshotsList.filter(s => snapshotFilter === 'all' || s.type === snapshotFilter).length === 0 ? (
+              <div className="p-8 text-center rounded-xl bg-slate-900/40 border border-dashed border-white/10 space-y-2">
+                <Database className="w-8 h-8 text-slate-500 mx-auto" />
+                <p className="text-xs text-slate-400 font-medium">No snapshots found matching filter.</p>
+                <button
+                  type="button"
+                  onClick={handleCreateManualBackup}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-bold"
+                >
+                  Create Backup Now
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[10px] uppercase font-bold text-slate-400">
+                      <th className="py-2.5 px-3">Type</th>
+                      <th className="py-2.5 px-3">Snapshot / Label</th>
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Records</th>
+                      <th className="py-2.5 px-3">Checksum</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {snapshotsList
+                      .filter(s => snapshotFilter === 'all' || s.type === snapshotFilter)
+                      .map((snap) => {
+                        const typeColors = {
+                          manual: 'bg-indigo-900/60 text-indigo-300 border-indigo-500/30',
+                          automatic: 'bg-amber-900/60 text-amber-300 border-amber-500/30',
+                          pre_action: 'bg-emerald-900/60 text-emerald-300 border-emerald-500/30',
+                          pre_update: 'bg-purple-900/60 text-purple-300 border-purple-500/30'
+                        };
+
+                        return (
+                          <tr key={snap.snapshotId} className="hover:bg-white/5 transition-colors">
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${typeColors[snap.type] || 'bg-slate-800 text-slate-300'}`}>
+                                {snap.type}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-medium text-white max-w-[200px] truncate" title={snap.label}>
+                              {snap.label}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap text-[11px]">
+                              {new Date(snap.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-300 whitespace-nowrap text-[11px]">
+                              {snap.recordCounts?.rabbits || 0} rabbits • {snap.recordCounts?.breedings || 0} breedings
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">
+                              {snap.checksum ? snap.checksum.slice(0, 10) + '...' : 'n/a'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right whitespace-nowrap space-x-1.5">
+                              {/* Pin Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePin(snap.snapshotId, snap.pinned)}
+                                className={`p-1.5 rounded-lg border transition-all ${
+                                  snap.pinned
+                                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                                    : 'bg-slate-800 text-slate-400 border-white/10 hover:text-white'
+                                }`}
+                                title={snap.pinned ? 'Pinned (Protected)' : 'Pin to prevent auto-deletion'}
+                              >
+                                <Pin className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Restore Button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedRestoreSnapshot(snap);
+                                  setShowGuidedRestore(true);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-bold"
+                              >
+                                Restore
+                              </button>
+
+                              {/* Download File */}
+                              <button
+                                type="button"
+                                onClick={() => DynamicBackupService.downloadSnapshotFile(snap.snapshotId, currentUser?.id)}
+                                className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-white/10"
+                                title="Download portable JSON backup file"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSnapshot(snap.snapshotId)}
+                                disabled={snap.pinned}
+                                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed border border-rose-500/20"
+                                title={snap.pinned ? 'Unpin before deleting' : 'Delete snapshot'}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Dynamic App Updates & Release Channels */}
+          <div className="p-5 bg-slate-950/70 border border-purple-500/30 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <div>
+                  <h4 className="font-bold text-white text-xs">PWA Release Channel & Update Manager</h4>
+                  <p className="text-[10px] text-slate-400">Manage release channel, staged feature rollouts, and view release notes.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCheckUpdate}
+                  disabled={isCheckingUpdate}
+                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-purple-600/20 transition-all"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+                  <span>Check for Updates</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWhatsNew(true)}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Release Notes</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-3 bg-slate-900 border border-white/10 rounded-xl space-y-2">
+                <div className="text-slate-400 font-bold text-[10px] uppercase">Installed App Version</div>
+                <div className="text-lg font-black text-white flex items-center gap-2">
+                  <span>v{updateManager.getCurrentVersion()}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 uppercase">
+                    {updateState.channel}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {updateState.hasUpdate ? '⚠️ New update downloaded and ready to apply.' : 'Application is up-to-date and offline cached.'}
+                </p>
+                {updateState.hasUpdate && (
+                  <button
+                    type="button"
+                    onClick={() => updateManager.applyUpdate()}
+                    className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                  >
+                    Apply Update & Reload
+                  </button>
+                )}
+              </div>
+
+              <div className="p-3 bg-slate-900 border border-white/10 rounded-xl space-y-2">
+                <div className="text-slate-400 font-bold text-[10px] uppercase">Release Channel Selection</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateManager.setChannel('stable')}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      updateState.channel === 'stable'
+                        ? 'bg-purple-950/60 border-purple-500 text-white shadow-sm'
+                        : 'bg-slate-950 border-white/10 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs">Stable</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Recommended for production barns</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateManager.setChannel('beta')}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      updateState.channel === 'beta'
+                        ? 'bg-purple-950/60 border-purple-500 text-white shadow-sm'
+                        : 'bg-slate-950 border-white/10 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs">Beta</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Early preview of AI & sync tools</div>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -707,6 +1105,33 @@ export default function AppSettingsView({
             )}
           </div>
         </div>
+      )}
+
+      {/* Guided Restore Modal */}
+      {showGuidedRestore && (
+        <GuidedRestoreModal
+          isOpen={showGuidedRestore}
+          onClose={() => {
+            setShowGuidedRestore(false);
+            setSelectedRestoreSnapshot(null);
+          }}
+          initialSnapshot={selectedRestoreSnapshot}
+          currentUser={currentUser}
+          onRestoreComplete={() => {
+            loadSnapshots();
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {/* What's New Release Notes Modal */}
+      {showWhatsNew && (
+        <WhatsNewModal
+          isOpen={showWhatsNew}
+          onClose={() => setShowWhatsNew(false)}
+          releaseInfo={updateState.releaseNotes || updateState.updateInfo}
+          onApplyUpdate={() => updateManager.applyUpdate()}
+        />
       )}
 
     </div>

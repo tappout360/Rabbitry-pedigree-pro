@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Upload, FileText, ChevronRight, AlertTriangle, CheckCircle, HelpCircle, BarChart2, ShieldCheck, Sparkles, RefreshCw, Trash2, Download } from 'lucide-react';
 import { db } from '../db/registryDb';
 import { parseDbf } from '../utils/dbfParser';
+import { DynamicBackupService } from '../services/DynamicBackupService';
 
 // RFC 4180-compliant CSV Parser
 function parseCSV(text) {
@@ -426,6 +427,18 @@ export default function EvansMigrator({ allRabbits, setAllRabbits, currentUser, 
         inbreedingCoeff: r.inbreedingCoeff || 0,
         photos: r.photos || ['https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300']
       }));
+
+      // Safety: Create pre-destructive action backup snapshot before clearing/merging
+      try {
+        await DynamicBackupService.createBackup({
+          type: 'pre_action',
+          label: `Pre-Evans Import Safety Snapshot (${allNewRabbits.length} candidates)`,
+          breederId,
+          breederName: currentUser?.rabbitryName || currentUser?.name || 'Rabbitry'
+        });
+      } catch (backupErr) {
+        console.warn('Pre-import safety snapshot warning:', backupErr);
+      }
 
       await db.rabbits.clear();
       await db.rabbits.bulkAdd(encrypted);

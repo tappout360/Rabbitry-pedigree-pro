@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, LifeBuoy, Key, Smartphone, Mail, CheckCircle, 
   AlertTriangle, Clock, Send, MessageSquare, UserCheck, RefreshCw, 
-  Search, Lock, Eye, Filter
+  Search, Lock, Eye, Filter, Database, HardDrive, AlertCircle, Wrench, Sparkles
 } from 'lucide-react';
 import { db } from '../db/registryDb';
 import { logSecurityEvent } from '../services/AccountSecurityService';
+import { DynamicBackupService } from '../services/DynamicBackupService';
 
 export default function AdminSupportDesk({
   allBreeders = [],
@@ -19,7 +20,27 @@ export default function AdminSupportDesk({
   showToast,
   triggerConfetti
 }) {
-  const [subTab, setSubTab] = useState('tickets'); // 'tickets', 'recovery', 'audit'
+  const [subTab, setSubTab] = useState('tickets'); // 'tickets', 'recovery', 'audit', 'system'
+  
+  // System Health & Backups State
+  const [systemSnapshotsCount, setSystemSnapshotsCount] = useState(0);
+  const [isBackingUpSystem, setIsBackingUpSystem] = useState(false);
+  const [maintenanceActive, setMaintenanceActive] = useState(() => localStorage.getItem('rp_maintenance_mode') === 'true');
+  const [maintenanceMsg, setMaintenanceMsg] = useState(() => localStorage.getItem('rp_maintenance_msg') || 'Scheduled barn database maintenance in progress.');
+  const [minVersionInput, setMinVersionInput] = useState(() => localStorage.getItem('rp_min_client_version') || '3.0.0');
+
+  useEffect(() => {
+    loadSystemMetrics();
+  }, []);
+
+  const loadSystemMetrics = async () => {
+    try {
+      if (db && db.backupSnapshots) {
+        const count = await db.backupSnapshots.count();
+        setSystemSnapshotsCount(count);
+      }
+    } catch {}
+  };
   
   // Tickets filter
   const [ticketFilterStatus, setTicketFilterStatus] = useState('All');
@@ -196,6 +217,14 @@ export default function AdminSupportDesk({
           }`}
         >
           <Lock className="w-4 h-4" /> Security Audit Logs ({securityLogs.length})
+        </button>
+        <button
+          onClick={() => setSubTab('system')}
+          className={`flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all ${
+            subTab === 'system' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white bg-transparent'
+          }`}
+        >
+          <Database className="w-4 h-4" /> System Health & Backups
         </button>
       </div>
 
@@ -611,6 +640,180 @@ export default function AdminSupportDesk({
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* SUBTAB 4: SYSTEM HEALTH & DISASTER RECOVERY */}
+      {subTab === 'system' && (
+        <div className="space-y-6">
+          {/* Status Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Backup Snapshots</span>
+                <HardDrive className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="text-2xl font-black text-white">{systemSnapshotsCount}</div>
+              <p className="text-[11px] text-slate-400 mt-1">IndexedDB snapshot records</p>
+            </div>
+
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>IndexedDB Registry</span>
+                <Database className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="text-sm font-bold text-emerald-400 mt-1">ONLINE (v13)</div>
+              <p className="text-[11px] text-slate-400 mt-1">{allRabbits.length} rabbits in state</p>
+            </div>
+
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Maintenance Mode</span>
+                <AlertCircle className="w-4 h-4 text-amber-400" />
+              </div>
+              <div className={`text-sm font-bold mt-1 ${maintenanceActive ? 'text-amber-400' : 'text-slate-300'}`}>
+                {maintenanceActive ? 'ACTIVE (BLOCKING)' : 'INACTIVE (NORMAL)'}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">Global gate status</p>
+            </div>
+
+            <div className="p-4 bg-slate-900/80 border border-white/10 rounded-2xl">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                <span>Min App Version</span>
+                <Sparkles className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="text-sm font-bold text-white mt-1">v{minVersionInput}</div>
+              <p className="text-[11px] text-slate-400 mt-1">Older clients forced to update</p>
+            </div>
+          </div>
+
+          {/* Emergency Operations & Disaster Recovery Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Global Maintenance Mode */}
+            <div className="p-5 bg-slate-950/70 border border-amber-500/30 rounded-2xl space-y-4">
+              <div className="flex items-center gap-2 text-amber-400">
+                <AlertTriangle className="w-5 h-5" />
+                <h4 className="font-bold text-white text-sm">Emergency Maintenance Mode</h4>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                When activated, all client sessions will display a global emergency banner, non-admin destructive actions are disabled, and offline sync can be paused safely.
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-300 font-bold block mb-1">Maintenance Banner Message</label>
+                  <input
+                    type="text"
+                    value={maintenanceMsg}
+                    onChange={(e) => setMaintenanceMsg(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-slate-300 font-medium">Activate Maintenance State</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !maintenanceActive;
+                      setMaintenanceActive(next);
+                      localStorage.setItem('rp_maintenance_mode', next ? 'true' : 'false');
+                      localStorage.setItem('rp_maintenance_msg', maintenanceMsg);
+                      window.dispatchEvent(new Event('rp_maintenance_change'));
+                      logSecurityEvent({
+                        eventType: next ? 'MAINTENANCE_ENABLED' : 'MAINTENANCE_DISABLED',
+                        severity: next ? 'warning' : 'info',
+                        breederId: currentUser?.id || 'admin',
+                        details: `Maintenance mode toggled by ${currentUser?.name}: ${maintenanceMsg}`
+                      });
+                      showToast(next ? 'Maintenance mode enabled!' : 'Maintenance mode disabled.', next ? 'warning' : 'success');
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      maintenanceActive
+                        ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10'
+                    }`}
+                  >
+                    {maintenanceActive ? 'Disable Maintenance' : 'Enable Maintenance'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Version Threshold & Emergency Snapshots */}
+            <div className="p-5 bg-slate-950/70 border border-purple-500/30 rounded-2xl space-y-4">
+              <div className="flex items-center gap-2 text-purple-400">
+                <Wrench className="w-5 h-5" />
+                <h4 className="font-bold text-white text-sm">Version Threshold & Global Snapshot</h4>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Enforce minimum client PWA version to reject outdated clients before database migrations, or trigger an instant full-system backup.
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-300 font-bold block mb-1">Minimum Client Version</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={minVersionInput}
+                      onChange={(e) => setMinVersionInput(e.target.value)}
+                      placeholder="e.g. 3.0.0"
+                      className="flex-1 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.setItem('rp_min_client_version', minVersionInput.trim());
+                        showToast(`Enforced minimum version: v${minVersionInput.trim()}`, 'success');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs"
+                    >
+                      Save Version
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsBackingUpSystem(true);
+                      try {
+                        await DynamicBackupService.createBackup({
+                          type: 'manual',
+                          label: `Root Admin System Snapshot (${allRabbits.length} herd animals)`,
+                          breederId: currentUser?.id || 'admin',
+                          breederName: 'Root System Admin'
+                        });
+                        await loadSystemMetrics();
+                        showToast('System safety snapshot created successfully!', 'success');
+                        triggerConfetti?.();
+                      } catch (err) {
+                        showToast(`System snapshot failed: ${err.message}`, 'error');
+                      } finally {
+                        setIsBackingUpSystem(false);
+                      }
+                    }}
+                    disabled={isBackingUpSystem}
+                    className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-600/30"
+                  >
+                    {isBackingUpSystem ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Taking System Snapshot...</span>
+                      </>
+                    ) : (
+                      <>
+                        <HardDrive className="w-4 h-4" />
+                        <span>Trigger System Safety Snapshot</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

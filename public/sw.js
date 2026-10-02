@@ -124,3 +124,11 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
+
+// Message Listener — Handle SKIP_WAITING and Cache Eviction from UpdateManager
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[ServiceWorker] Received SKIP_WAITING signal. Activating new worker immediately...');
+    self.skipWaiting();
+  }
+});

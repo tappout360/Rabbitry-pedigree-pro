@@ -12,6 +12,7 @@ import CryptoJS from 'crypto-js';
 import { useAsyncAction } from './hooks/useAsyncAction';
 import UndoToast from './components/ui/UndoToast';
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner';
+import UpdateBanner from './components/update/UpdateBanner';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import HealthCheck from './components/ui/HealthCheck';
 import { 
@@ -6347,6 +6348,7 @@ export default function App() {
       
       {/* Network Status Banner (sticky top, auto-dismiss) */}
       <NetworkStatusBanner />
+      <UpdateBanner />
 
       {/* Anime Reward Popups Overlay */}
       {successMascot && (

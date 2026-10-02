@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import { updateManager } from './services/UpdateManagerService';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -15,7 +16,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+      .then((reg) => {
+        console.log('Service Worker registered successfully:', reg.scope);
+        updateManager.initServiceWorker(reg);
+      })
       .catch((err) => console.error('Service Worker registration failed:', err));
   });
 }
